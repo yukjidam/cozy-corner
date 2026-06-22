@@ -3003,38 +3003,68 @@ const trackListEl=document.getElementById('trackList');
 const genreTabsEl=document.getElementById('genreTabs');
 
 const GENRES={
-  chill:{label:'🌙 chill lofi',tracks:[
-    {title:'midnight walk',artist:'lofi dreamer',dur:'3:12',src:''},
-    {title:'soft rain window',artist:'cozyhop',dur:'2:58',src:''},
-    {title:'sleepy city',artist:'nightowl beats',dur:'3:40',src:''},
-    {title:'lavender hour',artist:'pastel sounds',dur:'3:05',src:''},
-    {title:'dim light café',artist:'lofi dreamer',dur:'2:45',src:''},
+  chill:{label:'🌙 chill lofi',cover:'assets/chill_lofi.png',tracks:[
+    {title:'Home',artist:'Cassidy Goodwin',dur:'2:15',src:'assets/chill lofi/Cassidy Goodwin - Home.mp3',thumb:'assets/chill lofi/Cassidy Goodwin - Home.jpg'},
+    {title:'Changing Season',artist:'Cloudy Purle',dur:'2:39',src:'assets/chill lofi/Cloudy Purle - Changing Season.mp3',thumb:'assets/chill lofi/Cloudy Purle - Changing Season.jpg'},
+    {title:'wind down',artist:'flovry',dur:'2:14',src:'assets/chill lofi/flovry - wind down.mp3',thumb:'assets/chill lofi/flovry - wind down.jpg'},
+    {title:'Feathers',artist:'Kupla',dur:'1:55',src:'assets/chill lofi/Kupla - Feathers.mp3',thumb:'assets/chill lofi/Kupla - Feathers.jpg'},
+    {title:'Dreaming of Her',artist:'mellow fox',dur:'1:12',src:'assets/chill lofi/mellow fox - Dreaming of Her.mp3',thumb:'assets/chill lofi/mellow fox - Dreaming of Her.jpg'},
+    {title:'bikes at the pier',artist:'Nogymx',dur:'4:32',src:'assets/chill lofi/Nogymx - bikes at the pier.mp3',thumb:'assets/chill lofi/Nogymx - bikes at the pier.jpg'},
+    {title:'When You Said Hi',artist:'NVTHVN',dur:'1:27',src:'assets/chill lofi/NVTHVN - When You Said Hi.mp3',thumb:'assets/chill lofi/NVTHVN - When You Said Hi.jpg'},
+    {title:"It's Raining Outside",artist:'Outgoing Hikikomori',dur:'2:18',src:"assets/chill lofi/Outgoing Hikikomori - It's Raining Outside.mp3",thumb:"assets/chill lofi/Outgoing Hikikomori - It's Raining Outside.jpg"},
+    {title:'Relief',artist:'sheath',dur:'2:22',src:'assets/chill lofi/sheath - Relief.mp3',thumb:'assets/chill lofi/sheath - Relief.jpg'},
+    {title:'Every Summer',artist:"through & through, J'san",dur:'2:00',src:"assets/chill lofi/through & through, J'san - Every Summer.mp3",thumb:"assets/chill lofi/through & through, J'san - Every Summer.jpg"},
   ]},
-  study:{label:'📚 study lofi',tracks:[
-    {title:'focus flow',artist:'study.wav',dur:'3:28',src:''},
-    {title:'library at 2am',artist:'deep work co.',dur:'4:01',src:''},
-    {title:'coffee & pages',artist:'study.wav',dur:'3:15',src:''},
-    {title:'deadline mode',artist:'brainfuel beats',dur:'3:52',src:''},
-    {title:'quiet hours',artist:'deep work co.',dur:'2:59',src:''},
+  study:{label:'📚 study lofi',cover:'assets/study_lofi.png',tracks:[
+    {title:'Life is beautiful',artist:'Aisake',dur:'3:00',src:'assets/study lofi/Aisake - Life is beautiful.mp3',thumb:'assets/study lofi/Aisake - Life is beautiful.jpg'},
+    {title:'Action Speaks The Beat',artist:'chill chill journal',dur:'3:20',src:'assets/study lofi/chill chill journal - Action Speaks The Beat.mp3',thumb:'assets/study lofi/chill chill journal - Action Speaks The Beat.jpg'},
+    {title:'Forget',artist:'Dosi',dur:'2:55',src:'assets/study lofi/Dosi - Forget.mp3',thumb:'assets/study lofi/Dosi - Forget.jpg'},
+    {title:'Cotton Cloud',artist:'fatb',dur:'3:10',src:'assets/study lofi/fatb - Cotton Cloud.mp3',thumb:'assets/study lofi/fatb - Cotton Cloud.jpg'},
+    {title:'Lilac',artist:'Jinsang',dur:'3:30',src:'assets/study lofi/Jinsang - Lilac.mp3',thumb:'assets/study lofi/Jinsang - Lilac.jpg'},
+    {title:'rain on venus',artist:'ornaut',dur:'2:45',src:'assets/study lofi/ornaut - rain on venus.mp3',thumb:'assets/study lofi/ornaut - rain on venus.jpg'},
+    {title:"Ridin' Solo",artist:'Prompt Society',dur:'3:15',src:"assets/study lofi/Prompt Society - Ridin' Solo.mp3",thumb:"assets/study lofi/Prompt Society - Ridin' Solo.jpg"},
+    {title:'animal sports',artist:'sova',dur:'2:50',src:'assets/study lofi/sova - animal sports.mp3',thumb:'assets/study lofi/sova - animal sports.jpg'},
+    {title:'Tiramisu',artist:'sova',dur:'3:05',src:'assets/study lofi/sova - Tiramisu.mp3',thumb:'assets/study lofi/sova - Tiramisu.jpg'},
+    {title:'Sudachi',artist:'yuhei miura',dur:'3:25',src:'assets/study lofi/yuhei miura - Sudachi.mp3',thumb:'assets/study lofi/yuhei miura - Sudachi.jpg'},
   ]},
-  jazz:{label:'🎷 jazz lofi',tracks:[
-    {title:'smoke & vinyl',artist:'jazzcat records',dur:'4:10',src:''},
-    {title:'late night improv',artist:'trio nuance',dur:'3:48',src:''},
-    {title:'blue note kitchen',artist:'jazzcat records',dur:'3:33',src:''},
-    {title:'autumn standard',artist:'quartet soft',dur:'4:22',src:''},
-    {title:'sunday paper',artist:'trio nuance',dur:'3:07',src:''},
+  jazz:{label:'🎷 jazz lofi',cover:'assets/jazz_lofi.png',tracks:[
+    {title:'Envejecer',artist:'Erameld',dur:'1:13',src:'assets/jazz lofi/Erameld - Envejecer.mp3',thumb:'assets/jazz lofi/Erameld - Envejecer.jpg'},
+    {title:'Yume',artist:'Kalaido',dur:'3:01',src:'assets/jazz lofi/Kalaido - Yume.mp3',thumb:'assets/jazz lofi/Kalaido - Yume.jpg'},
+    {title:'The Way of the RAIN',artist:'Orihusay',dur:'2:40',src:'assets/jazz lofi/Orihusay - The Way of the RAIN.mp3',thumb:'assets/jazz lofi/Orihusay - The Way of the RAIN.jpg'},
+    {title:'Yoake',artist:'paniyolo',dur:'1:53',src:'assets/jazz lofi/paniyolo - Yoake.mp3',thumb:'assets/jazz lofi/paniyolo - Yoake.jpg'},
+    {title:'The Shining Kingdom',artist:'Raimu',dur:'2:23',src:'assets/jazz lofi/Raimu - The Shining Kingdom.mp3',thumb:'assets/jazz lofi/Raimu - The Shining Kingdom.jpg'},
+    {title:'Hananoen',artist:'Sakamoto Juunosuke',dur:'2:46',src:'assets/jazz lofi/Sakamoto Juunosuke - Hananoen.mp3',thumb:'assets/jazz lofi/Sakamoto Juunosuke - Hananoen.jpg'},
+    {title:'madder sky',artist:'TAKUMI M',dur:'2:41',src:'assets/jazz lofi/TAKUMI M - madder sky.mp3',thumb:'assets/jazz lofi/TAKUMI M - madder sky.jpg'},
+    {title:'Rent a Van',artist:'Tom Doolie',dur:'2:02',src:'assets/jazz lofi/Tom Doolie - Rent a Van.mp3',thumb:'assets/jazz lofi/Tom Doolie - Rent a Van.jpg'},
+    {title:'Black Sakura',artist:'Vindu, FlFexclamation',dur:'3:04',src:'assets/jazz lofi/Vindu, FlFexclamation - Black Sakura.mp3',thumb:'assets/jazz lofi/Vindu, FlFexclamation - Black Sakura.jpg'},
+    {title:'Tokyo Rooftop',artist:'zad.',dur:'2:18',src:'assets/jazz lofi/zad. - Tokyo Rooftop.mp3',thumb:'assets/jazz lofi/zad. - Tokyo Rooftop.jpg'},
   ]},
-  hiphop:{label:'🎤 hip hop lofi',tracks:[
-    {title:'corner store groove',artist:'beatsmith 88',dur:'2:55',src:''},
-    {title:'sample flip no. 4',artist:'crate digger',dur:'3:18',src:''},
-    {title:'golden era vibes',artist:'beatsmith 88',dur:'3:44',src:''},
-    {title:'headnod season',artist:'dusty wax co.',dur:'2:50',src:''},
-    {title:'lo frequency',artist:'crate digger',dur:'3:30',src:''},
+  hiphop:{label:'🎤 hip hop lofi',cover:'assets/hip_hop_lofi.png',tracks:[
+    {title:'Soft Spoken',artist:'Dreamfield',dur:'2:35',src:'assets/hip hop lofi/Dreamfield - Soft Spoken.mp3',thumb:'assets/hip hop lofi/Dreamfield - Soft Spoken.jpg'},
+    {title:'Timeless Glow',artist:'Erwin Do',dur:'2:38',src:'assets/hip hop lofi/Erwin Do - Timeless Glow.mp3',thumb:'assets/hip hop lofi/Erwin Do - Timeless Glow.jpg'},
+    {title:'Jazzy Winter',artist:'Guustavv',dur:'2:12',src:'assets/hip hop lofi/Guustavv - Jazzy Winter.mp3',thumb:'assets/hip hop lofi/Guustavv - Jazzy Winter.jpg'},
+    {title:'Shibuya River',artist:'HoKo',dur:'2:15',src:'assets/hip hop lofi/HoKo - Shibuya River.mp3',thumb:'assets/hip hop lofi/HoKo - Shibuya River.jpg'},
+    {title:'The Origami Man',artist:'HoKo',dur:'1:57',src:'assets/hip hop lofi/HoKo - The Origami Man.mp3',thumb:'assets/hip hop lofi/HoKo - The Origami Man.jpg'},
+    {title:'July',artist:'John Lee',dur:'2:08',src:'assets/hip hop lofi/John Lee - July.mp3',thumb:'assets/hip hop lofi/John Lee - July.jpg'},
+    {title:'Visitors',artist:'Late Night Tones',dur:'1:37',src:'assets/hip hop lofi/Late Night Tones - Visitors.mp3',thumb:'assets/hip hop lofi/Late Night Tones - Visitors.jpg'},
+    {title:'Miami Nights',artist:'Lenny B.',dur:'2:05',src:'assets/hip hop lofi/Lenny B. - Miami Nights.mp3',thumb:'assets/hip hop lofi/Lenny B. - Miami Nights.jpg'},
+    {title:'City Whispers',artist:'Living Room',dur:'1:59',src:'assets/hip hop lofi/Living Room - City Whispers.mp3',thumb:'assets/hip hop lofi/Living Room - City Whispers.jpg'},
+    {title:'Nardis',artist:'UKDD',dur:'2:08',src:'assets/hip hop lofi/UKDD - Nardis.mp3',thumb:'assets/hip hop lofi/UKDD - Nardis.jpg'},
   ]},
-  picks:{label:'⭐ personal picks',tracks:[
-    {title:'Ice Cream',artist:'YUNA',dur:'2:51',src:'assets/personal/YUNA - Ice Cream.mp3',thumb:'assets/thumbnail/YUNA - Ice Cream.jpg'},
-    {title:'Heat Waves',artist:'Glass Animals',dur:'2:55',src:'assets/personal/Glass Animals - Heat Waves.mp3',thumb:'assets/thumbnail/Glass Animals - Heat Waves.jpg'},
-    {title:'Sunflower',artist:'Post Malone, Swae Lee',dur:'2:41',src:'assets/personal/Post Malone, Swae Lee - Sunflower.mp3',thumb:'assets/thumbnail/Post Malone, Swae Lee - Sunflower.jpg'},
+  picks:{label:'⭐ personal picks',cover:'assets/personal.png',tracks:[
+    {title:'Backwards',artist:'Forrest.',dur:'4:20',src:'assets/personal/Forrest. - Backwards.mp3',thumb:'assets/personal/Forrest. - Backwards.jpg'},
+    {title:"Grandpop's Uke",artist:'Forrest.',dur:'4:09',src:"assets/personal/Forrest. - Grandpop's Uke.mp3",thumb:"assets/personal/Forrest. - Grandpop's Uke.jpg"},
+    {title:'Your Soul',artist:'Forrest., Biskwiq',dur:'4:27',src:'assets/personal/Forrest., Biskwiq - Your Soul.mp3',thumb:'assets/personal/Forrest., Biskwiq - Your Soul.jpg'},
+    {title:'Cloud',artist:'galdive',dur:'4:01',src:'assets/personal/galdive - Cloud.mp3',thumb:'assets/personal/galdive - Cloud.jpg'},
+    {title:'sorbet',artist:'galdive',dur:'4:55',src:'assets/personal/galdive - sorbet.mp3',thumb:'assets/personal/galdive - sorbet.jpg'},
+    {title:'Sunkissed',artist:'khai dreams',dur:'2:14',src:'assets/personal/khai dreams - Sunkissed.mp3',thumb:'assets/personal/khai dreams - Sunkissed.jpg'},
+    {title:'Come true',artist:'khai dreams, Forrest',dur:'5:06',src:'assets/personal/khai dreams, Forrest - Come true.mp3',thumb:'assets/personal/khai dreams, Forrest - Come true.jpg'},
+    {title:'Youth',artist:'Manila Killa, Satica',dur:'3:02',src:'assets/personal/Manila Killa, Satica - Youth.mp3',thumb:'assets/personal/Manila Killa, Satica - Youth.jpg'},
+    {title:'HALO HALO',artist:'Shawn Wasabi, Chevy',dur:'2:52',src:'assets/personal/Shawn Wasabi, Chevy - HALO HALO.mp3',thumb:'assets/personal/Shawn Wasabi, Chevy - HALO HALO.jpg'},
+    {title:'MANGO LOVE',artist:'Shawn Wasabi, Satica',dur:'3:21',src:'assets/personal/Shawn Wasabi, Satica - MANGO LOVE.mp3',thumb:'assets/personal/Shawn Wasabi, Satica - MANGO LOVE.jpg'},
+    {title:'Pixel Galaxy',artist:"Snail's House",dur:'6:00',src:"assets/personal/Snail's House - Pixel Galaxy.mp3",thumb:"assets/personal/Snail's House - Pixel Galaxy.jpg"},
+    {title:'Sunday Best',artist:'Surfaces',dur:'3:59',src:'assets/personal/Surfaces - Sunday Best.mp3',thumb:'assets/personal/Surfaces - Sunday Best.jpg'},
+    {title:"Can't Hide",artist:'Whethan, Ashe',dur:'4:36',src:"assets/personal/Whethan, Ashe - Can't Hide.mp3",thumb:"assets/personal/Whethan, Ashe - Can't Hide.jpg"},
   ]}
 };
 
@@ -3097,9 +3127,10 @@ function loadTrack(genre,index,autoplay){
   setNowPlayingText(t.title, t.artist, true);
 
   const playerThumbEl=document.querySelector('.player-thumb'),miniThumbEl=document.querySelector('.mini-thumb');
-  if(t.thumb){
-    playerThumbEl.innerHTML=`<img src="${t.thumb}" alt="${t.title}" style="width:100%;height:100%;object-fit:cover;">`;
-    miniThumbEl.innerHTML=`<img src="${t.thumb}" alt="${t.title}" style="width:100%;height:100%;object-fit:cover;">`;
+  const thumbSrc=t.thumb||GENRES[genre].cover||'';
+  if(thumbSrc){
+    playerThumbEl.innerHTML=`<img src="${thumbSrc}" alt="${t.title}" style="width:100%;height:100%;object-fit:cover;">`;
+    miniThumbEl.innerHTML=`<img src="${thumbSrc}" alt="${t.title}" style="width:100%;height:100%;object-fit:cover;">`;
   } else {
     playerThumbEl.innerHTML='<span>🎵</span>'; miniThumbEl.innerHTML='<span>🎵</span>';
   }
