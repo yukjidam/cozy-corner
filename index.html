@@ -2501,14 +2501,23 @@ const vinylToggle=document.getElementById('vinylToggle'),scene=document.querySel
     audio.volume = 0;
     audio.currentTime = 0;
     bgmStarting = true;
-    // Always start muted — browsers allow muted autoplay universally.
-    // armGestureRetry() will unmute on the first user interaction.
-    audio.muted = true;
+    // Try real, audible autoplay first — many browsers allow this
+    // (especially after any prior visit/engagement with the site).
+    audio.muted = false;
     audio.play().then(() => {
       bgmStarting = false;
       audio.volume = userVolume;
-      armGestureRetry();
-    }).catch(() => { bgmStarting = false; });
+    }).catch(() => {
+      // Unmuted autoplay was blocked. Fall back to muted autoplay,
+      // which browsers allow universally, then unmute on the first
+      // user interaction.
+      audio.muted = true;
+      audio.play().then(() => {
+        bgmStarting = false;
+        audio.volume = userVolume;
+        armGestureRetry();
+      }).catch(() => { bgmStarting = false; });
+    });
   }
 
   function armGestureRetry(){
@@ -2613,10 +2622,10 @@ const vinylToggle=document.getElementById('vinylToggle'),scene=document.querySel
   // throttled to ~1x/sec) while the tab is backgrounded, instead of freezing
   // mid-fade and jumping when the tab becomes visible again.
 
-  // Real autoplay attempt on load — try unmuted first (most browsers allow
-  // autoplaying audio that starts muted=false but at volume 0, since no
-  // sound is actually audible until the fade-in raises it). If that's
-  // blocked entirely, playBGM()'s own catch falls back to muted autoplay.
+  // Real autoplay attempt on load — playBGM() now tries genuinely
+  // unmuted playback first; if the browser's autoplay policy blocks
+  // that, it falls back to muted autoplay and unmutes on the first
+  // user interaction (click/keydown/touchstart).
   function init(){
     if(bgmEnabled){
       startBGM();
