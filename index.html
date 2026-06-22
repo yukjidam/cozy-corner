@@ -172,6 +172,30 @@
   .socials a:hover{ color:var(--accent); }
   .socials svg{ width:18px; height:18px; }
 
+  /* ===== BGM "CLICK ME" BUBBLE ===== */
+  .bgm-bubble{
+    position:absolute; top:calc(100% + 10px); right:-6px;
+    background:var(--panel); border:1px solid var(--panel-edge);
+    color:var(--text); font-family:'Nunito', sans-serif; font-weight:700;
+    font-size:.78rem; white-space:nowrap;
+    padding:7px 13px; border-radius:999px;
+    box-shadow:0 6px 18px var(--shadow);
+    pointer-events:none;
+    animation: bgm-bob 1.8s ease-in-out infinite;
+    z-index:250;
+  }
+  .bgm-bubble.hide{ animation:none; opacity:0; transform:translateY(-6px) scale(.9); transition:opacity .25s ease, transform .25s ease; }
+  .bgm-bubble-arrow{
+    position:absolute; top:-5px; right:18px;
+    width:10px; height:10px;
+    background:var(--panel); border-left:1px solid var(--panel-edge); border-top:1px solid var(--panel-edge);
+    transform:rotate(45deg);
+  }
+  @keyframes bgm-bob{
+    0%,100%{ transform:translateY(0); }
+    50%    { transform:translateY(-4px); }
+  }
+
   /* ===== TOP CONTROLS ===== */
   .top-controls{
     position:fixed; top:16px; right:16px; z-index:200;
@@ -1322,11 +1346,15 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" style="width:13px;height:13px;color:var(--text-muted);flex:none;"><path d="M3 9v6h4l5 5V4L7 9H3z"/><path d="M16 9a4 4 0 0 1 0 6"/><path d="M19.5 6a8 8 0 0 1 0 12"/></svg>
       </div>
     </div>
-    <button id="vinylToggle" class="icon-btn" aria-pressed="false" aria-label="toggle lofi ambience">
+    <button id="vinylToggle" class="icon-btn" aria-pressed="false" aria-label="toggle lofi ambience" style="position:relative;">
       <svg viewBox="0 0 24 24" fill="currentColor" style="color:var(--text)">
         <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/>
         <circle cx="12" cy="12" r="2.4" fill="currentColor"/>
       </svg>
+      <div id="bgmBubble" class="bgm-bubble">
+        <span class="bgm-bubble-text">click for music! 🎶</span>
+        <span class="bgm-bubble-arrow"></span>
+      </div>
     </button>
     <button id="themeToggle" class="icon-btn" aria-label="toggle day / night">
       <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="var(--text)" stroke-width="1.6"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg>
@@ -2467,7 +2495,6 @@ const vinylToggle=document.getElementById('vinylToggle'),scene=document.querySel
   let currentTheme = null;
   let playerActive = false;
   let bgmStarting  = false;
-  let gestureArmed = false; // guard against concurrent startBGM calls
 
   function getTheme(){ return document.documentElement.getAttribute('data-theme') || 'night'; }
 
@@ -2501,44 +2528,16 @@ const vinylToggle=document.getElementById('vinylToggle'),scene=document.querySel
     audio.volume = 0;
     audio.currentTime = 0;
     bgmStarting = true;
-    // Try real, audible autoplay first — many browsers allow this
-    // (especially after any prior visit/engagement with the site).
-    audio.muted = false;
+    audio.muted = false; // safe now — playBGM is only ever called after a real user click
     audio.play().then(() => {
       bgmStarting = false;
       audio.volume = userVolume;
-    }).catch(() => {
-      // Unmuted autoplay was blocked. Fall back to muted autoplay,
-      // which browsers allow universally, then unmute on the first
-      // user interaction.
-      audio.muted = true;
-      audio.play().then(() => {
-        bgmStarting = false;
-        audio.volume = userVolume;
-        armGestureRetry();
-      }).catch(() => { bgmStarting = false; });
-    });
-  }
-
-  function armGestureRetry(){
-    if(!gestureArmed){
-      gestureArmed = true;
-      function onGesture(){
-        if(bgmEnabled && !audio.paused) audio.muted = false;
-        gestureArmed = false;
-        document.removeEventListener('click',    onGesture);
-        document.removeEventListener('keydown',  onGesture);
-        document.removeEventListener('touchstart', onGesture);
-      }
-      document.addEventListener('click',     onGesture);
-      document.addEventListener('keydown',   onGesture);
-      document.addEventListener('touchstart', onGesture);
-    }
+    }).catch(() => { bgmStarting = false; });
   }
 
   // Loop with fade out → fade in
   audio.addEventListener('timeupdate', () => {
-    if(!audio.duration || audio.paused || audio.muted) return;
+    if(!audio.duration || audio.paused) return;
     const remaining = audio.duration - audio.currentTime;
     if(remaining <= FADE_OUT_DURATION / 1000 && audio.volume > 0.01){
       fadeTo(0, remaining * 1000, () => {
@@ -2559,17 +2558,14 @@ const vinylToggle=document.getElementById('vinylToggle'),scene=document.querySel
         fadeTo(0, FADE_OUT_DURATION, () => { audio.pause(); playBGM(theme); });
       } else {
         if(audio.src && currentTheme === theme && audio.currentTime > 0){
-          audio.play().then(()=>{
-            if(!audio.muted) fadeTo(userVolume, FADE_IN_DURATION);
-            else { audio.volume = userVolume; armGestureRetry(); }
-          }).catch(()=>{});
+          audio.play().then(()=> fadeTo(userVolume, FADE_IN_DURATION)).catch(()=>{});
         } else {
           playBGM(theme);
         }
       }
     } else {
       // Already playing but may have been fading out — ramp back up
-      if(!audio.muted) fadeTo(userVolume, FADE_IN_DURATION);
+      fadeTo(userVolume, FADE_IN_DURATION);
     }
   }
 
@@ -2588,6 +2584,7 @@ const vinylToggle=document.getElementById('vinylToggle'),scene=document.querySel
     vinylToggle.classList.toggle('active', bgmEnabled);
     vinylToggle.setAttribute('aria-pressed', bgmEnabled);
     if(bgmEnabled) startBGM(); else pauseBGM();
+    hideBubble();
   });
 
   // Theme switch → swap BGM
@@ -2622,16 +2619,29 @@ const vinylToggle=document.getElementById('vinylToggle'),scene=document.querySel
   // throttled to ~1x/sec) while the tab is backgrounded, instead of freezing
   // mid-fade and jumping when the tab becomes visible again.
 
-  // Real autoplay attempt on load — playBGM() now tries genuinely
-  // unmuted playback first; if the browser's autoplay policy blocks
-  // that, it falls back to muted autoplay and unmutes on the first
-  // user interaction (click/keydown/touchstart).
+  // ── "Click me" bubble ──
+  // Browsers block audible autoplay until a real user gesture, so BGM now
+  // starts OFF by default and a cute bubble invites the visitor to turn it
+  // on. The bubble disappears once they click the toggle (or anywhere else,
+  // after a short grace period, so it doesn't linger forever).
+  const bubble = document.getElementById('bgmBubble');
+  let bubbleHidden = false;
+  function hideBubble(){
+    if(bubbleHidden || !bubble) return;
+    bubbleHidden = true;
+    bubble.classList.add('hide');
+    setTimeout(() => bubble.remove(), 300);
+  }
+
   function init(){
-    if(bgmEnabled){
-      startBGM();
-      scene.classList.add('lofi-on');
-      vinylToggle.classList.add('active');
-      vinylToggle.setAttribute('aria-pressed','true');
+    bgmEnabled = false; // start OFF — wait for an explicit click
+    scene.classList.remove('lofi-on');
+    vinylToggle.classList.remove('active');
+    vinylToggle.setAttribute('aria-pressed','false');
+    if(bubble){
+      // Give it a moment to appear after load, then auto-fade after a while
+      // if the visitor never interacts, so it doesn't sit there forever.
+      setTimeout(() => { if(!bgmEnabled) hideBubble(); }, 15000);
     }
   }
   if(document.readyState === 'complete'){ init(); }
