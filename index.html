@@ -1759,7 +1759,7 @@ Underground 90s Japanese Hip Hop Archive Unreleased Tokyo Sessions Full Mix</a><
 
   <div class="win" id="win-game" data-title="game" style="width:420px;">
     <div class="win-bar"><div class="win-bar-left"><div class="win-dots"><button class="win-dot close" aria-label="close"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 1.5L6.5 6.5M6.5 1.5L1.5 6.5"/></svg></button><button class="win-dot min" aria-label="minimize"></button></div><span class="win-title">hatch &amp; hold 🥚</span></div><button id="tama-help-btn" class="tama-help-btn" aria-label="how to play" title="how to play">?</button></div>
-    <div class="win-body" id="tama-win-body" style="padding:16px 16px 20px;position:relative;">
+    <div class="win-body" id="tama-win-body" style="position:relative;">
 
       <!-- HELP / HOW TO PLAY OVERLAY -->
       <div id="tama-help-overlay" class="tama-help-overlay">
@@ -1914,6 +1914,17 @@ Underground 90s Japanese Hip Hop Archive Unreleased Tokyo Sessions Full Mix</a><
   </div>
 
   <style>
+    #tama-win-body{ padding:16px 16px 20px; }
+    @media (max-width:720px){
+      /* same dock-safe reservation every other window's .win-body gets —
+         tama-win-body used an inline padding override that was clobbering it */
+      #tama-win-body{
+        padding-bottom:max(
+          calc(var(--dock-h) + 18px),
+          calc(env(safe-area-inset-bottom, 0px) + var(--dock-h) + 18px)
+        ) !important;
+      }
+    }
     .tama-action-btn{
       display:flex;flex-direction:column;align-items:center;gap:3px;
       background:var(--panel);border:1px solid var(--panel-edge);
