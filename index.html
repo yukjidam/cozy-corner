@@ -554,7 +554,7 @@
     box-shadow:0 4px 14px var(--shadow);
   }
   .player-thumb span{ font-size:1.8rem; filter:drop-shadow(0 1px 1px rgba(0,0,0,.25)); }
-  .player-thumb img{ width:100%; height:100%; object-fit:cover; }
+  .player-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
   .player-meta{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
   .player-meta .label{ margin:0; line-height:1.2; }
   .player-track{ font-weight:700; font-size:.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin:0; line-height:1.3; }
@@ -737,7 +737,7 @@
     box-shadow:0 2px 6px var(--shadow);
   }
   .mini-thumb span{ font-size:1rem; filter:drop-shadow(0 1px 1px rgba(0,0,0,.25)); }
-  .mini-thumb img{ width:100%; height:100%; object-fit:cover; }
+  .mini-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
 
   .mini-meta{ flex:1; min-width:0; }
   .mini-track{
@@ -1518,7 +1518,7 @@
       </g>
     </svg>
     <h1>ceddy's cozy <span class="highlight">corner</span></h1>
-    <p class="tagline">rest here weary traveler, for great adventures lie ahead.</p>
+    <p class="tagline">rest here, weary traveler, for great adventures lie ahead.</p>
 
     <!-- NOW PLAYING PILL (marquee) + VISUALIZER -->
     <div class="now-playing-wrap">
@@ -1566,7 +1566,7 @@
       <p><strong>Bachelor of Science in Information Technology</strong><br>STI College Global City — 2026</p>
       <hr>
       <p class="label">currently</p>
-      <p>professionally unemployed and thriving (sort of). spending my free time building solo projects for my portfolio including, ironically, this very portfolio you're reading right now. it's basically a project about projects. the grind is recursive.</p>
+      <p>professionally unemployed and thriving (sort of). i spend my free time building solo projects for my portfolio, including, ironically, this very portfolio you're reading right now. it's basically a project about projects. the grind is recursive.</p>
     </div>
   </div>
 
@@ -1659,8 +1659,8 @@
 Underground 90s Japanese Hip Hop Archive Unreleased Tokyo Sessions Full Mix</a></p></div></div>
         <div class="faq-item"><button class="faq-q">do you have a cat irl? <span class="plus">+</span></button><div class="faq-a"><p>yes, i have a total of 9 cats. yes, i am definitely a cat person.</p></div></div>
         <div class="faq-item"><button class="faq-q">how do you usually approach building? <span class="plus">+</span></button><div class="faq-a"><p>i usually start by planning and sketching out the concept before diving into the actual development process. i utilize AI tools to give me ideas and help me debug stuff. i also document my progress.</p></div></div>
-        <div class="faq-item"><button class="faq-q">which ai do you actually reach for most? <span class="plus">+</span></button><div class="faq-a"><p>i really love using Claude. my working style and Claude aligns perfectly. my second choice is the classic ChatGPT.</p></div></div>
-        <div class="faq-item"><button class="faq-q">opinion on vibe coding? <span class="plus">+</span></button><div class="faq-a"><p>i think vibe coding is very effective especially for development. devs that utilize AI to work with their code are much faster than traditional no-AI development. (biased opinion from a vibe coder xd)</p></div></div>
+        <div class="faq-item"><button class="faq-q">which ai do you actually reach for most? <span class="plus">+</span></button><div class="faq-a"><p>i really love using Claude. my working style and Claude align perfectly. my second choice is the classic ChatGPT.</p></div></div>
+        <div class="faq-item"><button class="faq-q">opinion on vibe coding? <span class="plus">+</span></button><div class="faq-a"><p>i think vibe coding is very effective especially for development. devs who utilize AI to work with their code are much faster than traditional no-AI development. (biased opinion from a vibe coder xd)</p></div></div>
         <div class="faq-item"><button class="faq-q">pc specs reveal 👀 <span class="plus">+</span></button><div class="faq-a"><p>here are my pc specs:</p><div class="tag-row" style="margin-bottom:12px;"><span class="tag">Ryzen 5 5600G</span><span class="tag">16GB DDR4</span><span class="tag">RX 6600 XT</span><span class="tag">500GB NVMe SSD</span><span class="tag">3× 500GB HDD</span><span class="tag">850W Gold PSU</span><span class="tag">Tecware Timber M</span></div></div></div>
       </div>
     </div>
@@ -2037,8 +2037,8 @@ Underground 90s Japanese Hip Hop Archive Unreleased Tokyo Sessions Full Mix</a><
     <div class="mini-bar" id="miniBar">
       <div class="mini-thumb"><span>🎵</span></div>
       <div class="mini-meta">
-        <p class="mini-track" id="miniTrack">lofi beats to build a portfolio to</p>
-        <p class="mini-artist" id="miniArtist">[your name] · cozy corner radio</p>
+        <p class="mini-track" id="miniTrack">No track selected</p>
+        <p class="mini-artist" id="miniArtist">Select a track</p>
       </div>
       <div class="mini-controls" onclick="event.stopPropagation()">
         <button class="mini-btn" id="miniPrevBtn" aria-label="previous"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M3 2h1.5v5.3L13 2v12L4.5 8.7V14H3z"/></svg></button>
@@ -2466,31 +2466,32 @@ const vinylToggle=document.getElementById('vinylToggle'),scene=document.querySel
   let fadeTimer   = null;  // setInterval id — unlike rAF, this keeps ticking in background tabs
   let currentTheme = null;
   let playerActive = false;
-  let bgmStarting  = false; // guard against concurrent startBGM calls
+  let bgmStarting  = false;
+  let gestureArmed = false; // guard against concurrent startBGM calls
 
   function getTheme(){ return document.documentElement.getAttribute('data-theme') || 'night'; }
 
   function cancelFade(){ if(fadeTimer){ clearInterval(fadeTimer); fadeTimer=null; } }
 
-  // Timer-based fade (not requestAnimationFrame) so it keeps running while the
-  // tab is backgrounded — rAF gets throttled/suspended when hidden, which is
-  // what caused fades to freeze mid-way and then jump when switching back.
   function fadeTo(targetVol, duration, onDone){
     cancelFade();
     const startVol  = audio.volume;
     const startTime = Date.now();
+    // Tag this fade so stale callbacks can be ignored
+    const id = ++fadeTo._id;
     const tick = () => {
       const t = Math.min((Date.now() - startTime) / duration, 1);
       audio.volume = startVol + (targetVol - startVol) * t;
       if(t >= 1){
         cancelFade();
         audio.volume = targetVol;
-        if(onDone) onDone();
+        if(fadeTo._id === id && onDone) onDone();
       }
     };
     fadeTimer = setInterval(tick, 50);
     tick();
   }
+  fadeTo._id = 0;
 
   function playBGM(theme){
     const src = BGM[theme];
@@ -2500,40 +2501,39 @@ const vinylToggle=document.getElementById('vinylToggle'),scene=document.querySel
     audio.volume = 0;
     audio.currentTime = 0;
     bgmStarting = true;
-    audio.muted = false;
+    // Always start muted — browsers allow muted autoplay universally.
+    // armGestureRetry() will unmute on the first user interaction.
+    audio.muted = true;
     audio.play().then(() => {
       bgmStarting = false;
-      fadeTo(userVolume, FADE_IN_DURATION);
-    }).catch(() => {
-      // Unmuted autoplay was blocked — fall back to muted autoplay so the
-      // track is at least playing, then unmute on the first user gesture.
-      bgmStarting = false;
-      audio.muted = true;
-      audio.play().then(() => {
-        audio.volume = userVolume;
-        armGestureRetry();
-      }).catch(()=>{});
-    });
+      audio.volume = userVolume;
+      armGestureRetry();
+    }).catch(() => { bgmStarting = false; });
   }
 
   function armGestureRetry(){
-    function onGesture(){
-      audio.muted = false;
-      document.removeEventListener('click', onGesture);
-      document.removeEventListener('keydown', onGesture);
-      document.removeEventListener('touchstart', onGesture);
+    if(!gestureArmed){
+      gestureArmed = true;
+      function onGesture(){
+        if(bgmEnabled && !audio.paused) audio.muted = false;
+        gestureArmed = false;
+        document.removeEventListener('click',    onGesture);
+        document.removeEventListener('keydown',  onGesture);
+        document.removeEventListener('touchstart', onGesture);
+      }
+      document.addEventListener('click',     onGesture);
+      document.addEventListener('keydown',   onGesture);
+      document.addEventListener('touchstart', onGesture);
     }
-    document.addEventListener('click', onGesture);
-    document.addEventListener('keydown', onGesture);
-    document.addEventListener('touchstart', onGesture);
   }
 
   // Loop with fade out → fade in
   audio.addEventListener('timeupdate', () => {
-    if(!audio.duration || audio.paused) return;
+    if(!audio.duration || audio.paused || audio.muted) return;
     const remaining = audio.duration - audio.currentTime;
     if(remaining <= FADE_OUT_DURATION / 1000 && audio.volume > 0.01){
       fadeTo(0, remaining * 1000, () => {
+        if(!bgmEnabled) return; // don't restart if toggled off during fade-out
         audio.currentTime = 0;
         audio.play().then(() => fadeTo(userVolume, FADE_IN_DURATION)).catch(()=>{});
       });
@@ -2543,22 +2543,34 @@ const vinylToggle=document.getElementById('vinylToggle'),scene=document.querySel
   function startBGM(){
     if(playerActive || bgmStarting) return;
     const theme = getTheme();
+    // Cancel any in-progress fade-out so the stale pause callback won't fire
+    cancelFade();
     if(audio.paused || currentTheme !== theme){
       if(!audio.paused && currentTheme !== theme){
-        // switch theme: fade out then switch
         fadeTo(0, FADE_OUT_DURATION, () => { audio.pause(); playBGM(theme); });
       } else {
-        // resume or fresh start
         if(audio.src && currentTheme === theme && audio.currentTime > 0){
-          audio.play().then(()=>fadeTo(userVolume, FADE_IN_DURATION)).catch(()=>{});
+          audio.play().then(()=>{
+            if(!audio.muted) fadeTo(userVolume, FADE_IN_DURATION);
+            else { audio.volume = userVolume; armGestureRetry(); }
+          }).catch(()=>{});
         } else {
           playBGM(theme);
         }
       }
+    } else {
+      // Already playing but may have been fading out — ramp back up
+      if(!audio.muted) fadeTo(userVolume, FADE_IN_DURATION);
     }
   }
 
-  function pauseBGM(){ cancelFade(); fadeTo(0, FADE_OUT_DURATION, ()=>audio.pause()); }
+  function pauseBGM(){
+    cancelFade();
+    fadeTo(0, FADE_OUT_DURATION, () => {
+      // Only pause if BGM is still disabled — user may have re-enabled it
+      if(!bgmEnabled) audio.pause();
+    });
+  }
 
   // Vinyl toggle: visual + BGM
   vinylToggle.addEventListener('click', () => {
