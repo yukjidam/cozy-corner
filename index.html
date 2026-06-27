@@ -321,6 +321,25 @@
   }
   .dock .tape{ display:none; }
 
+  /* ===== MORE APPS FOLDER ===== */
+  .folder-app-btn{
+    display:flex; flex-direction:column; align-items:center; gap:5px;
+    background:var(--bg-2); border:1px solid var(--panel-edge);
+    border-radius:12px; padding:10px 6px 8px;
+    cursor:pointer; color:var(--text);
+    font-family:'Space Mono',monospace; font-size:.55rem;
+    letter-spacing:.04em; text-transform:uppercase;
+    transition: background .15s ease, transform .15s ease;
+  }
+  .folder-app-btn:hover{ background:var(--panel-edge); transform:translateY(-2px); }
+  .folder-app-btn:active{ transform:scale(.94); }
+  .folder-app-btn.win-open{ border-color:var(--accent); }
+  #moreAppsFolder.visible{ display:block !important; animation: folderPop .2s cubic-bezier(.34,1.5,.64,1) both; }
+  @keyframes folderPop{
+    from{ opacity:0; transform:scale(.88) translateY(8px); }
+    to{ opacity:1; transform:scale(1) translateY(0); }
+  }
+
   /* ===== DESKTOP WINDOWS ===== */
   .win{
     position:fixed;
@@ -491,7 +510,7 @@
   /* ===== GUESTBOOK TOAST (scoped inside #win-logs, bottom-right) ===== */
   #gb-toast{
     position:absolute;
-    bottom:16px; right:16px;
+    bottom:72px; right:16px;
     max-width:min(240px, calc(100% - 32px));
     display:flex; align-items:flex-start; gap:9px;
     background:var(--panel);
@@ -517,6 +536,198 @@
   .gb-toast-msg{
     font-family:'Nunito', sans-serif; font-weight:700;
     font-size:.82rem; line-height:1.35; color:var(--text);
+  }
+
+  /* ===== CHAT WINDOW (logs redesign) ===== */
+  #win-logs .win-body{
+    padding:0;
+    display:flex; flex-direction:column;
+    height:480px;
+    max-height:calc(100vh - 120px);
+    overflow:hidden;
+  }
+  .chat-header{
+    padding:12px 16px;
+    border-bottom:1px solid var(--panel-edge);
+    background:var(--win-bar);
+    display:flex; align-items:center; gap:10px;
+    flex:none;
+  }
+  .chat-avatar{
+    width:36px; height:36px; border-radius:50%;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.1rem; flex:none;
+    box-shadow:0 2px 8px var(--shadow);
+  }
+  .chat-header-info{ flex:1; min-width:0; }
+  .chat-header-name{
+    font-family:'Fredoka',sans-serif; font-weight:600;
+    font-size:.95rem; color:var(--text); line-height:1.2;
+  }
+  .chat-header-status{
+    font-size:.7rem; color:var(--text-muted);
+    display:flex; align-items:center; gap:5px;
+    font-family:'Space Mono',monospace;
+  }
+  .chat-online-dot{
+    width:6px; height:6px; border-radius:50%;
+    background:#4ade80;
+    animation:np-pulse 2s ease-in-out infinite;
+  }
+
+  /* messages feed */
+  .chat-feed{
+    flex:1; overflow-y:auto; padding:14px 14px 10px;
+    display:flex; flex-direction:column; gap:10px;
+    scrollbar-width:thin; scrollbar-color:var(--panel-edge) transparent;
+  }
+  .chat-feed::-webkit-scrollbar{ width:4px; }
+  .chat-feed::-webkit-scrollbar-thumb{ background:var(--panel-edge); border-radius:999px; }
+  .chat-feed::-webkit-scrollbar-track{ background:transparent; }
+  /* pushes messages to the bottom when there are few of them */
+  .chat-feed-spacer{ flex:1; }
+
+  /* date divider */
+  .chat-date-divider{
+    display:flex; align-items:center; gap:8px;
+    font-family:'Space Mono',monospace; font-size:.62rem;
+    color:var(--text-muted); margin:4px 0;
+  }
+  .chat-date-divider::before,.chat-date-divider::after{
+    content:''; flex:1; height:1px; background:var(--panel-edge);
+  }
+
+  /* bubble */
+  .chat-bubble-row{
+    display:flex; align-items:flex-end; gap:8px;
+  }
+  .chat-bubble-row.mine{
+    flex-direction:row-reverse;
+  }
+  .bubble-avatar{
+    width:28px; height:28px; border-radius:50%;
+    background:var(--panel-edge);
+    display:flex; align-items:center; justify-content:center;
+    font-size:.85rem; flex:none; margin-bottom:2px;
+  }
+  .bubble-avatar.host{
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  }
+  .bubble-col{ display:flex; flex-direction:column; gap:3px; max-width:78%; }
+  .chat-bubble-row.mine .bubble-col{ align-items:flex-end; }
+
+  .bubble-sender{
+    font-family:'Space Mono',monospace; font-size:.62rem;
+    color:var(--text-muted); padding:0 4px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;
+  }
+  .bubble-from-inline{
+    font-family:'Space Mono',monospace; font-size:.62rem;
+    color:var(--text-muted); opacity:.7;
+  }
+  .bubble{
+    padding:9px 13px; border-radius:16px;
+    font-family:'Nunito',sans-serif; font-size:.88rem;
+    line-height:1.5; color:var(--text);
+    background:var(--panel); border:1px solid var(--panel-edge);
+    word-break:break-word;
+    position:relative;
+    display:inline-block; width:fit-content; max-width:100%;
+  }
+  .bubble.host-bubble{
+    background:var(--accent); color:var(--bg);
+    border-color:transparent;
+    border-radius:16px 16px 4px 16px;
+  }
+  .bubble.visitor-bubble{
+    border-radius:16px 16px 16px 4px;
+  }
+  .bubble-meta{
+    font-family:'Space Mono',monospace; font-size:.6rem;
+    color:var(--text-muted); padding:0 4px;
+    display:flex; align-items:center; gap:4px;
+  }
+  .chat-bubble-row.mine .bubble-meta{ justify-content:flex-end; }
+  .bubble-from-badge{
+    background:var(--bg-2); border:1px solid var(--panel-edge);
+    border-radius:999px; padding:1px 7px;
+    font-size:.6rem; font-family:'Space Mono',monospace;
+    color:var(--text-muted);
+  }
+
+  /* empty / loading state */
+  .chat-empty{
+    text-align:center; padding:32px 16px;
+    font-family:'Indie Flower',cursive; font-size:1rem;
+    color:var(--text-muted);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:10px; flex:1;
+  }
+  .chat-loading-dots{
+    display:flex; gap:6px; align-items:center; justify-content:center;
+  }
+  .chat-loading-dots span{
+    width:8px; height:8px; border-radius:50%;
+    background:var(--accent); opacity:.7;
+    animation: chat-dot-bounce 1.2s ease-in-out infinite;
+  }
+  .chat-loading-dots span:nth-child(2){ animation-delay:.2s; }
+  .chat-loading-dots span:nth-child(3){ animation-delay:.4s; }
+  @keyframes chat-dot-bounce{
+    0%,80%,100%{ transform:translateY(0); opacity:.4; }
+    40%         { transform:translateY(-6px); opacity:1; }
+  }
+  .chat-loading-label{
+    font-family:'Space Mono',monospace; font-size:.68rem;
+    color:var(--text-muted); letter-spacing:.06em;
+  }
+
+  /* compose bar */
+  .chat-compose{
+    flex:none;
+    border-top:1px solid var(--panel-edge);
+    background:var(--win-bar);
+    padding:10px 12px;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .chat-compose-fields{
+    display:flex; gap:8px;
+  }
+  .chat-compose-fields input{
+    flex:1; padding:6px 10px;
+    border-radius:8px; border:1px solid var(--panel-edge);
+    background:var(--bg); color:var(--text);
+    font-family:'Nunito',sans-serif; font-size:.82rem;
+    outline:none;
+  }
+  .chat-compose-fields input:focus{ border-color:var(--accent); }
+  .chat-compose-row{
+    display:flex; gap:8px; align-items:flex-end;
+  }
+  .chat-compose-row textarea{
+    flex:1; padding:8px 12px;
+    border-radius:12px; border:1px solid var(--panel-edge);
+    background:var(--bg); color:var(--text);
+    font-family:'Nunito',sans-serif; font-size:.88rem;
+    resize:none; outline:none; line-height:1.4;
+    max-height:80px;
+  }
+  .chat-compose-row textarea:focus{ border-color:var(--accent); }
+  .chat-send-btn{
+    width:38px; height:38px; border-radius:50%; flex:none;
+    background:var(--accent); border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:transform .15s ease, filter .15s ease;
+    box-shadow:0 2px 8px var(--shadow);
+  }
+  .chat-send-btn:hover{ transform:scale(1.08); filter:brightness(1.1); }
+  .chat-send-btn:disabled{ opacity:.5; cursor:not-allowed; transform:none; }
+  .chat-send-btn svg{ width:16px; height:16px; fill:var(--bg); }
+  .chat-status-row{
+    font-size:.72rem; color:var(--accent);
+    font-family:'Nunito',sans-serif; min-height:1em;
+    padding:0 2px;
   }
 
   /* ===== PLAYER STATION ===== */
@@ -886,6 +1097,7 @@
   @keyframes glow-pulse{ 0%,100%{ opacity:.35; } 50%{ opacity:1; } }
   @keyframes vinyl-spin{ to{ transform:rotate(360deg); } }
   @keyframes note-float{ 0%{ transform:translate(0,0) rotate(0deg); opacity:0; } 20%{ opacity:1; } 100%{ transform:translate(14px,-70px) rotate(20deg); opacity:0; } }
+  @keyframes tv-spin{ to{ transform:rotate(360deg); } }
 
   @media (prefers-reduced-motion: reduce){
     *{ animation:none !important; transition:none !important; }
@@ -1383,10 +1595,40 @@
     <button data-win="work"><span class="dock-icon">💼</span><span class="dock-label">work</span><span class="dock-dot"></span><span class="dock-tooltip">work</span></button>
     <button data-win="faq"><span class="dock-icon">💬</span><span class="dock-label">faq</span><span class="dock-dot"></span><span class="dock-tooltip">faq</span></button>
     <button data-win="contact"><span class="dock-icon">✉️</span><span class="dock-label">contact</span><span class="dock-dot"></span><span class="dock-tooltip">contact</span></button>
-    <button data-win="logs"><span class="dock-icon">📋</span><span class="dock-label">logs</span><span class="dock-dot"></span><span class="dock-tooltip">logs</span></button>
+    <button data-win="logs"><span class="dock-icon">💬</span><span class="dock-label">messages</span><span class="dock-dot"></span><span class="dock-tooltip">messages</span></button>
     <button data-win="game" id="gameDockBtn"><span class="dock-icon">🐾</span><span class="dock-label">games</span><span class="dock-dot"></span><span class="dock-tooltip">hatch & hold</span></button>
     <button data-win="player"><span class="dock-icon">🎵</span><span class="dock-label">player</span><span class="dock-dot"></span><span class="dock-tooltip">player</span></button>
+    <button id="moreAppsBtn"><span class="dock-icon" id="moreAppsIcon" style="font-size:1.1rem;">📁</span><span class="dock-label">more</span><span class="dock-dot" id="moreAppsDot"></span><span class="dock-tooltip">more apps</span></button>
   </nav>
+
+  <!-- ===== MORE APPS FOLDER POPUP ===== -->
+  <div id="moreAppsFolder" style="
+    display:none; position:fixed; z-index:500;
+    background:var(--panel); border:1px solid var(--panel-edge);
+    border-radius:18px; padding:14px 16px 16px;
+    box-shadow:0 16px 48px var(--shadow), 0 4px 16px var(--shadow);
+    width:196px;
+  ">
+    <p style="font-family:'Space Mono',monospace;font-size:.58rem;color:var(--text-muted);text-align:center;margin:0 0 12px;letter-spacing:.08em;text-transform:uppercase;">more apps</p>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
+      <button class="folder-app-btn" data-win="8ball">
+        <span style="font-size:1.5rem;">🎱</span>
+        <span>8-ball</span>
+      </button>
+      <button class="folder-app-btn" data-win="plant">
+        <span style="font-size:1.5rem;">🌱</span>
+        <span>plant</span>
+      </button>
+      <button class="folder-app-btn" data-win="tv">
+        <span style="font-size:1.5rem;">📺</span>
+        <span>tv</span>
+      </button>
+      <button class="folder-app-btn" data-win="slots">
+        <span style="font-size:1.5rem;">🎰</span>
+        <span>slots</span>
+      </button>
+    </div>
+  </div>
 
   <main class="hero">
     <svg class="scene" viewBox="0 0 480 380" xmlns="http://www.w3.org/2000/svg">
@@ -1688,6 +1930,20 @@
         <a href="https://github.com/yukjidam/STI-Global-City-Senior-High-School-Club-Management-System" target="_blank" style="font-size:.82rem;">view on github</a>
       </div>
 
+      <div class="project-card">
+        <a href="https://github.com/yukjidam/plantodex" target="_blank">
+          <img src="assets/projects/plantodex.png" alt="PlantoDex" style="width:100%;height:auto;object-fit:contain;border-radius:8px;display:block;margin-bottom:12px;">
+        </a>
+        <h3>PlantoDex 🌿</h3>
+        <div class="tag-row" style="margin:6px 0 8px;">
+          <span class="tag">Dart</span><span class="tag">Flutter</span><span class="tag">Pl@ntNet API</span><span class="tag">GBIF</span><span class="tag">SQLite</span>
+        </div>
+        <p>a pokédex for plants. scan to identify, collect species with rarity tiers, and track every find on a map. powered by Pl@ntNet and GBIF.</p>
+        <a href="https://github.com/yukjidam/plantodex" target="_blank" style="font-size:.82rem;">view on github</a>
+        &nbsp;·&nbsp;
+        <a href="https://yukjidam.itch.io/plantodex" target="_blank" style="font-size:.82rem;">download on itch.io →</a>
+      </div>
+
       <p style="margin-top:4px;">see more on <a href="https://github.com/yukjidam" target="_blank">github →</a></p>
     </div>
   </div>
@@ -1725,47 +1981,53 @@ Underground 90s Japanese Hip Hop Archive Unreleased Tokyo Sessions Full Mix</a><
     </div>
   </div>
 
-  <div class="win" id="win-logs" data-title="logs">
-    <div class="win-bar"><div class="win-bar-left"><div class="win-dots"><button class="win-dot close" aria-label="close"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 1.5L6.5 6.5M6.5 1.5L1.5 6.5"/></svg></button><button class="win-dot min" aria-label="minimize"></button></div><span class="win-title">logs</span></div></div>
+  <div class="win" id="win-logs" data-title="messages" style="width:460px;">
+    <div class="win-bar"><div class="win-bar-left"><div class="win-dots"><button class="win-dot close" aria-label="close"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 1.5L6.5 6.5M6.5 1.5L1.5 6.5"/></svg></button><button class="win-dot min" aria-label="minimize"></button></div><span class="win-title">messages</span></div></div>
     <div class="win-body">
-      <h2>visitor log</h2>
-      <p style="margin-top:8px;">drop a note. i read every single one 🐾</p>
 
-      <!-- GUESTBOOK FORM -->
-      <div class="mail-card" style="text-align:left;padding:16px;margin-top:12px;">
-        <div style="display:flex;flex-direction:column;gap:10px;">
-          <div style="display:flex;gap:10px;">
-            <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
-              <label class="label" for="gb-name">name</label>
-              <input id="gb-name" type="text" placeholder="your name" maxlength="40"
-                style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--panel-edge);background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;font-size:.88rem;outline:none;">
-            </div>
-            <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
-              <label class="label" for="gb-from">from</label>
-              <input id="gb-from" type="text" placeholder="city / country 🌍" maxlength="40"
-                style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--panel-edge);background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;font-size:.88rem;outline:none;">
-            </div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:4px;">
-            <label class="label" for="gb-msg">message</label>
-            <textarea id="gb-msg" rows="3" placeholder="leave a little note..." maxlength="280"
-              style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--panel-edge);background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;font-size:.88rem;resize:none;outline:none;"></textarea>
-          </div>
-          <button id="gb-submit" class="mail-btn" style="align-self:flex-start;margin-top:0;">leave a note ✉️</button>
-          <p id="gb-status" style="font-size:.8rem;color:var(--accent);min-height:1em;margin:0;"></p>
+      <!-- CHAT HEADER -->
+      <div class="chat-header">
+        <div class="chat-avatar">🐾</div>
+        <div class="chat-header-info">
+          <div class="chat-header-name">cozy corner</div>
+          <div class="chat-header-status"><span class="chat-online-dot"></span>online · visitors welcome</div>
         </div>
       </div>
 
-      <!-- GUESTBOOK LOG -->
-      <div style="margin-top:18px;">
-        <p class="label">notes from visitors</p>
-        <div id="gb-log" style="display:flex;flex-direction:column;gap:0;margin-top:8px;max-height:220px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#d4b96a transparent;background:#fef9c3;border-radius:10px;border:1px solid #e9d76a;padding:4px 14px 4px 14px;box-shadow:inset 0 1px 4px rgba(0,0,0,.06);">
-          <p style="color:#92720a;font-family:'Indie Flower',cursive;font-size:.92rem;" id="gb-empty">loading notes...</p>
+      <!-- MESSAGES FEED -->
+      <div class="chat-feed" id="gb-log">
+        <div class="chat-feed-spacer"></div>
+        <!-- host pinned message — hidden until messages finish loading -->
+        <div class="chat-bubble-row mine" id="gb-pinned" style="display:none;">
+          <div class="bubble-col">
+            <div class="bubble host-bubble">hey!! drop me a message — i read every single one 🐾<br>don't be shy, say hi~</div>
+            <div class="bubble-meta">me · pinned</div>
+          </div>
         </div>
+        <!-- loading screen -->
+        <div class="chat-empty" id="gb-empty">
+          <div class="chat-loading-dots"><span></span><span></span><span></span></div>
+          <div class="chat-loading-label">fetching messages</div>
+        </div>
+      </div>
+
+      <!-- COMPOSE BAR -->
+      <div class="chat-compose">
+        <div class="chat-compose-fields">
+          <input id="gb-name" type="text" placeholder="your name" maxlength="40" autocomplete="off">
+          <input id="gb-from" type="text" placeholder="city / country 🌍" maxlength="40" autocomplete="off">
+        </div>
+        <div class="chat-compose-row">
+          <textarea id="gb-msg" rows="1" placeholder="say something nice..." maxlength="280"></textarea>
+          <button class="chat-send-btn" id="gb-submit" aria-label="send message">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          </button>
+        </div>
+        <div class="chat-status-row" id="gb-status"></div>
       </div>
     </div>
 
-    <!-- GUESTBOOK TOAST (scoped to this window, bottom-right) -->
+    <!-- TOAST (scoped to this window) -->
     <div id="gb-toast" role="status" aria-live="polite">
       <span class="gb-toast-icon" id="gb-toast-icon">🐾</span>
       <span class="gb-toast-msg" id="gb-toast-msg"></span>
@@ -1928,7 +2190,111 @@ Underground 90s Japanese Hip Hop Archive Unreleased Tokyo Sessions Full Mix</a><
     </div>
   </div>
 
+  <!-- ===== MAGIC 8-BALL ===== -->
+  <div class="win" id="win-8ball" data-title="magic 8-ball" style="width:300px;">
+    <div class="win-bar"><div class="win-bar-left"><div class="win-dots"><button class="win-dot close" aria-label="close"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 1.5L6.5 6.5M6.5 1.5L1.5 6.5"/></svg></button><button class="win-dot min" aria-label="minimize"></button></div><span class="win-title">magic 8-ball 🎱</span></div></div>
+    <div class="win-body" style="padding:20px;display:flex;flex-direction:column;align-items:center;gap:14px;user-select:text;">
+      <div id="ball-wrap" style="position:relative;width:160px;height:160px;cursor:pointer;transition:transform .1s;" title="shake me!">
+        <svg viewBox="0 0 160 160" width="160" height="160" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="ballGrad" cx="38%" cy="35%" r="60%"><stop offset="0%" stop-color="#3a3a5c"/><stop offset="100%" stop-color="#0a0a14"/></radialGradient>
+            <radialGradient id="shineGrad" cx="40%" cy="30%" r="55%"><stop offset="0%" stop-color="rgba(255,255,255,.18)"/><stop offset="100%" stop-color="rgba(255,255,255,0)"/></radialGradient>
+          </defs>
+          <circle cx="80" cy="80" r="78" fill="url(#ballGrad)" stroke="#111" stroke-width="1.5"/>
+          <circle cx="80" cy="80" r="78" fill="url(#shineGrad)"/>
+          <circle cx="80" cy="82" r="32" fill="#1a1a2e" stroke="#2a2a4a" stroke-width="1"/>
+          <text id="ball-num" x="80" y="90" text-anchor="middle" font-family="Georgia,serif" font-size="22" font-weight="bold" fill="#6ec6f5">8</text>
+        </svg>
+        <div id="ball-answer" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:50%;opacity:0;transition:opacity .5s ease;pointer-events:none;">
+          <div style="width:64px;height:64px;background:#1a1a2e;border-radius:50%;border:1px solid #2a2a4a;display:flex;align-items:center;justify-content:center;padding:6px;text-align:center;">
+            <span id="ball-text" style="font-family:'Nunito',sans-serif;font-size:.58rem;font-weight:700;color:#6ec6f5;line-height:1.25;"></span>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:.78rem;color:var(--text-muted);text-align:center;margin:0;font-family:'Nunito',sans-serif;">type a yes/no question, then shake~</p>
+      <div style="display:flex;gap:8px;width:100%;">
+        <input id="ball-q" type="text" placeholder="will i ship today? 🤔" maxlength="80"
+          style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid var(--panel-edge);background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;font-size:.85rem;outline:none;">
+        <button id="ball-shake" class="mail-btn" style="padding:8px 16px;font-size:.85rem;flex:none;">🎱</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== VIRTUAL PLANT ===== -->
+  <div class="win" id="win-plant" data-title="virtual plant" style="width:280px;">
+    <div class="win-bar"><div class="win-bar-left"><div class="win-dots"><button class="win-dot close" aria-label="close"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 1.5L6.5 6.5M6.5 1.5L1.5 6.5"/></svg></button><button class="win-dot min" aria-label="minimize"></button></div><span class="win-title">virtual plant 🌱</span></div></div>
+    <div class="win-body" style="padding:20px;display:flex;flex-direction:column;align-items:center;gap:12px;">
+      <canvas id="plant-canvas" width="220" height="180" style="display:block;border-radius:10px;background:var(--bg-2);"></canvas>
+      <div style="width:100%;background:var(--panel);border:1px solid var(--panel-edge);border-radius:10px;padding:10px 14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-family:'Fredoka',sans-serif;font-weight:600;font-size:.95rem;" id="plant-name">sprout</span>
+          <span style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--text-muted);" id="plant-stage">stage 1 / 5</span>
+        </div>
+        <div style="height:6px;background:var(--bg);border-radius:999px;overflow:hidden;margin-bottom:6px;">
+          <div id="plant-bar" style="height:100%;background:#4ade80;border-radius:999px;transition:width .6s ease;width:0%;"></div>
+        </div>
+        <p style="font-size:.72rem;color:var(--text-muted);margin:0;font-family:'Space Mono',monospace;" id="plant-tip">water me to grow! 💧</p>
+      </div>
+      <button id="plant-water" class="mail-btn" style="width:100%;text-align:center;">water 💧</button>
+    </div>
+  </div>
+
+  <!-- ===== FAKE TV ===== -->
+  <div class="win" id="win-tv" data-title="cozy tv" style="width:360px;">
+    <div class="win-bar"><div class="win-bar-left"><div class="win-dots"><button class="win-dot close" aria-label="close"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 1.5L6.5 6.5M6.5 1.5L1.5 6.5"/></svg></button><button class="win-dot min" aria-label="minimize"></button></div><span class="win-title">📺 cozy tv</span></div></div>
+    <div class="win-body" style="padding:0;overflow:hidden;">
+      <div id="tv-screen" style="position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+        <div id="tv-content" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:24px;text-align:center;"></div>
+        <div id="tv-channel-badge" style="position:absolute;top:10px;right:12px;font-family:'Space Mono',monospace;font-size:.6rem;padding:3px 8px;border-radius:4px;letter-spacing:.06em;background:rgba(0,0,0,.5);color:#fff;"></div>
+      </div>
+      <div style="background:var(--win-bar);border-top:1px solid var(--win-bar-border);padding:9px 14px;display:flex;align-items:center;justify-content:space-between;">
+        <button id="tv-prev" style="background:var(--panel);border:1px solid var(--panel-edge);color:var(--text);border-radius:6px;padding:5px 12px;font-size:.8rem;cursor:pointer;font-family:'Nunito',sans-serif;">◀ prev</button>
+        <span id="tv-ch-label" style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--text-muted);"></span>
+        <button id="tv-next" style="background:var(--panel);border:1px solid var(--panel-edge);color:var(--text);border-radius:6px;padding:5px 12px;font-size:.8rem;cursor:pointer;font-family:'Nunito',sans-serif;">next ▶</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SLOT MACHINE ===== -->
+  <div class="win" id="win-slots" data-title="stack slots" style="width:300px;">
+    <div class="win-bar"><div class="win-bar-left"><div class="win-dots"><button class="win-dot close" aria-label="close"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 1.5L6.5 6.5M6.5 1.5L1.5 6.5"/></svg></button><button class="win-dot min" aria-label="minimize"></button></div><span class="win-title">🎰 stack slots</span></div></div>
+    <div class="win-body" style="padding:20px 20px 24px;display:flex;flex-direction:column;align-items:center;gap:16px;">
+      <p style="font-size:.8rem;color:var(--text-muted);margin:0;text-align:center;font-family:'Nunito',sans-serif;">spin to get your next tech stack 🎲</p>
+      <div style="display:flex;gap:6px;justify-content:center;background:var(--bg);border:2px solid var(--panel-edge);border-radius:12px;padding:10px 12px;">
+        <div class="slot-reel"><div class="slot-inner" id="slot-inner-0"></div></div>
+        <div class="slot-reel"><div class="slot-inner" id="slot-inner-1"></div></div>
+        <div class="slot-reel"><div class="slot-inner" id="slot-inner-2"></div></div>
+      </div>
+      <p id="slot-result" style="font-family:'Fredoka',sans-serif;font-size:1rem;font-weight:600;color:var(--accent);min-height:1.4em;text-align:center;margin:0;"></p>
+      <button id="slot-spin" class="mail-btn" style="width:100%;text-align:center;font-size:1rem;letter-spacing:.04em;">SPIN 🎰</button>
+    </div>
+  </div>
+
   <style>
+    /* slot reels */
+    .slot-reel{
+      width:64px; height:64px; overflow:hidden;
+      background:var(--win-body); border:1px solid var(--panel-edge);
+      border-radius:8px; position:relative;
+    }
+    .slot-inner{
+      display:flex; flex-direction:column;
+      transition:transform .0s;
+    }
+    .slot-cell{
+      width:64px; height:64px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.5rem; flex:none;
+    }
+    /* ball shake anim */
+    @keyframes ball-shake{
+      0%,100%{ transform:rotate(0deg) scale(1); }
+      15%{ transform:rotate(-12deg) scale(1.06); }
+      30%{ transform:rotate(10deg) scale(.96); }
+      45%{ transform:rotate(-8deg) scale(1.04); }
+      60%{ transform:rotate(6deg) scale(.98); }
+      75%{ transform:rotate(-4deg) scale(1.02); }
+    }
     #tama-win-body{ padding:16px 16px 20px; }
     @media (max-width:720px){
       /* same dock-safe reservation every other window's .win-body gets —
@@ -2338,7 +2704,7 @@ const CuteSound = (function(){
 // ===== WINDOW MANAGEMENT =====
 const allWins=document.querySelectorAll('.win');
 let zTop=150;
-const defaultPositions={'win-about':{x:80,y:80},'win-links':{x:110,y:110},'win-work':{x:140,y:80},'win-faq':{x:170,y:110},'win-contact':{x:200,y:80},'win-logs':{x:220,y:100},'win-game':{x:250,y:90}};
+const defaultPositions={'win-about':{x:80,y:80},'win-links':{x:110,y:110},'win-work':{x:140,y:80},'win-faq':{x:170,y:110},'win-contact':{x:200,y:80},'win-logs':{x:220,y:100},'win-game':{x:250,y:90},'win-8ball':{x:160,y:100},'win-plant':{x:180,y:110},'win-tv':{x:140,y:100},'win-slots':{x:200,y:110}};
 function isMobile(){ return window.innerWidth<=720; }
 function clampPosition(win,x,y){ const vw=window.innerWidth,vh=window.innerHeight,w=win.offsetWidth,h=win.offsetHeight; return{x:Math.max(0,Math.min(x,vw-w)),y:Math.max(0,Math.min(y,vh-40))}; }
 function focusWin(win){ zTop++; win.style.zIndex=zTop; win.classList.add('focused'); allWins.forEach(w=>{if(w!==win)w.classList.remove('focused');}); }
@@ -2435,12 +2801,91 @@ function updateDockBtn(winId,open){ const btn=dockBtnFor(winId); if(btn)btn.clas
 
 document.querySelectorAll('.dock button').forEach(btn=>{
   if(btn.dataset.win==='player')return;
+  if(!btn.dataset.win) return; // skip the moreAppsBtn which has no data-win
   btn.addEventListener('click',()=>{
     btn.classList.remove('dock-bounce'); void btn.offsetWidth; btn.classList.add('dock-bounce');
     btn.addEventListener('animationend',()=>btn.classList.remove('dock-bounce'),{once:true});
     openWin('win-'+btn.dataset.win);
   });
 });
+
+// ===== MORE APPS FOLDER =====
+(function(){
+  const moreBtn = document.getElementById('moreAppsBtn');
+  const folder  = document.getElementById('moreAppsFolder');
+  if(!moreBtn || !folder) return;
+
+  const FOLDER_WINS = ['8ball','plant','tv','slots'];
+
+  function positionFolder(){
+    const br = moreBtn.getBoundingClientRect();
+    const fw = 196;
+    let left = br.left + br.width/2 - fw/2;
+    left = Math.max(8, Math.min(left, window.innerWidth - fw - 8));
+    folder.style.left = left + 'px';
+    folder.style.bottom = (window.innerHeight - br.top + 12) + 'px';
+    folder.style.top = 'auto';
+  }
+
+  function updateFolderDot(){
+    const anyOpen = FOLDER_WINS.some(w => {
+      const win = document.getElementById('win-'+w);
+      return win && win.classList.contains('visible');
+    });
+    const dot = document.getElementById('moreAppsDot');
+    if(dot) dot.style.opacity = anyOpen ? '1' : '0';
+    const icon = document.getElementById('moreAppsIcon');
+    if(icon) icon.textContent = anyOpen ? '📂' : '📁';
+  }
+
+  function toggleFolder(){
+    moreBtn.classList.remove('dock-bounce'); void moreBtn.offsetWidth; moreBtn.classList.add('dock-bounce');
+    moreBtn.addEventListener('animationend',()=>moreBtn.classList.remove('dock-bounce'),{once:true});
+    const isOpen = folder.classList.contains('visible');
+    if(isOpen){
+      folder.classList.remove('visible');
+    } else {
+      positionFolder();
+      folder.classList.add('visible');
+    }
+  }
+
+  moreBtn.addEventListener('click', e=>{ e.stopPropagation(); toggleFolder(); });
+
+  // clicking outside closes the folder
+  document.addEventListener('click', e=>{
+    if(!folder.contains(e.target) && e.target !== moreBtn){
+      folder.classList.remove('visible');
+    }
+  });
+
+  // clicking app buttons inside folder
+  folder.querySelectorAll('.folder-app-btn').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      e.stopPropagation();
+      folder.classList.remove('visible');
+      openWin('win-'+btn.dataset.win);
+      setTimeout(updateFolderDot, 100);
+    });
+  });
+
+  // update dot whenever any of the folder wins change
+  const observer = new MutationObserver(updateFolderDot);
+  FOLDER_WINS.forEach(w=>{
+    const win = document.getElementById('win-'+w);
+    if(win) observer.observe(win, { attributes:true, attributeFilter:['class'] });
+  });
+
+  // patch close/min so dot updates
+  FOLDER_WINS.forEach(w=>{
+    const win = document.getElementById('win-'+w);
+    if(!win) return;
+    win.querySelector('.win-dot.close')?.addEventListener('click', ()=>setTimeout(updateFolderDot,50));
+    win.querySelector('.win-dot.min')?.addEventListener('click', ()=>setTimeout(updateFolderDot,50));
+  });
+
+  updateFolderDot();
+})();
 document.querySelectorAll('.win .win-dot.close').forEach(dot=>dot.addEventListener('click',e=>{e.stopPropagation();closeWin(dot.closest('.win'));}));
 document.querySelectorAll('.win .win-dot.min').forEach(dot=>dot.addEventListener('click',e=>{e.stopPropagation();minimizeWin(dot.closest('.win'));}));
 allWins.forEach(win=>{
@@ -3444,37 +3889,95 @@ function showToast(msg, isError) {
 }
 
 function renderGuestbookEntries(data) {
-  const log   = document.getElementById('gb-log');
-  const empty = document.getElementById('gb-empty');
+  const log    = document.getElementById('gb-log');
+  const empty  = document.getElementById('gb-empty');
+  const pinned = document.getElementById('gb-pinned');
   if (!log) return;
+
+  // Show pinned bubble now that we have a result
+  if (pinned) pinned.style.display = '';
+
   if (!data || !data.length) {
-    if (empty) empty.textContent = 'no notes yet — be the first! 🐾';
+    if (empty) { empty.innerHTML = '<span style="font-size:1.4rem">🐾</span><span>no messages yet — be the first!</span>'; }
     return;
   }
   if (empty) empty.remove();
-  log.innerHTML = '';
-  data.forEach(entry => {
-    const card = document.createElement('div');
-    card.style.cssText = 'background:#fef9c3;border:none;border-bottom:1.5px solid #e9d76a;padding:14px 4px 12px;position:relative;';
-    card.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
-        <span style="font-family:'Indie Flower',cursive;font-size:1.08rem;font-weight:700;color:#5a4a00;">${escapeHtml(entry.name||'anonymous')}</span>
-        <span style="font-family:'Indie Flower',cursive;font-size:.82rem;color:#92720a;white-space:nowrap;margin-left:8px;">${entry.from?escapeHtml(entry.from)+' · ':''}${escapeHtml(entry.date)}</span>
+
+  // Remove old visitor bubbles (keep spacer + pinned bubble)
+  log.querySelectorAll('.chat-bubble-row.visitor-row, .chat-date-divider').forEach(el => el.remove());
+
+  // Server returns newest-first (doGet does rows.reverse()), so flip it
+  // to get oldest → newest (first message at top, latest at bottom)
+  const sorted = data.slice().reverse();
+
+  // Emoji pool for random PFPs
+  const EMOJIS = ['🐱','🐶','🦊','🐸','🐼','🐨','🦋','🌸','🍀','🌙','⭐','🎈','🍓','🍉','🌊','🦄','🐙','🍄','🌻','🎀','🐧','🦝','🌈','🍪','🎸'];
+  // Bubble color palette (background + text pairs)
+  const BUBBLE_COLORS = [
+    { bg:'#ddd6fe', text:'#3b1f8c' }, // lavender
+    { bg:'#a7f3d0', text:'#064e3b' }, // mint
+    { bg:'#fde68a', text:'#713f12' }, // yellow
+    { bg:'#fca5a5', text:'#7f1d1d' }, // rose
+    { bg:'#bae6fd', text:'#0c4a6e' }, // sky
+    { bg:'#fbcfe8', text:'#831843' }, // pink
+    { bg:'#d9f99d', text:'#365314' }, // lime
+    { bg:'#fed7aa', text:'#7c2d12' }, // peach
+    { bg:'#e0e7ff', text:'#1e1b4b' }, // indigo
+    { bg:'#ccfbf1', text:'#134e4a' }, // teal
+  ];
+
+  // Seed per-user so same name always gets same emoji + color
+  function seededIndex(str, len) {
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+    return Math.abs(h) % len;
+  }
+
+  // Group by date for dividers — skip divider before very first message
+  let lastDate = null;
+  let isFirst = true;
+  sorted.forEach(entry => {
+    const dateStr = entry.date || '';
+    if (dateStr && dateStr !== lastDate) {
+      lastDate = dateStr;
+      if (!isFirst) {
+        const div = document.createElement('div');
+        div.className = 'chat-date-divider';
+        div.textContent = dateStr;
+        log.appendChild(div);
+      }
+    }
+    isFirst = false;
+
+    const seed    = (entry.name || '?') + (entry.from || '');
+    const emoji   = EMOJIS[seededIndex(seed, EMOJIS.length)];
+    const color   = BUBBLE_COLORS[seededIndex(seed + 'c', BUBBLE_COLORS.length)];
+    const fromText = entry.from ? ` · 📍 ${escapeHtml(entry.from)}` : '';
+
+    const row = document.createElement('div');
+    row.className = 'chat-bubble-row visitor-row';
+    row.innerHTML = `
+      <div class="bubble-avatar" style="background:${color.bg};font-size:1rem;">${emoji}</div>
+      <div class="bubble-col">
+        <div class="bubble-sender">${escapeHtml(entry.name||'anonymous')}<span class="bubble-from-inline">${fromText}</span></div>
+        <div class="bubble visitor-bubble" style="background:${color.bg};color:${color.text};border-color:transparent;">${escapeHtml(entry.message)}</div>
       </div>
-      <p style="font-family:'Indie Flower',cursive;font-size:1rem;color:#6b5700;margin:0;line-height:1.6;">${escapeHtml(entry.message)}</p>
     `;
-    log.appendChild(card);
+    log.appendChild(row);
   });
+
+  // Scroll to bottom so the latest message is visible
+  requestAnimationFrame(() => { log.scrollTop = log.scrollHeight; });
 }
 
 function loadGuestbook() {
   if (gbCache) { renderGuestbookEntries(gbCache); return; }
   const callbackName = 'gbCallback_' + Date.now();
   const script = document.createElement('script');
-  const timeout = setTimeout(() => { cleanup(); const e=document.getElementById('gb-empty'); if(e) e.textContent="couldn't load notes right now 😿"; }, 8000);
+  const timeout = setTimeout(() => { cleanup(); const e=document.getElementById('gb-empty'); if(e){ e.innerHTML='<span style="font-size:1.4rem">😿</span><span>couldn\'t load messages right now</span>'; } }, 8000);
   function cleanup() { clearTimeout(timeout); delete window[callbackName]; if(script.parentNode) script.remove(); }
   window[callbackName] = (data) => { cleanup(); gbCache=data; renderGuestbookEntries(data); };
-  script.onerror = () => { cleanup(); const e=document.getElementById('gb-empty'); if(e) e.textContent="couldn't load notes right now 😿"; };
+  script.onerror = () => { cleanup(); const e=document.getElementById('gb-empty'); if(e){ e.innerHTML='<span style="font-size:1.4rem">😿</span><span>couldn\'t load messages right now</span>'; } };
   script.src = APPS_SCRIPT_URL + '?action=get&callback=' + callbackName;
   document.head.appendChild(script);
 }
@@ -3486,35 +3989,54 @@ function submitGuestbook() {
   const status  = document.getElementById('gb-status');
   const btn     = document.getElementById('gb-submit');
   if (!name || !message) { status.textContent='name and message are required! 🐱'; return; }
-  btn.disabled=true; btn.textContent='sending...'; status.textContent='';
-  const callbackName = 'gbSubmit_' + Date.now();
-  const script = document.createElement('script');
-  const timeout = setTimeout(() => { delete window[callbackName]; if(script.parentNode) script.remove(); onSuccess(); }, 5000);
+
+  const sendIcon = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:16px;height:16px;fill:var(--bg)"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
+  btn.disabled=true;
+  btn.innerHTML='<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:16px;height:16px;fill:var(--bg);opacity:.5"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
+  status.textContent='sending...';
+
   function onSuccess() {
-    clearTimeout(timeout);
     document.getElementById('gb-name').value='';
     document.getElementById('gb-from').value='';
     document.getElementById('gb-msg').value='';
-    status.textContent=''; btn.disabled=false; btn.textContent='leave a note ✉️';
-    showToast('note left! thanks for visiting', false);
+    const ta = document.getElementById('gb-msg'); if(ta) ta.style.height='';
+    status.textContent=''; btn.disabled=false; btn.innerHTML=sendIcon;
+    showToast('message sent! thanks for visiting 🐾', false);
     gbCache=null; setTimeout(()=>loadGuestbook(),1500);
   }
   function onFail() {
-    btn.disabled=false; btn.textContent='leave a note ✉️';
+    btn.disabled=false; btn.innerHTML=sendIcon;
+    status.textContent='';
     showToast('something went wrong, try again', true);
   }
-  window[callbackName] = (res) => { delete window[callbackName]; if(script.parentNode) script.remove(); clearTimeout(timeout); if(res&&res.ok){onSuccess();}else{onFail();} };
-  script.onerror = () => { delete window[callbackName]; clearTimeout(timeout); onFail(); };
-  const params = new URLSearchParams({ action:'post', callback:callbackName, name, from, message });
-  script.src = APPS_SCRIPT_URL + '?' + params.toString();
-  document.head.appendChild(script);
+
+  // Apps Script doPost uses e.postData — must use fetch with no-cors
+  // (response will be opaque, so we treat the attempt as success after a short delay)
+  fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, from, message })
+  })
+  .then(() => onSuccess())
+  .catch(() => onFail());
 }
 
 // Wire up submit button
 document.getElementById('gb-submit').addEventListener('click', submitGuestbook);
 
 // Load guestbook when logs window opens
-document.querySelector('button[data-win="logs"]').addEventListener('click', () => { setTimeout(loadGuestbook, 80); });
+document.querySelector('button[data-win="logs"]').addEventListener('click', () => { setTimeout(()=>{ loadGuestbook(); const feed=document.getElementById('gb-log'); if(feed) feed.scrollTop=feed.scrollHeight; }, 80); });
+
+// Auto-resize textarea + Enter to send (Shift+Enter = newline)
+(function(){
+  const ta = document.getElementById('gb-msg');
+  if(!ta) return;
+  ta.addEventListener('input', function(){ this.style.height='auto'; this.style.height=Math.min(this.scrollHeight,80)+'px'; });
+  ta.addEventListener('keydown', function(e){
+    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); submitGuestbook(); }
+  });
+})();
 
 // Preload in background
 setTimeout(() => { gbCache=null; loadGuestbook(); }, 1800);
@@ -6031,6 +6553,402 @@ if(helpBtn && helpOverlay && helpClose){
   });
 }
 
+})();
+
+
+// ===== MAGIC 8-BALL =====
+(function(){
+  const ANSWERS = [
+    // positive
+    'it is certain ✨','it is decidedly so 🌟','without a doubt 💫','yes definitely 🎉','you may rely on it 🐾',
+    'as i see it, yes 🔮','most likely 🌸','outlook good 🍀','yes 💚','signs point to yes ⭐',
+    // neutral
+    'reply hazy, try again 🌫️','ask again later ⏳','better not tell you now 🤫','cannot predict now 🌙','concentrate and ask again 🎱',
+    // negative
+    "don't count on it 😬","my reply is no 🙅","my sources say no 🚫","outlook not so good 😅","very doubtful 💀",
+  ];
+  const wrap    = document.getElementById('ball-wrap');
+  const numEl   = document.getElementById('ball-num');
+  const ansEl   = document.getElementById('ball-answer');
+  const textEl  = document.getElementById('ball-text');
+  const shakeBtn= document.getElementById('ball-shake');
+  const qInput  = document.getElementById('ball-q');
+  if(!wrap) return;
+
+  let spinning = false;
+  function shake(){
+    if(spinning) return;
+    spinning = true;
+    // hide old answer, show 8
+    ansEl.style.opacity = '0';
+    numEl.style.opacity = '1';
+    // shake anim
+    wrap.style.animation = 'ball-shake .7s cubic-bezier(.36,.07,.19,.97)';
+    wrap.addEventListener('animationend', ()=>{
+      wrap.style.animation = '';
+      const ans = ANSWERS[Math.floor(Math.random()*ANSWERS.length)];
+      textEl.textContent = ans;
+      numEl.style.opacity = '0';
+      ansEl.style.opacity = '1';
+      spinning = false;
+    }, {once:true});
+  }
+  shakeBtn.addEventListener('click', shake);
+  wrap.addEventListener('click', shake);
+  qInput.addEventListener('keydown', e=>{ if(e.key==='Enter') shake(); });
+})();
+
+// ===== VIRTUAL PLANT =====
+(function(){
+  const canvas  = document.getElementById('plant-canvas');
+  const nameEl  = document.getElementById('plant-name');
+  const stageEl = document.getElementById('plant-stage');
+  const barEl   = document.getElementById('plant-bar');
+  const tipEl   = document.getElementById('plant-tip');
+  const waterBtn= document.getElementById('plant-water');
+  if(!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  const STAGES = [
+    { name:'sprout 🌱',     maxWater:5,  tips:['just sprouted!','needs sunshine ☀️','growing slowly...'] },
+    { name:'seedling 🌿',   maxWater:8,  tips:['leaves forming!','looking healthy!','keep watering 💧'] },
+    { name:'plant 🪴',      maxWater:12, tips:['thriving!','bushy and green 🍃','almost there!'] },
+    { name:'flower 🌸',     maxWater:16, tips:['blooming!!','so pretty ✨','full of life!'] },
+    { name:'big tree 🌳',   maxWater:Infinity, tips:['fully grown!','a majestic tree 🌳','you did it! 🎉'] },
+  ];
+
+  // Persist in localStorage
+  let waterCount = parseInt(localStorage.getItem('plant_water')||'0');
+
+  function getStage(){
+    let total = 0;
+    for(let i=0;i<STAGES.length;i++){
+      total += STAGES[i].maxWater;
+      if(waterCount < total || i===STAGES.length-1) return {idx:i, stage:STAGES[i], prev: total - STAGES[i].maxWater};
+    }
+  }
+
+  function drawPlant(){
+    ctx.clearRect(0,0,W,H);
+    const theme = document.documentElement.getAttribute('data-theme')||'night';
+    const isDark = theme==='night';
+
+    // sky bg
+    ctx.fillStyle = isDark ? '#1a1430' : '#e8f4f8';
+    ctx.fillRect(0,0,W,H);
+
+    // ground
+    ctx.fillStyle = isDark ? '#2c2440' : '#c8a96e';
+    ctx.fillRect(0,H-30,W,30);
+    ctx.fillStyle = isDark ? '#352b4c' : '#8fbc8f';
+    ctx.fillRect(0,H-34,W,8);
+
+    const {idx} = getStage();
+    const groundY = H - 34;
+    const cx = W/2;
+
+    if(idx===0){
+      // tiny sprout
+      ctx.strokeStyle='#4ade80'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(cx,groundY); ctx.lineTo(cx,groundY-22); ctx.stroke();
+      ctx.fillStyle='#4ade80';
+      ctx.beginPath(); ctx.ellipse(cx-8,groundY-22,8,5,-.4,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx+8,groundY-24,8,5,.4,0,Math.PI*2); ctx.fill();
+    } else if(idx===1){
+      // seedling with more leaves
+      ctx.strokeStyle='#22c55e'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.moveTo(cx,groundY); ctx.lineTo(cx,groundY-44); ctx.stroke();
+      [[cx-14,groundY-20,-.5],[cx+14,groundY-28,.5],[cx-10,groundY-40,-.3],[cx+10,groundY-44,.3]].forEach(([x,y,r])=>{
+        ctx.fillStyle='#4ade80';
+        ctx.beginPath(); ctx.ellipse(x,y,12,7,r,0,Math.PI*2); ctx.fill();
+      });
+    } else if(idx===2){
+      // potted plant
+      ctx.fillStyle=isDark?'#4a3b5c':'#c2845a';
+      ctx.beginPath(); ctx.moveTo(cx-14,groundY); ctx.lineTo(cx-18,groundY-22); ctx.lineTo(cx+18,groundY-22); ctx.lineTo(cx+14,groundY); ctx.fill();
+      ctx.strokeStyle='#22c55e'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.moveTo(cx,groundY-22); ctx.lineTo(cx,groundY-60); ctx.stroke();
+      for(let i=0;i<5;i++){
+        const ang = (i/5)*Math.PI*2 - Math.PI/2;
+        const lx = cx + Math.cos(ang)*22, ly = groundY-60 + Math.sin(ang)*14;
+        ctx.fillStyle=`hsl(${120+i*8},60%,50%)`;
+        ctx.beginPath(); ctx.ellipse(lx,ly,14,9,ang,0,Math.PI*2); ctx.fill();
+      }
+    } else if(idx===3){
+      // flowering plant
+      ctx.fillStyle=isDark?'#4a3b5c':'#c2845a';
+      ctx.beginPath(); ctx.moveTo(cx-14,groundY); ctx.lineTo(cx-18,groundY-22); ctx.lineTo(cx+18,groundY-22); ctx.lineTo(cx+14,groundY); ctx.fill();
+      ctx.strokeStyle='#16a34a'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.moveTo(cx,groundY-22); ctx.lineTo(cx,groundY-70); ctx.stroke();
+      for(let i=0;i<6;i++){
+        const ang = (i/6)*Math.PI*2 - Math.PI/2;
+        const lx = cx + Math.cos(ang)*26, ly = groundY-70 + Math.sin(ang)*18;
+        ctx.fillStyle='#f9a8d4';
+        ctx.beginPath(); ctx.arc(lx,ly,9,0,Math.PI*2); ctx.fill();
+      }
+      ctx.fillStyle='#fde68a';
+      ctx.beginPath(); ctx.arc(cx,groundY-70,8,0,Math.PI*2); ctx.fill();
+      // side stems
+      [-1,1].forEach(dir=>{
+        ctx.strokeStyle='#16a34a'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.moveTo(cx,groundY-50); ctx.quadraticCurveTo(cx+dir*30,groundY-58,cx+dir*34,groundY-68); ctx.stroke();
+        ctx.fillStyle='#fb7185'; ctx.beginPath(); ctx.arc(cx+dir*34,groundY-68,6,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='#fde68a'; ctx.beginPath(); ctx.arc(cx+dir*34,groundY-68,3,0,Math.PI*2); ctx.fill();
+      });
+    } else {
+      // big tree
+      ctx.strokeStyle='#92400e'; ctx.lineWidth=8;
+      ctx.beginPath(); ctx.moveTo(cx,groundY); ctx.lineTo(cx,groundY-90); ctx.stroke();
+      ctx.lineWidth=4;
+      [[-28,groundY-60],[28,groundY-65],[-20,groundY-80],[22,groundY-78]].forEach(([bx,by])=>{
+        ctx.beginPath(); ctx.moveTo(cx,by+10); ctx.lineTo(cx+bx,by); ctx.stroke();
+      });
+      [[0,groundY-100,42],[0,groundY-90,34],[-24,groundY-78,22],[24,groundY-82,22],[-16,groundY-68,18],[18,groundY-72,18]].forEach(([ox,oy,r])=>{
+        ctx.fillStyle=`hsl(${130+Math.random()*20},55%,${isDark?32:42}%)`;
+        ctx.beginPath(); ctx.arc(cx+ox,oy,r,0,Math.PI*2); ctx.fill();
+      });
+    }
+  }
+
+  function update(){
+    const {idx, stage, prev} = getStage();
+    const stageWater = waterCount - prev;
+    const pct = idx===STAGES.length-1 ? 100 : Math.min(100, (stageWater/stage.maxWater)*100);
+    nameEl.textContent = stage.name;
+    stageEl.textContent = `stage ${idx+1} / ${STAGES.length}`;
+    barEl.style.width = pct+'%';
+    tipEl.textContent = stage.tips[Math.floor(Math.random()*stage.tips.length)];
+    drawPlant();
+  }
+
+  waterBtn.addEventListener('click', ()=>{
+    const {idx} = getStage();
+    if(idx<STAGES.length-1){
+      waterCount++;
+      localStorage.setItem('plant_water', waterCount);
+    }
+    // water drop anim on button
+    waterBtn.textContent='💦 watered!';
+    setTimeout(()=>{ waterBtn.textContent='water 💧'; },900);
+    update();
+  });
+
+  // Redraw on theme change
+  const themeObs = new MutationObserver(drawPlant);
+  themeObs.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+  update();
+})();
+
+// ===== FAKE TV =====
+(function(){
+  const screen  = document.getElementById('tv-content');
+  const badge   = document.getElementById('tv-channel-badge');
+  const chLabel = document.getElementById('tv-ch-label');
+  const prevBtn = document.getElementById('tv-prev');
+  const nextBtn = document.getElementById('tv-next');
+  if(!screen) return;
+
+  // nekos.best — free, no API key, CORS enabled, returns real anime GIFs
+  // We keep a pool per channel; on first visit we fetch 20, then pick randomly from cache
+  const pool = { anime: [], lofi: [] };
+
+  // Cozy/chill anime GIF categories from nekos.best
+  const ANIME_CATS = ['sleep','smile','blush','happy','wink','sip','yawn','lurk','cuddle','pat','teehee','smug','bored'];
+  const LOFI_CATS  = ['stare','think','confused','shrug','nod','wave','poke','shocked','facepalm','spin'];
+
+  async function fillPool(key, cats) {
+    if(pool[key].length >= 5) return; // already got enough
+    try {
+      const cat = cats[Math.floor(Math.random()*cats.length)];
+      const res = await fetch(`https://nekos.best/api/v2/${cat}?amount=20`, {
+        headers: { 'User-Agent': 'cozy-corner-portfolio/1.0' }
+      });
+      const data = await res.json();
+      const urls = (data.results || []).map(r => r.url).filter(Boolean);
+      pool[key].push(...urls);
+    } catch(e) {}
+  }
+
+  function pickFromPool(key) {
+    if(!pool[key].length) return null;
+    const idx = Math.floor(Math.random() * pool[key].length);
+    return pool[key].splice(idx, 1)[0]; // remove so we don't repeat
+  }
+
+  function showLoading(el, label, bg) {
+    el.style.background = bg;
+    el.style.padding = '0'; el.style.gap = '0';
+    el.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px;color:rgba(255,255,255,.55);">
+        <div style="font-size:1.6rem;animation:tv-spin 1.2s linear infinite;display:inline-block;">📡</div>
+        <div style="font-family:'Space Mono',monospace;font-size:.6rem;letter-spacing:.06em;">tuning in...</div>
+      </div>`;
+  }
+
+  function showGif(el, url, label, emoji, animeInfo) {
+    el.style.background = '#080812';
+    el.style.padding = '0'; el.style.gap = '0';
+    el.innerHTML = `
+      <img src="${url}"
+        style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"
+        alt="${label}" />
+      <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.4) 0%,transparent 30%,transparent 65%,rgba(0,0,0,.5) 100%);pointer-events:none;"></div>
+      <div style="position:absolute;top:8px;left:10px;font-family:'Fredoka',sans-serif;font-size:.85rem;color:rgba(255,255,255,.92);font-weight:600;text-shadow:0 1px 6px rgba(0,0,0,.9);pointer-events:none;">${emoji} ${label}</div>
+      ${animeInfo ? `<div style="position:absolute;bottom:8px;left:10px;font-family:'Space Mono',monospace;font-size:.5rem;color:rgba(255,255,255,.4);pointer-events:none;">${animeInfo}</div>` : ''}
+      <div style="position:absolute;bottom:8px;right:10px;font-family:'Space Mono',monospace;font-size:.5rem;color:rgba(255,255,255,.35);pointer-events:none;">nekos.best</div>`;
+  }
+
+  function showError(el, emoji) {
+    el.style.background = '#0d0d1a';
+    el.style.padding = '24px';
+    el.innerHTML = `
+      <div style="font-size:2rem;">${emoji}</div>
+      <div style="color:rgba(255,255,255,.4);font-family:'Space Mono',monospace;font-size:.58rem;margin-top:8px;text-align:center;">no signal<br>check connection</div>`;
+  }
+
+  const CHANNELS = [
+    {
+      ch:'01', name:'anime vibes 🌸',
+      async render(el) {
+        showLoading(el, 'anime', 'linear-gradient(135deg,#0d0a1a,#1a0d2e)');
+        await fillPool('anime', ANIME_CATS);
+        // pre-fill next batch in background
+        fillPool('anime', ANIME_CATS);
+        const url = pickFromPool('anime');
+        if(url) showGif(el, url, 'anime vibes', '🌸', null);
+        else showError(el, '🌸');
+      }
+    },
+    {
+      ch:'02', name:'lofi mode 🎧',
+      async render(el) {
+        showLoading(el, 'lofi', 'linear-gradient(135deg,#0a0d1a,#0d1a2a)');
+        await fillPool('lofi', LOFI_CATS);
+        fillPool('lofi', LOFI_CATS);
+        const url = pickFromPool('lofi');
+        if(url) showGif(el, url, 'lofi mode', '🎧', null);
+        else showError(el, '🎧');
+      }
+    },
+  ];
+
+  let current = 0;
+
+  function goTo(idx){
+    if(screen._stopStatic) { screen._stopStatic(); screen._stopStatic=null; }
+    current = ((idx % CHANNELS.length) + CHANNELS.length) % CHANNELS.length;
+    const ch = CHANNELS[current];
+    screen.innerHTML='';
+    screen.style.cssText='width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:0;text-align:center;position:relative;overflow:hidden;';
+    ch.render(screen);
+    badge.textContent=`ch ${ch.ch}`;
+    chLabel.textContent=`${ch.ch} · ${ch.name}`;
+  }
+
+  // Pre-warm both pools on load
+  fillPool('anime', ANIME_CATS);
+  fillPool('lofi', LOFI_CATS);
+
+  prevBtn.addEventListener('click',()=>goTo(current-1));
+  nextBtn.addEventListener('click',()=>goTo(current+1));
+  let tvTimer = setInterval(()=>goTo(current+1), 20000);
+  [prevBtn,nextBtn].forEach(b=>b.addEventListener('click',()=>{ clearInterval(tvTimer); tvTimer=setInterval(()=>goTo(current+1),20000); }));
+
+  // init when window opens
+  document.querySelector('.dock button[data-win="tv"]')?.addEventListener('click',()=>{ setTimeout(()=>goTo(current),80); });
+  goTo(0);
+})();
+
+// ===== SLOT MACHINE =====
+(function(){
+  const spinBtn   = document.getElementById('slot-spin');
+  const resultEl  = document.getElementById('slot-result');
+  if(!spinBtn) return;
+
+  const REELS = [
+    ['⚛️','🟢','🔷','🐍','🐘','🦀','☕','🔥','⚡','🌊'],  // frontend/lang icons
+    ['🗄️','🌐','📱','🖥️','☁️','🐳','🤖','🎮','🔐','📊'],  // category
+    ['⚡','🎨','🛠️','🚀','💡','🔮','🌈','🎯','💎','🏗️'],  // vibe
+  ];
+  const COMBOS = [
+    {check:s=>s[0]===s[1]&&s[1]===s[2], msg:'JACKPOT!! triple match 🎉🎉🎉'},
+    {check:s=>s[0]===s[1]||s[1]===s[2]||s[0]===s[2], msg:'two of a kind! not bad 👀'},
+  ];
+  const STACKS = [
+    'React + Node + MongoDB 🍃','Next.js + Prisma + PostgreSQL 🐘','Vue + Django + Redis 🔴',
+    'Svelte + Go + SQLite ⚡','Angular + Spring + Oracle ☕','React Native + Firebase 🔥',
+    'Nuxt + Laravel + MySQL 🐬','Remix + Supabase + Deno 🦕','Astro + Netlify + Sanity ✨',
+    'SolidJS + Hono + Turso 🚀','Next.js + tRPC + PlanetScale 🌍','T3 Stack: trpc+next+prisma 💎',
+  ];
+
+  const CELL_H = 64;
+  const STRIP_LEN = 20; // how many cells per reel strip
+
+  // Build each reel strip
+  [0,1,2].forEach(i=>{
+    const inner = document.getElementById(`slot-inner-${i}`);
+    let html='';
+    for(let j=0;j<STRIP_LEN;j++){
+      const emoji = REELS[i][j % REELS[i].length];
+      html+=`<div class="slot-cell">${emoji}</div>`;
+    }
+    inner.innerHTML=html;
+    inner.style.transform=`translateY(0px)`;
+  });
+
+  let spinning=false;
+  function spin(){
+    if(spinning) return;
+    spinning=true;
+    spinBtn.disabled=true;
+    resultEl.textContent='';
+
+    const stops = [0,1,2].map(()=>Math.floor(Math.random()*REELS[0].length));
+    const finals = [];
+
+    [0,1,2].forEach((i,_)=>{
+      const inner = document.getElementById(`slot-inner-${i}`);
+      const delay = i*120;
+      const totalCells = 8 + Math.floor(Math.random()*6); // spin 8-13 cells
+      const targetCell = totalCells;
+      const targetY = -(targetCell * CELL_H);
+
+      // Reset to top without animation
+      inner.style.transition='none';
+      inner.style.transform='translateY(0px)';
+
+      setTimeout(()=>{
+        inner.style.transition=`transform ${0.6+i*0.18}s cubic-bezier(.17,.67,.35,1) ${delay}ms`;
+        inner.style.transform=`translateY(${targetY}px)`;
+      },30);
+
+      const stopDelay = delay + (0.6+i*0.18)*1000 + 80;
+      setTimeout(()=>{
+        const stopIdx = stops[i];
+        finals[i] = REELS[i][stopIdx];
+        if(finals.length===3 && finals.filter(Boolean).length===3){
+          showResult(finals);
+        }
+      }, stopDelay);
+    });
+
+    setTimeout(()=>{ spinning=false; spinBtn.disabled=false; }, 1400);
+  }
+
+  function showResult(s){
+    const combo = COMBOS.find(c=>c.check(s));
+    if(combo){
+      resultEl.textContent=combo.msg;
+    } else {
+      const stack=STACKS[Math.floor(Math.random()*STACKS.length)];
+      resultEl.textContent=`your stack: ${stack}`;
+    }
+  }
+
+  spinBtn.addEventListener('click',spin);
 })();
 
 
