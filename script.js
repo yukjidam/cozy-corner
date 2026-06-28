@@ -126,6 +126,9 @@ const CuteSound = (function(){
   });
 })();
 
+// ===== PORTFOLIO INIT (called by boot sequence when done) =====
+window.initPortfolio = function(){
+
 // ===== CLOCK =====
 (function(){
   const timeEl=document.getElementById('clockTime'),dateEl=document.getElementById('clockDate'),dayEl=document.getElementById('clockDay');
@@ -189,7 +192,7 @@ const CuteSound = (function(){
 // ===== WINDOW MANAGEMENT =====
 const allWins=document.querySelectorAll('.win');
 let zTop=150;
-const defaultPositions={'win-about':{x:80,y:80},'win-links':{x:110,y:110},'win-work':{x:140,y:80},'win-faq':{x:170,y:110},'win-contact':{x:200,y:80},'win-logs':{x:220,y:100},'win-game':{x:250,y:90},'win-8ball':{x:160,y:100},'win-plant':{x:180,y:110},'win-tv':{x:140,y:100},'win-slots':{x:200,y:110},'win-terminal':{x:40,y:60}};
+const defaultPositions={'win-about':{x:80,y:80},'win-links':{x:110,y:110},'win-work':{x:140,y:80},'win-faq':{x:170,y:110},'win-contact':{x:200,y:80},'win-logs':{x:220,y:100},'win-game':{x:250,y:90},'win-palette':{x:160,y:100},'win-tv':{x:140,y:100},'win-slots':{x:200,y:110},'win-terminal':{x:40,y:60}};
 function isMobile(){ return window.innerWidth<=720; }
 function clampPosition(win,x,y){ const vw=window.innerWidth,vh=window.innerHeight,w=win.offsetWidth,h=win.offsetHeight; return{x:Math.max(0,Math.min(x,vw-w)),y:Math.max(0,Math.min(y,vh-40))}; }
 function focusWin(win){ zTop++; win.style.zIndex=zTop; win.classList.add('focused'); allWins.forEach(w=>{if(w!==win)w.classList.remove('focused');}); }
@@ -300,7 +303,7 @@ document.querySelectorAll('.dock button').forEach(btn=>{
   const folder  = document.getElementById('moreAppsFolder');
   if(!moreBtn || !folder) return;
 
-  const FOLDER_WINS = ['8ball','plant','tv','slots'];
+  const FOLDER_WINS = ['palette','tv','slots'];
 
   function positionFolder(){
     const br = moreBtn.getBoundingClientRect();
@@ -4041,192 +4044,6 @@ if(helpBtn && helpOverlay && helpClose){
 })();
 
 
-// ===== MAGIC 8-BALL =====
-(function(){
-  const ANSWERS = [
-    // positive
-    'it is certain ✨','it is decidedly so 🌟','without a doubt 💫','yes definitely 🎉','you may rely on it 🐾',
-    'as i see it, yes 🔮','most likely 🌸','outlook good 🍀','yes 💚','signs point to yes ⭐',
-    // neutral
-    'reply hazy, try again 🌫️','ask again later ⏳','better not tell you now 🤫','cannot predict now 🌙','concentrate and ask again 🎱',
-    // negative
-    "don't count on it 😬","my reply is no 🙅","my sources say no 🚫","outlook not so good 😅","very doubtful 💀",
-  ];
-  const wrap    = document.getElementById('ball-wrap');
-  const numEl   = document.getElementById('ball-num');
-  const ansEl   = document.getElementById('ball-answer');
-  const textEl  = document.getElementById('ball-text');
-  const shakeBtn= document.getElementById('ball-shake');
-  const qInput  = document.getElementById('ball-q');
-  if(!wrap) return;
-
-  let spinning = false;
-  function shake(){
-    if(spinning) return;
-    spinning = true;
-    // hide old answer, show 8
-    ansEl.style.opacity = '0';
-    numEl.style.opacity = '1';
-    // shake anim
-    wrap.style.animation = 'ball-shake .7s cubic-bezier(.36,.07,.19,.97)';
-    wrap.addEventListener('animationend', ()=>{
-      wrap.style.animation = '';
-      const ans = ANSWERS[Math.floor(Math.random()*ANSWERS.length)];
-      textEl.textContent = ans;
-      numEl.style.opacity = '0';
-      ansEl.style.opacity = '1';
-      spinning = false;
-    }, {once:true});
-  }
-  shakeBtn.addEventListener('click', shake);
-  wrap.addEventListener('click', shake);
-  qInput.addEventListener('keydown', e=>{ if(e.key==='Enter') shake(); });
-})();
-
-// ===== VIRTUAL PLANT =====
-(function(){
-  const canvas  = document.getElementById('plant-canvas');
-  const nameEl  = document.getElementById('plant-name');
-  const stageEl = document.getElementById('plant-stage');
-  const barEl   = document.getElementById('plant-bar');
-  const tipEl   = document.getElementById('plant-tip');
-  const waterBtn= document.getElementById('plant-water');
-  if(!canvas) return;
-
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
-
-  const STAGES = [
-    { name:'sprout 🌱',     maxWater:5,  tips:['just sprouted!','needs sunshine ☀️','growing slowly...'] },
-    { name:'seedling 🌿',   maxWater:8,  tips:['leaves forming!','looking healthy!','keep watering 💧'] },
-    { name:'plant 🪴',      maxWater:12, tips:['thriving!','bushy and green 🍃','almost there!'] },
-    { name:'flower 🌸',     maxWater:16, tips:['blooming!!','so pretty ✨','full of life!'] },
-    { name:'big tree 🌳',   maxWater:Infinity, tips:['fully grown!','a majestic tree 🌳','you did it! 🎉'] },
-  ];
-
-  // Persist in localStorage
-  let waterCount = parseInt(localStorage.getItem('plant_water')||'0');
-
-  function getStage(){
-    let total = 0;
-    for(let i=0;i<STAGES.length;i++){
-      total += STAGES[i].maxWater;
-      if(waterCount < total || i===STAGES.length-1) return {idx:i, stage:STAGES[i], prev: total - STAGES[i].maxWater};
-    }
-  }
-
-  function drawPlant(){
-    ctx.clearRect(0,0,W,H);
-    const theme = document.documentElement.getAttribute('data-theme')||'night';
-    const isDark = theme==='night';
-
-    // sky bg
-    ctx.fillStyle = isDark ? '#1a1430' : '#e8f4f8';
-    ctx.fillRect(0,0,W,H);
-
-    // ground
-    ctx.fillStyle = isDark ? '#2c2440' : '#c8a96e';
-    ctx.fillRect(0,H-30,W,30);
-    ctx.fillStyle = isDark ? '#352b4c' : '#8fbc8f';
-    ctx.fillRect(0,H-34,W,8);
-
-    const {idx} = getStage();
-    const groundY = H - 34;
-    const cx = W/2;
-
-    if(idx===0){
-      // tiny sprout
-      ctx.strokeStyle='#4ade80'; ctx.lineWidth=2;
-      ctx.beginPath(); ctx.moveTo(cx,groundY); ctx.lineTo(cx,groundY-22); ctx.stroke();
-      ctx.fillStyle='#4ade80';
-      ctx.beginPath(); ctx.ellipse(cx-8,groundY-22,8,5,-.4,0,Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(cx+8,groundY-24,8,5,.4,0,Math.PI*2); ctx.fill();
-    } else if(idx===1){
-      // seedling with more leaves
-      ctx.strokeStyle='#22c55e'; ctx.lineWidth=3;
-      ctx.beginPath(); ctx.moveTo(cx,groundY); ctx.lineTo(cx,groundY-44); ctx.stroke();
-      [[cx-14,groundY-20,-.5],[cx+14,groundY-28,.5],[cx-10,groundY-40,-.3],[cx+10,groundY-44,.3]].forEach(([x,y,r])=>{
-        ctx.fillStyle='#4ade80';
-        ctx.beginPath(); ctx.ellipse(x,y,12,7,r,0,Math.PI*2); ctx.fill();
-      });
-    } else if(idx===2){
-      // potted plant
-      ctx.fillStyle=isDark?'#4a3b5c':'#c2845a';
-      ctx.beginPath(); ctx.moveTo(cx-14,groundY); ctx.lineTo(cx-18,groundY-22); ctx.lineTo(cx+18,groundY-22); ctx.lineTo(cx+14,groundY); ctx.fill();
-      ctx.strokeStyle='#22c55e'; ctx.lineWidth=3;
-      ctx.beginPath(); ctx.moveTo(cx,groundY-22); ctx.lineTo(cx,groundY-60); ctx.stroke();
-      for(let i=0;i<5;i++){
-        const ang = (i/5)*Math.PI*2 - Math.PI/2;
-        const lx = cx + Math.cos(ang)*22, ly = groundY-60 + Math.sin(ang)*14;
-        ctx.fillStyle=`hsl(${120+i*8},60%,50%)`;
-        ctx.beginPath(); ctx.ellipse(lx,ly,14,9,ang,0,Math.PI*2); ctx.fill();
-      }
-    } else if(idx===3){
-      // flowering plant
-      ctx.fillStyle=isDark?'#4a3b5c':'#c2845a';
-      ctx.beginPath(); ctx.moveTo(cx-14,groundY); ctx.lineTo(cx-18,groundY-22); ctx.lineTo(cx+18,groundY-22); ctx.lineTo(cx+14,groundY); ctx.fill();
-      ctx.strokeStyle='#16a34a'; ctx.lineWidth=3;
-      ctx.beginPath(); ctx.moveTo(cx,groundY-22); ctx.lineTo(cx,groundY-70); ctx.stroke();
-      for(let i=0;i<6;i++){
-        const ang = (i/6)*Math.PI*2 - Math.PI/2;
-        const lx = cx + Math.cos(ang)*26, ly = groundY-70 + Math.sin(ang)*18;
-        ctx.fillStyle='#f9a8d4';
-        ctx.beginPath(); ctx.arc(lx,ly,9,0,Math.PI*2); ctx.fill();
-      }
-      ctx.fillStyle='#fde68a';
-      ctx.beginPath(); ctx.arc(cx,groundY-70,8,0,Math.PI*2); ctx.fill();
-      // side stems
-      [-1,1].forEach(dir=>{
-        ctx.strokeStyle='#16a34a'; ctx.lineWidth=2;
-        ctx.beginPath(); ctx.moveTo(cx,groundY-50); ctx.quadraticCurveTo(cx+dir*30,groundY-58,cx+dir*34,groundY-68); ctx.stroke();
-        ctx.fillStyle='#fb7185'; ctx.beginPath(); ctx.arc(cx+dir*34,groundY-68,6,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle='#fde68a'; ctx.beginPath(); ctx.arc(cx+dir*34,groundY-68,3,0,Math.PI*2); ctx.fill();
-      });
-    } else {
-      // big tree
-      ctx.strokeStyle='#92400e'; ctx.lineWidth=8;
-      ctx.beginPath(); ctx.moveTo(cx,groundY); ctx.lineTo(cx,groundY-90); ctx.stroke();
-      ctx.lineWidth=4;
-      [[-28,groundY-60],[28,groundY-65],[-20,groundY-80],[22,groundY-78]].forEach(([bx,by])=>{
-        ctx.beginPath(); ctx.moveTo(cx,by+10); ctx.lineTo(cx+bx,by); ctx.stroke();
-      });
-      [[0,groundY-100,42],[0,groundY-90,34],[-24,groundY-78,22],[24,groundY-82,22],[-16,groundY-68,18],[18,groundY-72,18]].forEach(([ox,oy,r])=>{
-        ctx.fillStyle=`hsl(${130+Math.random()*20},55%,${isDark?32:42}%)`;
-        ctx.beginPath(); ctx.arc(cx+ox,oy,r,0,Math.PI*2); ctx.fill();
-      });
-    }
-  }
-
-  function update(){
-    const {idx, stage, prev} = getStage();
-    const stageWater = waterCount - prev;
-    const pct = idx===STAGES.length-1 ? 100 : Math.min(100, (stageWater/stage.maxWater)*100);
-    nameEl.textContent = stage.name;
-    stageEl.textContent = `stage ${idx+1} / ${STAGES.length}`;
-    barEl.style.width = pct+'%';
-    tipEl.textContent = stage.tips[Math.floor(Math.random()*stage.tips.length)];
-    drawPlant();
-  }
-
-  waterBtn.addEventListener('click', ()=>{
-    const {idx} = getStage();
-    if(idx<STAGES.length-1){
-      waterCount++;
-      localStorage.setItem('plant_water', waterCount);
-    }
-    // water drop anim on button
-    waterBtn.textContent='💦 watered!';
-    setTimeout(()=>{ waterBtn.textContent='water 💧'; },900);
-    update();
-  });
-
-  // Redraw on theme change
-  const themeObs = new MutationObserver(drawPlant);
-  themeObs.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
-
-  update();
-})();
-
 // ===== FAKE TV =====
 (function(){
   const screen  = document.getElementById('tv-content');
@@ -5038,4 +4855,81 @@ i live somewhere between late-night coding sessions and lo-fi playlists.`,
   );
 
   resetTimer();
+})();
+
+}; // end window.initPortfolio
+
+// ===== BOOT SEQUENCE =====
+(function(){
+  const bootScreen  = document.getElementById('boot-screen');
+  const log         = document.getElementById('boot-log');
+  const fill        = document.getElementById('boot-bar-fill');
+  const pctEl       = document.getElementById('boot-bar-pct');
+  const statEl      = document.getElementById('boot-bar-status');
+  const skipBtn     = document.getElementById('boot-skip');
+
+  const steps = [
+    { pct:  5, delay: 300,  label:'loading kernel modules…',    line:'[    0.001] 🐾 cozy-kernel v2.0.0 booting',          cls:'info' },
+    { pct: 14, delay: 500,  label:'mounting filesystems…',      line:'[    0.042] ✔  /dev/vibes: mounted ok',               cls:'ok'   },
+    { pct: 23, delay: 450,  label:'loading theme engine…',      line:'[    0.118] ✔  theme.service: night mode active',     cls:'ok'   },
+    { pct: 35, delay: 550,  label:'spawning aurora blobs…',     line:'[    0.203] ✔  aurora.service: 5 blobs deployed',     cls:'ok'   },
+    { pct: 44, delay: 400,  label:'calibrating dock…',          line:'[    0.291] ✔  dock.service: 9 icons loaded',         cls:'ok'   },
+    { pct: 53, delay: 600,  label:'warming up audio engine…',   line:'[    0.380] ⚠  lofi.service: awaiting user gesture', cls:'warn' },
+    { pct: 62, delay: 450,  label:'loading widget layer…',      line:'[    0.455] ✔  widgets.service: clock + cal ok',      cls:'ok'   },
+    { pct: 71, delay: 500,  label:'placing sticky notes…',      line:'[    0.510] ✔  stickies.service: 3 notes pinned',    cls:'ok'   },
+    { pct: 80, delay: 400,  label:'spawning paw prints…',       line:'[    0.574] ✔  paws.service: trail deployed 🐾',      cls:'ok'   },
+    { pct: 89, delay: 550,  label:'initializing screensaver…',  line:'[    0.638] ✔  screensaver.service: idle timer set', cls:'ok'   },
+    { pct: 96, delay: 450,  label:'almost there…',              line:'[    0.701] ✔  cozy-corner.service: ready',          cls:'ok'   },
+    { pct:100, delay: 700,  label:'welcome 🎉',                 line:'[    0.750] ✔  startup complete — enjoy your visit!',cls:'ok'   },
+  ];
+
+  let bootDone = false;
+
+  function appendLine(text, cls){
+    const span = document.createElement('span');
+    span.className = 'boot-log-line' + (cls ? ' ' + cls : '');
+    span.textContent = text;
+    log.appendChild(span);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function runStep(i){
+    if(bootDone) return;
+    if(i >= steps.length){ finishBoot(); return; }
+    const s = steps[i];
+    setTimeout(()=>{
+      if(bootDone) return;
+      fill.style.width = s.pct + '%';
+      pctEl.textContent = s.pct + '%';
+      statEl.textContent = s.label;
+      appendLine(s.line, s.cls);
+      runStep(i + 1);
+    }, s.delay);
+  }
+
+  function finishBoot(){
+    if(bootDone) return;
+    bootDone = true;
+    // ── Start the portfolio only now that the boot is done ──
+    if(typeof window.initPortfolio === 'function') window.initPortfolio();
+    setTimeout(()=>{
+      bootScreen.classList.add('fade-out');
+      setTimeout(()=>{ bootScreen.style.display = 'none'; }, 1100);
+    }, 600);
+  }
+
+  function skipBoot(){
+    if(bootDone) return;
+    bootDone = true;
+    document.removeEventListener('keydown', onBootKey);
+    // ── Start the portfolio on skip too ──
+    if(typeof window.initPortfolio === 'function') window.initPortfolio();
+    bootScreen.classList.add('fade-out');
+    setTimeout(()=>{ bootScreen.style.display = 'none'; }, 1100);
+  }
+
+  function onBootKey(){ skipBoot(); }
+  skipBtn.addEventListener('click', skipBoot);
+  document.addEventListener('keydown', onBootKey);
+  runStep(0);
 })();
