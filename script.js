@@ -1529,6 +1529,60 @@ document.querySelector('button[data-win="logs"]').addEventListener('click', () =
 // Preload in background
 setTimeout(() => { gbCache=null; loadGuestbook(); }, 1800);
 
+// ===== VISITOR COUNT WIDGET =====
+// Reuses the same Apps Script backend as the guestbook (add a 'visitors'
+// action there — see palette.js sibling note / setup instructions).
+(function(){
+  const countEl = document.getElementById('visitors-count');
+  if (!countEl) return;
+
+  const SESSION_FLAG = 'cc_visit_counted';
+
+  function renderCount(n) {
+    if (typeof n !== 'number' || isNaN(n)) {
+      countEl.textContent = '· · ·';
+      return;
+    }
+    countEl.style.opacity = '0';
+    setTimeout(() => {
+      countEl.textContent = n.toLocaleString();
+      countEl.style.opacity = '1';
+    }, 120);
+  }
+
+  // Read-only fetch via JSONP (same pattern as the guestbook GET)
+  function fetchCount(onDone) {
+    const callbackName = 'visitCallback_' + Date.now();
+    const script = document.createElement('script');
+    const timeout = setTimeout(() => { cleanup(); onDone(null); }, 8000);
+    function cleanup(){ clearTimeout(timeout); delete window[callbackName]; if(script.parentNode) script.remove(); }
+    window[callbackName] = (data) => { cleanup(); onDone(data && typeof data.count === 'number' ? data.count : null); };
+    script.onerror = () => { cleanup(); onDone(null); };
+    script.src = APPS_SCRIPT_URL + '?action=visitors&callback=' + callbackName;
+    document.head.appendChild(script);
+  }
+
+  // Fire-and-forget increment (same no-cors pattern as guestbook POST) —
+  // only once per browser session so refreshing the page doesn't inflate it
+  function incrementOnce() {
+    if (sessionStorage.getItem(SESSION_FLAG)) return;
+    sessionStorage.setItem(SESSION_FLAG, '1');
+    fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'visit' })
+    }).catch(() => { /* fail silently — count just won't tick this visit */ });
+  }
+
+  // Show the last-known count immediately, then refresh after the
+  // increment has had a moment to land server-side
+  fetchCount(renderCount);
+  incrementOnce();
+  setTimeout(() => { fetchCount(renderCount); }, 1500);
+})();
+
+
 // ===== HEADPHONE NOTIFICATION TOAST =====
 (function(){
   const TOAST_ID   = 'headphone-toast';

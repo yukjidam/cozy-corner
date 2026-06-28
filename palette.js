@@ -121,15 +121,10 @@
   function luminance(rgb) { return 0.299*rgb[0] + 0.587*rgb[1] + 0.114*rgb[2]; }
   function contrastColor(hex) { return luminance(hexToRgb(hex)) > 140 ? '#1a1a2e' : '#f3ead9'; }
 
-  // ── capture original CSS vars so we can reset them ──
+  // ── CSS vars touched when a palette is applied; theme switching is
+  //    handled by removing these inline overrides (see restoreOriginals) ──
   const ROOT = document.documentElement;
   const THEME_VARS = ['--bg','--bg-2','--panel','--panel-edge','--text','--text-muted','--accent','--accent-2','--sky-1','--sky-2','--frame','--sill','--shadow','--win-bar','--win-bar-border','--win-body'];
-  const ORIG_VARS = {};
-  function captureOriginals() {
-    const style = getComputedStyle(ROOT);
-    THEME_VARS.forEach(v => { ORIG_VARS[v] = style.getPropertyValue(v).trim(); });
-  }
-  captureOriginals();
 
   let lastPalette = null;
   let themeApplied = false;
@@ -175,7 +170,11 @@
   }
 
   function restoreOriginals() {
-    THEME_VARS.forEach(v => ROOT.style.setProperty(v, ORIG_VARS[v]));
+    // remove the inline overrides entirely so the stylesheet's
+    // data-theme rules (night/day) take back over — setting them to a
+    // captured snapshot would freeze the theme at whatever it was on
+    // page load and block the day/night toggle afterwards.
+    THEME_VARS.forEach(v => ROOT.style.removeProperty(v));
     themeApplied = false;
     tryBtn.textContent = '🖥️ try this palette';
     tryWrap.style.display = lastPalette ? 'block' : 'none';

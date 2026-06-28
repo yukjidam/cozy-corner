@@ -1141,10 +1141,9 @@
     font-weight:700;
   }
 
-  /* ── Haiku Widget ── */
-  /* ── Haiku Widget ── sits below the sticky note in the left column ── */
+  /* ── Haiku Widget ── sits below the mint "now listening" sticky, left column ── */
   .widget-haiku{
-    top:280px; left:20px;
+    top:330px; left:20px;
     background:var(--panel); border:1px solid var(--panel-edge);
     border-radius:16px; padding:16px 18px 14px;
     box-shadow:0 4px 18px var(--shadow);
@@ -1156,22 +1155,24 @@
     color:var(--accent); letter-spacing:.1em; text-transform:uppercase;
     display:flex; align-items:center; gap:5px;
   }
+  /* formal literary serif, sized between too-small and too-large */
   .widget-haiku-text{
-    font-family:'Nunito', sans-serif; font-size:1.05rem; font-weight:600;
-    line-height:1.8; color:var(--text);
+    font-family:'Lora', serif; font-size:1rem; font-weight:500;
+    line-height:1.6; color:var(--text);
     display:flex; flex-direction:column; gap:1px;
     transition:opacity .22s ease;
     min-height:68px;
   }
+  /* author · country · year — bumped up from .52rem for legibility */
   .widget-haiku-meta{
-    font-family:'Space Mono', monospace; font-size:.52rem;
-    color:var(--text-muted); line-height:1.5;
+    font-family:'Space Mono', monospace; font-size:.62rem;
+    color:var(--text-muted); line-height:1.45;
     transition:opacity .22s ease;
   }
 
-  /* ── Quote Widget ── sits below haiku in the left column ── */
+  /* ── Quote Widget ── sits below the lavender "note to self" sticky, right column ── */
   .widget-quote{
-    top:490px; left:20px;
+    top:400px; right:20px;
     background:var(--panel); border:1px solid var(--panel-edge);
     border-radius:16px; padding:16px 18px 14px;
     box-shadow:0 4px 18px var(--shadow);
@@ -1183,16 +1184,42 @@
     color:var(--accent-2); letter-spacing:.1em; text-transform:uppercase;
     display:flex; align-items:center; gap:5px;
   }
+  /* bold, confident, declarative sans for quotes */
   .widget-quote-text{
-    font-family:'Nunito', sans-serif; font-size:.95rem; font-weight:600;
-    line-height:1.65; color:var(--text);
+    font-family:'Sora', sans-serif; font-size:.88rem; font-weight:600;
+    line-height:1.5; color:var(--text);
     transition:opacity .22s ease;
     min-height:68px;
   }
+  /* author · country · year — bumped up from .52rem for legibility */
   .widget-quote-meta{
-    font-family:'Space Mono', monospace; font-size:.52rem;
-    color:var(--text-muted); line-height:1.5;
+    font-family:'Space Mono', monospace; font-size:.62rem;
+    color:var(--text-muted); line-height:1.45;
     transition:opacity .22s ease;
+  }
+
+  /* ── Visitor Count Widget ── sits below the quote widget, right column ── */
+  .widget-visitors{
+    top:640px; right:20px;
+    background:var(--panel); border:1px solid var(--panel-edge);
+    border-radius:16px; padding:16px 18px 14px;
+    box-shadow:0 4px 18px var(--shadow);
+    width:230px;
+    display:flex; flex-direction:column; align-items:flex-start; gap:4px;
+  }
+  .widget-visitors-header{
+    font-family:'Space Mono', monospace; font-size:.55rem;
+    color:var(--accent); letter-spacing:.1em; text-transform:uppercase;
+    display:flex; align-items:center; gap:5px;
+  }
+  .widget-visitors-count{
+    font-family:'Space Mono', monospace; font-size:1.55rem; font-weight:700;
+    color:var(--text); letter-spacing:-.02em; line-height:1.2;
+    transition:opacity .25s ease;
+  }
+  .widget-visitors-sub{
+    font-family:'Nunito', sans-serif; font-size:.68rem;
+    color:var(--text-muted); line-height:1.4;
   }
 
   /* ── Shared widget next button ── */
