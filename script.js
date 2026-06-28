@@ -192,7 +192,7 @@ window.initPortfolio = function(){
 // ===== WINDOW MANAGEMENT =====
 const allWins=document.querySelectorAll('.win');
 let zTop=150;
-const defaultPositions={'win-about':{x:80,y:80},'win-links':{x:110,y:110},'win-work':{x:140,y:80},'win-faq':{x:170,y:110},'win-contact':{x:200,y:80},'win-logs':{x:220,y:100},'win-game':{x:250,y:90},'win-palette':{x:160,y:100},'win-tv':{x:140,y:100},'win-slots':{x:200,y:110},'win-terminal':{x:40,y:60}};
+const defaultPositions={'win-about':{x:80,y:80},'win-links':{x:110,y:110},'win-work':{x:140,y:80},'win-faq':{x:170,y:110},'win-contact':{x:200,y:80},'win-logs':{x:220,y:100},'win-game':{x:250,y:90},'win-palette':{x:160,y:100},'win-tv':{x:140,y:100},'win-slots':{x:200,y:110},'win-terminal':{x:40,y:60},'win-wallpaper':{x:180,y:80}};
 function isMobile(){ return window.innerWidth<=720; }
 function clampPosition(win,x,y){ const vw=window.innerWidth,vh=window.innerHeight,w=win.offsetWidth,h=win.offsetHeight; return{x:Math.max(0,Math.min(x,vw-w)),y:Math.max(0,Math.min(y,vh-40))}; }
 function focusWin(win){ zTop++; win.style.zIndex=zTop; win.classList.add('focused'); allWins.forEach(w=>{if(w!==win)w.classList.remove('focused');}); }
@@ -303,7 +303,7 @@ document.querySelectorAll('.dock button').forEach(btn=>{
   const folder  = document.getElementById('moreAppsFolder');
   if(!moreBtn || !folder) return;
 
-  const FOLDER_WINS = ['palette','tv','slots'];
+  const FOLDER_WINS = ['palette','tv','slots','terminal','wallpaper'];
 
   function positionFolder(){
     const br = moreBtn.getBoundingClientRect();
@@ -1580,6 +1580,124 @@ setTimeout(() => { gbCache=null; loadGuestbook(); }, 1800);
   fetchCount(renderCount);
   incrementOnce();
   setTimeout(() => { fetchCount(renderCount); }, 1500);
+})();
+
+
+// ===== LIVE WALLPAPER PICKER =====
+// Intentionally session-only: no localStorage. Every reload starts back
+// at the default background, no matter what was picked before.
+(function(){
+  const grid     = document.getElementById('wallpaper-grid');
+  const bgVideo  = document.getElementById('liveWallpaper');
+  if (!grid || !bgVideo) return;
+
+  const BASE_PATH = 'assets/live wallpaper/';
+
+  // name shown to the user : actual filename on disk
+  const WALLPAPERS = [
+    { id: 'convenience-store', label: 'convenience store rain', file: 'convenience-store-in-the-rain-moewalls-com.mp4' },
+    { id: 'midnight-lofi',     label: 'girl & cat, midnight',   file: 'girl-and-cat-midnight-lofi-moewalls-com.mp4' },
+    { id: 'home-garden',       label: 'lofi home garden',       file: 'lofi-home-garden-moewalls-com.mp4' },
+    { id: 'neon-dreams',       label: 'neon dreams, rainy night', file: 'neon-dreams-and-rainy-nights-moewalls-com.mp4' },
+    { id: 'rainy-cafe',        label: 'rainy cat cafe',         file: 'rainy-cat-cafe-moewalls-com.mp4' },
+    { id: 'sakura-garden',     label: 'sakura garden cafe',     file: 'sakura-garden-cafe-moewalls-com.mp4' },
+    { id: 'seaside-garden',    label: 'seaside garden coffee',  file: 'seaside-garden-coffee-moewalls-com.mp4' },
+  ];
+
+  // Fades the wallpaper layer out, swaps the video source (or clears it
+  // for "default"), then fades back in once the new frame is ready —
+  // covers all three transitions: default→video, video→video, video→default
+  let fadeTimer = null;
+  function applyWallpaper(file) {
+    clearTimeout(fadeTimer);
+    bgVideo.classList.remove('active'); // start the fade-out
+
+    fadeTimer = setTimeout(() => {
+      if (!file) {
+        bgVideo.pause();
+        bgVideo.removeAttribute('src');
+        bgVideo.load();
+        document.documentElement.classList.remove('wallpaper-active');
+        return;
+      }
+      bgVideo.src = BASE_PATH + file;
+      bgVideo.play().catch(() => { /* autoplay can be blocked until a user gesture — picking a tile counts as one, so this normally just works */ });
+      document.documentElement.classList.add('wallpaper-active');
+      // fade back in on the next frame so the opacity transition actually runs
+      requestAnimationFrame(() => bgVideo.classList.add('active'));
+    }, 300); // half of the CSS opacity transition (.6s) — swap lands once the fade-out is mostly done, not after an awkward pause
+  }
+
+
+  function buildTile(opt) {
+    const tile = document.createElement('button');
+    tile.className = 'wallpaper-tile';
+    tile.type = 'button';
+    tile.setAttribute('aria-label', opt.label || 'no wallpaper (default background)');
+    tile.dataset.file = opt.file || '';
+
+    if (opt.file) {
+      const vid = document.createElement('video');
+      vid.muted = true; vid.loop = true; vid.playsInline = true;
+      // 'metadata' alone won't paint a visible frame in every browser, so
+      // once it's loaded we explicitly seek a hair in to force one to draw —
+      // that's what makes the tile show a real thumbnail at rest instead of
+      // staying blank until the cursor first enters it
+      vid.preload = 'metadata';
+      vid.className = 'wallpaper-tile-video';
+      tile.appendChild(vid);
+
+      vid.addEventListener('loadedmetadata', () => {
+        if (vid.currentTime === 0) {
+          try { vid.currentTime = 0.1; } catch (err) { /* some browsers throw if not seekable yet — safe to ignore */ }
+        }
+      }, { once: true });
+
+      // lazy-load: only fetch the actual video once the tile is scrolled
+      // into view, so opening the window doesn't pull all 7 files at once
+      const io = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting && !vid.src) {
+            vid.src = BASE_PATH + opt.file;
+          }
+        });
+      }, { threshold: 0.2 });
+      io.observe(tile);
+
+      // full playback only while the cursor is over the tile container —
+      // pointerenter/leave cover mouse, pen, and touch in one listener,
+      // and pause-on-leave keeps idle CPU/bandwidth down for the other tiles
+      tile.addEventListener('pointerenter', () => vid.play().catch(()=>{}));
+      tile.addEventListener('pointerleave', () => vid.pause());
+      tile.addEventListener('focus', () => vid.play().catch(()=>{}));
+      tile.addEventListener('blur',  () => vid.pause());
+    } else {
+      const swatch = document.createElement('div');
+      swatch.className = 'wallpaper-tile-default';
+      swatch.textContent = '✕';
+      tile.appendChild(swatch);
+    }
+
+    const cap = document.createElement('span');
+    cap.className = 'wallpaper-tile-label';
+    cap.textContent = opt.label || 'default';
+    tile.appendChild(cap);
+
+    tile.addEventListener('click', () => {
+      grid.querySelectorAll('.wallpaper-tile.active-pick').forEach(t => t.classList.remove('active-pick'));
+      tile.classList.add('active-pick');
+      applyWallpaper(opt.file || null);
+    });
+
+    return tile;
+  }
+
+  // "none" tile first, restores the original aurora/scene background
+  grid.appendChild(buildTile({ id: 'default', label: 'default', file: null }));
+  WALLPAPERS.forEach(opt => grid.appendChild(buildTile(opt)));
+
+  // Always starts on "default" — no saved/restored state on load
+  grid.querySelector('.wallpaper-tile[data-file=""]')?.classList.add('active-pick');
 })();
 
 

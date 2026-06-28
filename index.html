@@ -47,6 +47,9 @@
 
 <div class="desktop" id="desktop">
 
+  <!-- LIVE WALLPAPER (hidden until a wallpaper is selected) -->
+  <video id="liveWallpaper" class="live-wallpaper" autoplay loop muted playsinline aria-hidden="true"></video>
+
   <div class="aurora-canvas" aria-hidden="true">
     <div class="aurora-blob" style="width:55vw;height:55vw;background:radial-gradient(circle,#f3b27a 0%,transparent 70%);bottom:-15vw;left:-10vw;--dur:22s;--tx1:4vw;--ty1:-6vw;--tx2:8vw;--ty2:-2vw;--tx3:2vw;--ty3:-9vw;"></div>
     <div class="aurora-blob" style="width:60vw;height:60vw;background:radial-gradient(circle,#7c3aed 0%,transparent 68%);top:-18vw;right:-14vw;--dur:26s;--tx1:-6vw;--ty1:5vw;--tx2:-10vw;--ty2:10vw;--tx3:-3vw;--ty3:6vw;"></div>
@@ -148,6 +151,10 @@
       <button class="folder-app-btn" data-win="terminal">
         <span style="font-size:1.5rem;">🖥️</span>
         <span>terminal</span>
+      </button>
+      <button class="folder-app-btn" data-win="wallpaper">
+        <span style="font-size:1.5rem;">🖼️</span>
+        <span>wallpaper</span>
       </button>
     </div>
   </div>
@@ -703,6 +710,15 @@ Underground 90s Japanese Hip Hop Archive Unreleased Tokyo Sessions Full Mix</a><
         <button id="palette-try-btn" class="mail-btn" style="margin:0;width:100%;text-align:center;font-size:.9rem;">🖥️ try this palette</button>
         <button id="palette-reset-btn" style="margin-top:8px;width:100%;text-align:center;font-size:.75rem;font-family:'Space Mono',monospace;background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px;">↩ restore original theme</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ===== LIVE WALLPAPER PICKER ===== -->
+  <div class="win" id="win-wallpaper" data-title="live wallpaper" style="width:360px;">
+    <div class="win-bar"><div class="win-bar-left"><div class="win-dots"><button class="win-dot close" aria-label="close"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 1.5L6.5 6.5M6.5 1.5L1.5 6.5"/></svg></button><button class="win-dot min" aria-label="minimize"></button></div><span class="win-title">🖼️ live wallpaper</span></div></div>
+    <div class="win-body" style="padding:16px;display:flex;flex-direction:column;gap:12px;user-select:text;">
+      <p style="margin:0;font-size:.78rem;color:var(--text-muted);font-family:'Space Mono',monospace;">pick a moving backdrop ~ tap to preview & apply</p>
+      <div id="wallpaper-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;max-height:380px;overflow-y:auto;padding-right:2px;"></div>
     </div>
   </div>
 
