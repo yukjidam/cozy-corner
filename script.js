@@ -1,100 +1,129 @@
 // ===== CUTE SOUND ENGINE =====
-// All sounds are synthesized with Web Audio API — no files needed.
 const CuteSound = (function(){
-  // Create and unlock the AudioContext on the very first click anywhere,
-  // so it's already running by the time a dock button fires its handler.
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  function unlock(){ if(ctx.state==='suspended') ctx.resume(); document.removeEventListener('click',unlock,true); }
+  document.addEventListener('click', unlock, true);
 
-  function unlock(){
-    if(ctx.state === 'suspended') ctx.resume();
-    document.removeEventListener('click', unlock, true);
-  }
-  document.addEventListener('click', unlock, true); // capture phase = fires first
-
-  function getCtx(){ return ctx; }
-
-  // ── open: a soft two-tone "pop" like a bubble ──
   function playOpen(){
-    const c = getCtx();
-    const t = c.currentTime;
-
-    // first tone — quick chirp
-    const osc1 = c.createOscillator();
-    const gain1 = c.createGain();
-    osc1.connect(gain1); gain1.connect(c.destination);
-    osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(520, t);
-    osc1.frequency.exponentialRampToValueAtTime(780, t + 0.06);
-    gain1.gain.setValueAtTime(0.0, t);
-    gain1.gain.linearRampToValueAtTime(0.18, t + 0.01);
-    gain1.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
-    osc1.start(t); osc1.stop(t + 0.14);
-
-    // second tone — slight echo sparkle
-    const osc2 = c.createOscillator();
-    const gain2 = c.createGain();
-    osc2.connect(gain2); gain2.connect(c.destination);
-    osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(1040, t + 0.04);
-    osc2.frequency.exponentialRampToValueAtTime(1300, t + 0.10);
-    gain2.gain.setValueAtTime(0.0, t + 0.04);
-    gain2.gain.linearRampToValueAtTime(0.09, t + 0.055);
-    gain2.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
-    osc2.start(t + 0.04); osc2.stop(t + 0.19);
+    const c=ctx, t=c.currentTime;
+    const o1=c.createOscillator(), g1=c.createGain();
+    o1.connect(g1); g1.connect(c.destination);
+    o1.type='sine'; o1.frequency.setValueAtTime(520,t); o1.frequency.exponentialRampToValueAtTime(780,t+.06);
+    g1.gain.setValueAtTime(0,t); g1.gain.linearRampToValueAtTime(.22,t+.01); g1.gain.exponentialRampToValueAtTime(.0001,t+.13);
+    o1.start(t); o1.stop(t+.14);
+    const o2=c.createOscillator(), g2=c.createGain();
+    o2.connect(g2); g2.connect(c.destination);
+    o2.type='sine'; o2.frequency.setValueAtTime(1040,t+.04); o2.frequency.exponentialRampToValueAtTime(1300,t+.10);
+    g2.gain.setValueAtTime(0,t+.04); g2.gain.linearRampToValueAtTime(.11,t+.055); g2.gain.exponentialRampToValueAtTime(.0001,t+.18);
+    o2.start(t+.04); o2.stop(t+.19);
   }
 
-  // ── close: a gentle descending "whoosh" ──
   function playClose(){
-    const c = getCtx();
-    const t = c.currentTime;
-
-    const osc = c.createOscillator();
-    const gain = c.createGain();
-    osc.connect(gain); gain.connect(c.destination);
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(640, t);
-    osc.frequency.exponentialRampToValueAtTime(220, t + 0.18);
-    gain.gain.setValueAtTime(0.0, t);
-    gain.gain.linearRampToValueAtTime(0.14, t + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
-    osc.start(t); osc.stop(t + 0.23);
-
-    // soft noise layer for the "whoosh" texture
-    const bufSize = c.sampleRate * 0.2;
-    const buf = c.createBuffer(1, bufSize, c.sampleRate);
-    const data = buf.getChannelData(0);
-    for(let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1);
-    const noise = c.createBufferSource();
-    noise.buffer = buf;
-    const noiseFilter = c.createBiquadFilter();
-    noiseFilter.type = 'bandpass';
-    noiseFilter.frequency.setValueAtTime(800, t);
-    noiseFilter.frequency.exponentialRampToValueAtTime(200, t + 0.2);
-    noiseFilter.Q.value = 1.2;
-    const noiseGain = c.createGain();
-    noiseGain.gain.setValueAtTime(0.06, t);
-    noiseGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
-    noise.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(c.destination);
-    noise.start(t); noise.stop(t + 0.21);
+    const c=ctx, t=c.currentTime;
+    const o=c.createOscillator(), g=c.createGain();
+    o.connect(g); g.connect(c.destination);
+    o.type='sine'; o.frequency.setValueAtTime(600,t); o.frequency.exponentialRampToValueAtTime(200,t+.2);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.18,t+.02); g.gain.exponentialRampToValueAtTime(.0001,t+.25);
+    o.start(t); o.stop(t+.26);
   }
 
-  // ── minimize: a tiny descending pip ──
   function playMinimize(){
-    const c = getCtx();
-    const t = c.currentTime;
-    const osc = c.createOscillator();
-    const gain = c.createGain();
-    osc.connect(gain); gain.connect(c.destination);
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(480, t);
-    osc.frequency.exponentialRampToValueAtTime(300, t + 0.10);
-    gain.gain.setValueAtTime(0.0, t);
-    gain.gain.linearRampToValueAtTime(0.12, t + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
-    osc.start(t); osc.stop(t + 0.15);
+    const c=ctx, t=c.currentTime;
+    const o=c.createOscillator(), g=c.createGain();
+    o.connect(g); g.connect(c.destination);
+    o.type='sine'; o.frequency.setValueAtTime(480,t); o.frequency.exponentialRampToValueAtTime(300,t+.10);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.15,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+.14);
+    o.start(t); o.stop(t+.15);
   }
 
-  return { playOpen, playClose, playMinimize };
+  return { playOpen, playClose, playMinimize, _ctx: ctx };
+})();
+
+// ===== LOFI NOTE PLAYER =====
+(function(){
+  const NOTES = {
+    do:  261.63,
+    re:  293.66,
+    mi:  329.63,
+    fa:  349.23,
+    sol: 392.00,
+    la:  440.00,
+    ti:  493.88,
+    do2: 523.25,
+  };
+
+  function playLofiNote(freq){
+    const c = CuteSound._ctx;
+    if(c.state === 'suspended') c.resume();
+    const t = c.currentTime;
+
+    // ── warm lowpass filter (muffled vinyl feel) ──
+    const lp = c.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(900, t);
+    lp.frequency.exponentialRampToValueAtTime(600, t + 0.6);
+    lp.Q.value = 0.8;
+
+    // ── master gain ──
+    const master = c.createGain();
+    master.gain.setValueAtTime(0, t);
+    master.gain.linearRampToValueAtTime(0.22, t + 0.04);
+    master.gain.exponentialRampToValueAtTime(0.08, t + 0.35);
+    master.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+    lp.connect(master); master.connect(c.destination);
+
+    // ── main tone: triangle (warmer than sine) with slight detune ──
+    const osc1 = c.createOscillator(), g1 = c.createGain();
+    osc1.type = 'triangle';
+    osc1.frequency.setValueAtTime(freq, t);
+    osc1.detune.setValueAtTime(-4, t); // slightly flat = vintage feel
+    g1.gain.value = 0.7;
+    osc1.connect(g1); g1.connect(lp);
+    osc1.start(t); osc1.stop(t + 1.15);
+
+    // ── sub octave: adds warmth/body ──
+    const osc2 = c.createOscillator(), g2 = c.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(freq / 2, t);
+    g2.gain.value = 0.25;
+    osc2.connect(g2); g2.connect(lp);
+    osc2.start(t); osc2.stop(t + 1.15);
+
+    // ── soft 2nd harmonic: adds a mellow bell shimmer ──
+    const osc3 = c.createOscillator(), g3 = c.createGain();
+    osc3.type = 'sine';
+    osc3.frequency.setValueAtTime(freq * 2, t);
+    osc3.detune.setValueAtTime(6, t);
+    g3.gain.setValueAtTime(0.12, t);
+    g3.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+    osc3.connect(g3); g3.connect(lp);
+    osc3.start(t); osc3.stop(t + 0.5);
+
+    // ── vinyl crackle: tiny noise burst at the attack ──
+    const bufLen = Math.floor(c.sampleRate * 0.06);
+    const buf = c.createBuffer(1, bufLen, c.sampleRate);
+    const data = buf.getChannelData(0);
+    for(let i = 0; i < bufLen; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufLen);
+    const crackle = c.createBufferSource();
+    crackle.buffer = buf;
+    const crackleHp = c.createBiquadFilter();
+    crackleHp.type = 'highpass'; crackleHp.frequency.value = 2000;
+    const crackleGain = c.createGain();
+    crackleGain.gain.value = 0.04;
+    crackle.connect(crackleHp); crackleHp.connect(crackleGain); crackleGain.connect(master);
+    crackle.start(t); crackle.stop(t + 0.06);
+  }
+
+  document.querySelectorAll('.note-polaroid').forEach(el => {
+    el.addEventListener('click', () => {
+      const note = el.dataset.note;
+      if(NOTES[note]) playLofiNote(NOTES[note]);
+      el.classList.remove('note-ping');
+      void el.offsetWidth;
+      el.classList.add('note-ping');
+      el.addEventListener('animationend', () => el.classList.remove('note-ping'), { once: true });
+    });
+  });
 })();
 
 // ===== CLOCK =====
@@ -160,7 +189,7 @@ const CuteSound = (function(){
 // ===== WINDOW MANAGEMENT =====
 const allWins=document.querySelectorAll('.win');
 let zTop=150;
-const defaultPositions={'win-about':{x:80,y:80},'win-links':{x:110,y:110},'win-work':{x:140,y:80},'win-faq':{x:170,y:110},'win-contact':{x:200,y:80},'win-logs':{x:220,y:100}};
+const defaultPositions={'win-about':{x:80,y:80},'win-links':{x:110,y:110},'win-work':{x:140,y:80},'win-faq':{x:170,y:110},'win-contact':{x:200,y:80},'win-logs':{x:220,y:100},'win-game':{x:250,y:90},'win-8ball':{x:160,y:100},'win-plant':{x:180,y:110},'win-tv':{x:140,y:100},'win-slots':{x:200,y:110},'win-terminal':{x:40,y:60}};
 function isMobile(){ return window.innerWidth<=720; }
 function clampPosition(win,x,y){ const vw=window.innerWidth,vh=window.innerHeight,w=win.offsetWidth,h=win.offsetHeight; return{x:Math.max(0,Math.min(x,vw-w)),y:Math.max(0,Math.min(y,vh-40))}; }
 function focusWin(win){ zTop++; win.style.zIndex=zTop; win.classList.add('focused'); allWins.forEach(w=>{if(w!==win)w.classList.remove('focused');}); }
@@ -257,12 +286,91 @@ function updateDockBtn(winId,open){ const btn=dockBtnFor(winId); if(btn)btn.clas
 
 document.querySelectorAll('.dock button').forEach(btn=>{
   if(btn.dataset.win==='player')return;
+  if(!btn.dataset.win) return; // skip the moreAppsBtn which has no data-win
   btn.addEventListener('click',()=>{
     btn.classList.remove('dock-bounce'); void btn.offsetWidth; btn.classList.add('dock-bounce');
     btn.addEventListener('animationend',()=>btn.classList.remove('dock-bounce'),{once:true});
     openWin('win-'+btn.dataset.win);
   });
 });
+
+// ===== MORE APPS FOLDER =====
+(function(){
+  const moreBtn = document.getElementById('moreAppsBtn');
+  const folder  = document.getElementById('moreAppsFolder');
+  if(!moreBtn || !folder) return;
+
+  const FOLDER_WINS = ['8ball','plant','tv','slots'];
+
+  function positionFolder(){
+    const br = moreBtn.getBoundingClientRect();
+    const fw = 196;
+    let left = br.left + br.width/2 - fw/2;
+    left = Math.max(8, Math.min(left, window.innerWidth - fw - 8));
+    folder.style.left = left + 'px';
+    folder.style.bottom = (window.innerHeight - br.top + 12) + 'px';
+    folder.style.top = 'auto';
+  }
+
+  function updateFolderDot(){
+    const anyOpen = FOLDER_WINS.some(w => {
+      const win = document.getElementById('win-'+w);
+      return win && win.classList.contains('visible');
+    });
+    const dot = document.getElementById('moreAppsDot');
+    if(dot) dot.style.opacity = anyOpen ? '1' : '0';
+    const icon = document.getElementById('moreAppsIcon');
+    if(icon) icon.textContent = anyOpen ? '📂' : '📁';
+  }
+
+  function toggleFolder(){
+    moreBtn.classList.remove('dock-bounce'); void moreBtn.offsetWidth; moreBtn.classList.add('dock-bounce');
+    moreBtn.addEventListener('animationend',()=>moreBtn.classList.remove('dock-bounce'),{once:true});
+    const isOpen = folder.classList.contains('visible');
+    if(isOpen){
+      folder.classList.remove('visible');
+    } else {
+      positionFolder();
+      folder.classList.add('visible');
+    }
+  }
+
+  moreBtn.addEventListener('click', e=>{ e.stopPropagation(); toggleFolder(); });
+
+  // clicking outside closes the folder
+  document.addEventListener('click', e=>{
+    if(!folder.contains(e.target) && e.target !== moreBtn){
+      folder.classList.remove('visible');
+    }
+  });
+
+  // clicking app buttons inside folder
+  folder.querySelectorAll('.folder-app-btn').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      e.stopPropagation();
+      folder.classList.remove('visible');
+      openWin('win-'+btn.dataset.win);
+      setTimeout(updateFolderDot, 100);
+    });
+  });
+
+  // update dot whenever any of the folder wins change
+  const observer = new MutationObserver(updateFolderDot);
+  FOLDER_WINS.forEach(w=>{
+    const win = document.getElementById('win-'+w);
+    if(win) observer.observe(win, { attributes:true, attributeFilter:['class'] });
+  });
+
+  // patch close/min so dot updates
+  FOLDER_WINS.forEach(w=>{
+    const win = document.getElementById('win-'+w);
+    if(!win) return;
+    win.querySelector('.win-dot.close')?.addEventListener('click', ()=>setTimeout(updateFolderDot,50));
+    win.querySelector('.win-dot.min')?.addEventListener('click', ()=>setTimeout(updateFolderDot,50));
+  });
+
+  updateFolderDot();
+})();
 document.querySelectorAll('.win .win-dot.close').forEach(dot=>dot.addEventListener('click',e=>{e.stopPropagation();closeWin(dot.closest('.win'));}));
 document.querySelectorAll('.win .win-dot.min').forEach(dot=>dot.addEventListener('click',e=>{e.stopPropagation();minimizeWin(dot.closest('.win'));}));
 allWins.forEach(win=>{
@@ -294,7 +402,6 @@ document.querySelectorAll('.win').forEach(win => {
     swipeSwiping = false;
     win.style.transition = '';
     if(swipeCurrentY > 80){
-      CuteSound.playClose();
       win.style.transform = `translateY(100%)`;
       setTimeout(()=>{ win.style.transform = ''; closeWin(win); }, 260);
     } else {
@@ -313,10 +420,10 @@ document.querySelectorAll('.win .win-bar').forEach(bar=>{
   function startDrag(cx,cy){ if(isMobile())return; const win=bar.closest('.win'); dragging=true; startX=cx;startY=cy; winX=parseInt(win.style.left)||0; winY=parseInt(win.style.top)||0; focusWin(win); bar.style.cursor='grabbing'; }
   function onMove(cx,cy){ if(!dragging)return; const win=bar.closest('.win'),dx=cx-startX,dy=cy-startY,clamped=clampPosition(win,winX+dx,winY+dy); win.style.left=clamped.x+'px'; win.style.top=clamped.y+'px'; }
   function endDrag(){ dragging=false; bar.style.cursor='grab'; }
-  bar.addEventListener('mousedown',e=>{ if(e.target.closest('.win-dot'))return; startDrag(e.clientX,e.clientY); e.preventDefault(); });
+  bar.addEventListener('mousedown',e=>{ if(e.target.closest('.win-dot, .tama-help-btn'))return; startDrag(e.clientX,e.clientY); e.preventDefault(); });
   window.addEventListener('mousemove',e=>onMove(e.clientX,e.clientY));
   window.addEventListener('mouseup',endDrag);
-  bar.addEventListener('touchstart',e=>{ if(e.target.closest('.win-dot'))return; const t=e.touches[0]; startDrag(t.clientX,t.clientY); },{passive:true});
+  bar.addEventListener('touchstart',e=>{ if(e.target.closest('.win-dot, .tama-help-btn'))return; const t=e.touches[0]; startDrag(t.clientX,t.clientY); },{passive:true});
   window.addEventListener('touchmove',e=>{ const t=e.touches[0]; onMove(t.clientX,t.clientY); },{passive:true});
   window.addEventListener('touchend',endDrag);
 });
@@ -335,32 +442,39 @@ const vinylToggle=document.getElementById('vinylToggle'),scene=document.querySel
   };
   const FADE_IN_DURATION  = 3000; // ms
   const FADE_OUT_DURATION = 2000; // ms
-  const TARGET_VOLUME     = 0.22; // soft background level
 
   let audio       = new Audio();
   audio.loop      = false; // we handle looping ourselves for fade effect
   let bgmEnabled  = true;
-  let fadeRaf     = null;
+  let userVolume  = 0.22;  // the volume the slider/mute button targets — fades always aim at this
+  let fadeTimer   = null;  // setInterval id — unlike rAF, this keeps ticking in background tabs
   let currentTheme = null;
   let playerActive = false;
-  let bgmStarting  = false; // guard against concurrent startBGM calls
+  let bgmStarting  = false;
 
   function getTheme(){ return document.documentElement.getAttribute('data-theme') || 'night'; }
 
-  function cancelFade(){ if(fadeRaf){ cancelAnimationFrame(fadeRaf); fadeRaf=null; } }
+  function cancelFade(){ if(fadeTimer){ clearInterval(fadeTimer); fadeTimer=null; } }
 
   function fadeTo(targetVol, duration, onDone){
     cancelFade();
     const startVol  = audio.volume;
-    const startTime = performance.now();
-    function step(now){
-      const t = Math.min((now - startTime) / duration, 1);
+    const startTime = Date.now();
+    // Tag this fade so stale callbacks can be ignored
+    const id = ++fadeTo._id;
+    const tick = () => {
+      const t = Math.min((Date.now() - startTime) / duration, 1);
       audio.volume = startVol + (targetVol - startVol) * t;
-      if(t < 1){ fadeRaf = requestAnimationFrame(step); }
-      else{ audio.volume = targetVol; fadeRaf = null; if(onDone) onDone(); }
-    }
-    fadeRaf = requestAnimationFrame(step);
+      if(t >= 1){
+        cancelFade();
+        audio.volume = targetVol;
+        if(fadeTo._id === id && onDone) onDone();
+      }
+    };
+    fadeTimer = setInterval(tick, 50);
+    tick();
   }
+  fadeTo._id = 0;
 
   function playBGM(theme){
     const src = BGM[theme];
@@ -368,13 +482,13 @@ const vinylToggle=document.getElementById('vinylToggle'),scene=document.querySel
     currentTheme = theme;
     audio.src    = src;
     audio.volume = 0;
-    audio.muted  = false; // always unmute when playing — user gesture has occurred by this point
     audio.currentTime = 0;
     bgmStarting = true;
+    audio.muted = false; // safe now — playBGM is only ever called after a real user click
     audio.play().then(() => {
       bgmStarting = false;
-      fadeTo(TARGET_VOLUME, FADE_IN_DURATION);
-    }).catch(()=>{ bgmStarting = false; });
+      audio.volume = userVolume;
+    }).catch(() => { bgmStarting = false; });
   }
 
   // Loop with fade out → fade in
@@ -383,8 +497,9 @@ const vinylToggle=document.getElementById('vinylToggle'),scene=document.querySel
     const remaining = audio.duration - audio.currentTime;
     if(remaining <= FADE_OUT_DURATION / 1000 && audio.volume > 0.01){
       fadeTo(0, remaining * 1000, () => {
+        if(!bgmEnabled) return; // don't restart if toggled off during fade-out
         audio.currentTime = 0;
-        audio.play().then(() => fadeTo(TARGET_VOLUME, FADE_IN_DURATION)).catch(()=>{});
+        audio.play().then(() => fadeTo(userVolume, FADE_IN_DURATION)).catch(()=>{});
       });
     }
   });
@@ -392,22 +507,31 @@ const vinylToggle=document.getElementById('vinylToggle'),scene=document.querySel
   function startBGM(){
     if(playerActive || bgmStarting) return;
     const theme = getTheme();
+    // Cancel any in-progress fade-out so the stale pause callback won't fire
+    cancelFade();
     if(audio.paused || currentTheme !== theme){
       if(!audio.paused && currentTheme !== theme){
-        // switch theme: fade out then switch
         fadeTo(0, FADE_OUT_DURATION, () => { audio.pause(); playBGM(theme); });
       } else {
-        // resume or fresh start
         if(audio.src && currentTheme === theme && audio.currentTime > 0){
-          audio.play().then(()=>fadeTo(TARGET_VOLUME, FADE_IN_DURATION)).catch(()=>{});
+          audio.play().then(()=> fadeTo(userVolume, FADE_IN_DURATION)).catch(()=>{});
         } else {
           playBGM(theme);
         }
       }
+    } else {
+      // Already playing but may have been fading out — ramp back up
+      fadeTo(userVolume, FADE_IN_DURATION);
     }
   }
 
-  function pauseBGM(){ cancelFade(); fadeTo(0, FADE_OUT_DURATION, ()=>audio.pause()); }
+  function pauseBGM(){
+    cancelFade();
+    fadeTo(0, FADE_OUT_DURATION, () => {
+      // Only pause if BGM is still disabled — user may have re-enabled it
+      if(!bgmEnabled) audio.pause();
+    });
+  }
 
   // Vinyl toggle: visual + BGM
   vinylToggle.addEventListener('click', () => {
@@ -416,6 +540,7 @@ const vinylToggle=document.getElementById('vinylToggle'),scene=document.querySel
     vinylToggle.classList.toggle('active', bgmEnabled);
     vinylToggle.setAttribute('aria-pressed', bgmEnabled);
     if(bgmEnabled) startBGM(); else pauseBGM();
+    hideBubble();
   });
 
   // Theme switch → swap BGM
@@ -430,44 +555,150 @@ const vinylToggle=document.getElementById('vinylToggle'),scene=document.querySel
     isEnabled: () => bgmEnabled,
     setEnabled: (val) => { bgmEnabled = val; },
     wasManuallyDisabled: () => !bgmEnabled,
+    // Sets the target volume. If audio is mid-fade or currently silent (e.g.
+    // muted via the mute button), this only updates the target so the next
+    // fade-in uses it — it won't yank the volume up while fading out.
+    setVolume: (v) => {
+      userVolume = v;
+      if(!fadeTimer && !audio.paused) audio.volume = v;
+    },
+    // Smoothly ramps to a volume (used by the mute button) instead of
+    // snapping instantly, matching the rest of the BGM system's fades.
+    fadeVolume: (v, duration) => {
+      userVolume = v;
+      if(!audio.paused) fadeTo(v, duration || 400);
+    },
   };
 
-  // Unmute on first user interaction (muted autoplay needs a gesture to unmute)
-  function tryAutoStart(){
-    audio.muted = false;
-    if(bgmEnabled){
-      const theme = getTheme();
-      if(bgmStarting){
-        // Muted play is still launching — if theme changed, abort it and restart with correct theme
-        if(currentTheme !== theme){ audio.pause(); bgmStarting = false; playBGM(theme); }
-        // else: play resolves soon and will fade in unmuted (muted=false already set above)
-      } else {
-        // Re-call startBGM to pick up the correct current theme (may have changed)
-        startBGM();
-      }
-      scene.classList.add('lofi-on');
-      vinylToggle.classList.add('active');
-      vinylToggle.setAttribute('aria-pressed','true');
-    }
-    document.removeEventListener('click', tryAutoStart);
-    document.removeEventListener('keydown', tryAutoStart);
-  }
-  document.addEventListener('click', tryAutoStart);
-  document.addEventListener('keydown', tryAutoStart);
+  // Note: fadeTo() above uses setInterval + wall-clock timestamps (Date.now()),
+  // not requestAnimationFrame, specifically so fades still progress (even if
+  // throttled to ~1x/sec) while the tab is backgrounded, instead of freezing
+  // mid-fade and jumping when the tab becomes visible again.
 
-  // Try muted autoplay immediately — browsers always allow muted autoplay,
-  // so this guarantees playback actually starts on page load.
-  setTimeout(()=>{
-    audio.muted = true;
-    startBGM();
-    scene.classList.add('lofi-on');
-    vinylToggle.classList.add('active');
-    vinylToggle.setAttribute('aria-pressed','true');
-  }, 300);
+  // ── "Click me" bubble ──
+  // Browsers block audible autoplay until a real user gesture, so BGM now
+  // starts OFF by default and a cute bubble invites the visitor to turn it
+  // on. The bubble disappears once they click the toggle (or anywhere else,
+  // after a short grace period, so it doesn't linger forever).
+  const bubble = document.getElementById('bgmBubble');
+  let bubbleHidden = false;
+  function hideBubble(){
+    if(bubbleHidden || !bubble) return;
+    bubbleHidden = true;
+    bubble.classList.add('hide');
+    setTimeout(() => bubble.remove(), 300);
+  }
+
+  function init(){
+    bgmEnabled = false; // start OFF — wait for an explicit click
+    scene.classList.remove('lofi-on');
+    vinylToggle.classList.remove('active');
+    vinylToggle.setAttribute('aria-pressed','false');
+    if(bubble){
+      // Give it a moment to appear after load, then auto-fade after a while
+      // if the visitor never interacts, so it doesn't sit there forever.
+      setTimeout(() => { if(!bgmEnabled) hideBubble(); }, 15000);
+    }
+  }
+  if(document.readyState === 'complete'){ init(); }
+  else { window.addEventListener('load', init); }
+})();
+
+// ===== VOLUME CONTROL (button: hover shows slider, click mutes/unmutes) =====
+(function(){
+  const wrap    = document.getElementById('vol-wrap');
+  const toggle  = document.getElementById('volToggle');
+  const popover = document.getElementById('vol-popover');
+  const slider  = document.getElementById('volSlider');
+  if(!wrap || !toggle || !popover || !slider) return;
+
+  // Style the thumb via injected CSS (can't do ::-webkit-slider-thumb inline)
+  const s = document.createElement('style');
+  s.textContent = `
+    #volSlider::-webkit-slider-thumb {
+      -webkit-appearance:none; width:12px; height:12px; border-radius:50%;
+      background:var(--accent); cursor:pointer; border:none;
+    }
+    #volSlider::-moz-range-thumb {
+      width:12px; height:12px; border-radius:50%;
+      background:var(--accent); cursor:pointer; border:none;
+    }
+  `;
+  document.head.appendChild(s);
+
+  let lastVolume = parseFloat(slider.value) || 0.22; // remembers volume to restore on unmute
+  let muted = false;
+  let hideTimer = null;
+
+  function isTouchDevice(){ return matchMedia('(hover:none),(pointer:coarse)').matches; }
+
+  function showPopover(){
+    clearTimeout(hideTimer);
+    popover.classList.add('show');
+    toggle.setAttribute('aria-expanded','true');
+  }
+  function hidePopover(){
+    popover.classList.remove('show');
+    toggle.setAttribute('aria-expanded','false');
+  }
+  function scheduleHide(){
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(hidePopover, 250);
+  }
+
+  function applyVolume(v){
+    if(window.BGMPlayer) window.BGMPlayer.setVolume(v);
+  }
+  function applyVolumeFade(v){
+    if(window.BGMPlayer) window.BGMPlayer.fadeVolume(v, 350);
+  }
+
+  function setMuted(val){
+    muted = val;
+    toggle.classList.toggle('muted', muted);
+    toggle.setAttribute('aria-pressed', muted);
+    toggle.setAttribute('aria-label', muted ? 'unmute background music' : 'mute background music');
+    if(muted){
+      applyVolumeFade(0);
+    } else {
+      slider.value = lastVolume;
+      applyVolumeFade(lastVolume);
+    }
+  }
+
+  // Hover (desktop/mouse only — avoids the popover getting stuck open on touch)
+  wrap.addEventListener('mouseenter', () => { if(!isTouchDevice()) showPopover(); });
+  wrap.addEventListener('mouseleave', () => { if(!isTouchDevice()) scheduleHide(); });
+
+  // Click: toggle mute. On touch devices, also toggles the popover open so the
+  // slider is reachable without hover.
+  toggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    setMuted(!muted);
+    if(isTouchDevice()){
+      if(popover.classList.contains('show')) hidePopover(); else showPopover();
+    }
+  });
+
+  // Keep popover open while interacting with the slider itself
+  popover.addEventListener('mouseenter', () => { if(!isTouchDevice()) clearTimeout(hideTimer); });
+  popover.addEventListener('mouseleave', () => { if(!isTouchDevice()) scheduleHide(); });
+
+  // Tap outside closes the popover on touch
+  document.addEventListener('click', (e) => {
+    if(isTouchDevice() && !wrap.contains(e.target)) hidePopover();
+  });
+
+  slider.addEventListener('input', function(){
+    const v = parseFloat(slider.value);
+    lastVolume = v;
+    if(muted && v > 0){ muted = false; toggle.classList.remove('muted'); toggle.setAttribute('aria-pressed','false'); toggle.setAttribute('aria-label','mute background music'); }
+    if(v === 0 && !muted){ muted = true; toggle.classList.add('muted'); toggle.setAttribute('aria-pressed','true'); toggle.setAttribute('aria-label','unmute background music'); }
+    applyVolume(v);
+  });
 })();
 
 
-// ===== FAQ =====
 document.querySelectorAll('.faq-q').forEach(q=>{
   q.addEventListener('click',()=>{
     const item=q.parentElement,ans=item.querySelector('.faq-a'),isOpen=item.classList.contains('open');
@@ -496,7 +727,7 @@ let marqueeRunning = false;
 function setNowPlayingText(title, artist, playing) {
   const label = playing
     ? `♪  ${artist}  —  ${title}`
-    : '♪  nothing playing yet  —  open the player below';
+    : '♪  nothing playing yet. open the player below';
   npDot.classList.toggle('idle', !playing);
   clearMarquee();
   buildMarquee(label);
@@ -784,28 +1015,28 @@ const GENRES={
     {title:'Sudachi',artist:'yuhei miura',dur:'3:25',src:'assets/study lofi/yuhei miura - Sudachi.mp3',thumb:'assets/study lofi/yuhei miura - Sudachi.jpg'},
   ]},
   jazz:{label:'🎷 jazz lofi',cover:'assets/jazz_lofi.png',tracks:[
-    {title:'Envejecer',artist:'Erameld',dur:'1:13',src:'assets/jazz lofi/Erameld - Envejecer.mp3',thumb:'assets/jazz lofi/Erameld - Envejecer.jpg'},
-    {title:'Yume',artist:'Kalaido',dur:'3:01',src:'assets/jazz lofi/Kalaido - Yume.mp3',thumb:'assets/jazz lofi/Kalaido - Yume.jpg'},
-    {title:'The Way of the RAIN',artist:'Orihusay',dur:'2:40',src:'assets/jazz lofi/Orihusay - The Way of the RAIN.mp3',thumb:'assets/jazz lofi/Orihusay - The Way of the RAIN.jpg'},
-    {title:'Yoake',artist:'paniyolo',dur:'1:53',src:'assets/jazz lofi/paniyolo - Yoake.mp3',thumb:'assets/jazz lofi/paniyolo - Yoake.jpg'},
-    {title:'The Shining Kingdom',artist:'Raimu',dur:'2:23',src:'assets/jazz lofi/Raimu - The Shining Kingdom.mp3',thumb:'assets/jazz lofi/Raimu - The Shining Kingdom.jpg'},
-    {title:'Hananoen',artist:'Sakamoto Juunosuke',dur:'2:46',src:'assets/jazz lofi/Sakamoto Juunosuke - Hananoen.mp3',thumb:'assets/jazz lofi/Sakamoto Juunosuke - Hananoen.jpg'},
-    {title:'madder sky',artist:'TAKUMI M',dur:'2:41',src:'assets/jazz lofi/TAKUMI M - madder sky.mp3',thumb:'assets/jazz lofi/TAKUMI M - madder sky.jpg'},
-    {title:'Rent a Van',artist:'Tom Doolie',dur:'2:02',src:'assets/jazz lofi/Tom Doolie - Rent a Van.mp3',thumb:'assets/jazz lofi/Tom Doolie - Rent a Van.jpg'},
-    {title:'Black Sakura',artist:'Vindu, FlFexclamation',dur:'3:04',src:'assets/jazz lofi/Vindu, FlFexclamation - Black Sakura.mp3',thumb:'assets/jazz lofi/Vindu, FlFexclamation - Black Sakura.jpg'},
-    {title:'Tokyo Rooftop',artist:'zad.',dur:'2:18',src:'assets/jazz lofi/zad. - Tokyo Rooftop.mp3',thumb:'assets/jazz lofi/zad. - Tokyo Rooftop.jpg'},
+    {title:'Soft Spoken',artist:'Dreamfield',dur:'2:35',src:'assets/jazz lofi/Dreamfield - Soft Spoken.mp3',thumb:'assets/jazz lofi/Dreamfield - Soft Spoken.jpg'},
+    {title:'Timeless Glow',artist:'Erwin Do',dur:'2:38',src:'assets/jazz lofi/Erwin Do - Timeless Glow.mp3',thumb:'assets/jazz lofi/Erwin Do - Timeless Glow.jpg'},
+    {title:'Jazzy Winter',artist:'Guustavv',dur:'2:12',src:'assets/jazz lofi/Guustavv - Jazzy Winter.mp3',thumb:'assets/jazz lofi/Guustavv - Jazzy Winter.jpg'},
+    {title:'Shibuya River',artist:'HoKo',dur:'2:15',src:'assets/jazz lofi/HoKo - Shibuya River.mp3',thumb:'assets/jazz lofi/HoKo - Shibuya River.jpg'},
+    {title:'The Origami Man',artist:'HoKo',dur:'1:57',src:'assets/jazz lofi/HoKo - The Origami Man.mp3',thumb:'assets/jazz lofi/HoKo - The Origami Man.jpg'},
+    {title:'July',artist:'John Lee',dur:'2:08',src:'assets/jazz lofi/John Lee - July.mp3',thumb:'assets/jazz lofi/John Lee - July.jpg'},
+    {title:'Visitors',artist:'Late Night Tones',dur:'1:37',src:'assets/jazz lofi/Late Night Tones - Visitors.mp3',thumb:'assets/jazz lofi/Late Night Tones - Visitors.jpg'},
+    {title:'Miami Nights',artist:'Lenny B.',dur:'2:05',src:'assets/jazz lofi/Lenny B. - Miami Nights.mp3',thumb:'assets/jazz lofi/Lenny B. - Miami Nights.jpg'},
+    {title:'City Whispers',artist:'Living Room',dur:'1:59',src:'assets/jazz lofi/Living Room - City Whispers.mp3',thumb:'assets/jazz lofi/Living Room - City Whispers.jpg'},
+    {title:'Nardis',artist:'UKDD',dur:'2:08',src:'assets/jazz lofi/UKDD - Nardis.mp3',thumb:'assets/jazz lofi/UKDD - Nardis.jpg'},
   ]},
   hiphop:{label:'🎤 hip hop lofi',cover:'assets/hip_hop_lofi.png',tracks:[
-    {title:'Soft Spoken',artist:'Dreamfield',dur:'2:35',src:'assets/hip hop lofi/Dreamfield - Soft Spoken.mp3',thumb:'assets/hip hop lofi/Dreamfield - Soft Spoken.jpg'},
-    {title:'Timeless Glow',artist:'Erwin Do',dur:'2:38',src:'assets/hip hop lofi/Erwin Do - Timeless Glow.mp3',thumb:'assets/hip hop lofi/Erwin Do - Timeless Glow.jpg'},
-    {title:'Jazzy Winter',artist:'Guustavv',dur:'2:12',src:'assets/hip hop lofi/Guustavv - Jazzy Winter.mp3',thumb:'assets/hip hop lofi/Guustavv - Jazzy Winter.jpg'},
-    {title:'Shibuya River',artist:'HoKo',dur:'2:15',src:'assets/hip hop lofi/HoKo - Shibuya River.mp3',thumb:'assets/hip hop lofi/HoKo - Shibuya River.jpg'},
-    {title:'The Origami Man',artist:'HoKo',dur:'1:57',src:'assets/hip hop lofi/HoKo - The Origami Man.mp3',thumb:'assets/hip hop lofi/HoKo - The Origami Man.jpg'},
-    {title:'July',artist:'John Lee',dur:'2:08',src:'assets/hip hop lofi/John Lee - July.mp3',thumb:'assets/hip hop lofi/John Lee - July.jpg'},
-    {title:'Visitors',artist:'Late Night Tones',dur:'1:37',src:'assets/hip hop lofi/Late Night Tones - Visitors.mp3',thumb:'assets/hip hop lofi/Late Night Tones - Visitors.jpg'},
-    {title:'Miami Nights',artist:'Lenny B.',dur:'2:05',src:'assets/hip hop lofi/Lenny B. - Miami Nights.mp3',thumb:'assets/hip hop lofi/Lenny B. - Miami Nights.jpg'},
-    {title:'City Whispers',artist:'Living Room',dur:'1:59',src:'assets/hip hop lofi/Living Room - City Whispers.mp3',thumb:'assets/hip hop lofi/Living Room - City Whispers.jpg'},
-    {title:'Nardis',artist:'UKDD',dur:'2:08',src:'assets/hip hop lofi/UKDD - Nardis.mp3',thumb:'assets/hip hop lofi/UKDD - Nardis.jpg'},
+    {title:'Envejecer',artist:'Erameld',dur:'1:13',src:'assets/hiphop lofi/Erameld - Envejecer.mp3',thumb:'assets/hiphop lofi/Erameld - Envejecer.jpg'},
+    {title:'Yume',artist:'Kalaido',dur:'3:01',src:'assets/hiphop lofi/Kalaido - Yume.mp3',thumb:'assets/hiphop lofi/Kalaido - Yume.jpg'},
+    {title:'The Way of the RAIN',artist:'Orihusay',dur:'2:40',src:'assets/hiphop lofi/Orihusay - The Way of the RAIN.mp3',thumb:'assets/hiphop lofi/Orihusay - The Way of the RAIN.jpg'},
+    {title:'Yoake',artist:'paniyolo',dur:'1:53',src:'assets/hiphop lofi/paniyolo - Yoake.mp3',thumb:'assets/hiphop lofi/paniyolo - Yoake.jpg'},
+    {title:'The Shining Kingdom',artist:'Raimu',dur:'2:23',src:'assets/hiphop lofi/Raimu - The Shining Kingdom.mp3',thumb:'assets/hiphop lofi/Raimu - The Shining Kingdom.jpg'},
+    {title:'Hananoen',artist:'Sakamoto Juunosuke',dur:'2:46',src:'assets/hiphop lofi/Sakamoto Juunosuke - Hananoen.mp3',thumb:'assets/hiphop lofi/Sakamoto Juunosuke - Hananoen.jpg'},
+    {title:'madder sky',artist:'TAKUMI M',dur:'2:41',src:'assets/hiphop lofi/TAKUMI M - madder sky.mp3',thumb:'assets/hiphop lofi/TAKUMI M - madder sky.jpg'},
+    {title:'Rent a Van',artist:'Tom Doolie',dur:'2:02',src:'assets/hiphop lofi/Tom Doolie - Rent a Van.mp3',thumb:'assets/hiphop lofi/Tom Doolie - Rent a Van.jpg'},
+    {title:'Black Sakura',artist:'Vindu, FIFexclamation',dur:'3:04',src:'assets/hiphop lofi/Vindu, FIFexclamation - Black Sakura.mp3',thumb:'assets/hiphop lofi/Vindu, FIFexclamation - Black Sakura.jpg'},
+    {title:'Tokyo Rooftop',artist:'zad.',dur:'2:18',src:'assets/hiphop lofi/zad. - Tokyo Rooftop.mp3',thumb:'assets/hiphop lofi/zad. - Tokyo Rooftop.jpg'},
   ]},
   picks:{label:'⭐ personal picks',cover:'assets/personal.png',tracks:[
     {title:'Backwards',artist:'Forrest.',dur:'4:20',src:'assets/personal/Forrest. - Backwards.mp3',thumb:'assets/personal/Forrest. - Backwards.jpg'},
@@ -815,7 +1046,7 @@ const GENRES={
     {title:'sorbet',artist:'galdive',dur:'4:55',src:'assets/personal/galdive - sorbet.mp3',thumb:'assets/personal/galdive - sorbet.jpg'},
     {title:'Sunkissed',artist:'khai dreams',dur:'2:14',src:'assets/personal/khai dreams - Sunkissed.mp3',thumb:'assets/personal/khai dreams - Sunkissed.jpg'},
     {title:'Come true',artist:'khai dreams, Forrest',dur:'5:06',src:'assets/personal/khai dreams, Forrest - Come true.mp3',thumb:'assets/personal/khai dreams, Forrest - Come true.jpg'},
-    {title:'Youth',artist:'Manila Killa, Satica',dur:'3:02',src:'assets/personal/Manila Killa, Satica - Youth.mp3',thumb:'assets/personal/Manila Killa, Satica - Youth.jpg'},
+    {title:'Youth',artist:'Manila Killa, Satica',dur:'3:02',src:'assets/personal/Manila Killa, Satica - Youth .mp3',thumb:'assets/personal/Manila Killa, Satica - Youth .jpg'},
     {title:'HALO HALO',artist:'Shawn Wasabi, Chevy',dur:'2:52',src:'assets/personal/Shawn Wasabi, Chevy - HALO HALO.mp3',thumb:'assets/personal/Shawn Wasabi, Chevy - HALO HALO.jpg'},
     {title:'MANGO LOVE',artist:'Shawn Wasabi, Satica',dur:'3:21',src:'assets/personal/Shawn Wasabi, Satica - MANGO LOVE.mp3',thumb:'assets/personal/Shawn Wasabi, Satica - MANGO LOVE.jpg'},
     {title:'Pixel Galaxy',artist:"Snail's House",dur:'6:00',src:"assets/personal/Snail's House - Pixel Galaxy.mp3",thumb:"assets/personal/Snail's House - Pixel Galaxy.jpg"},
@@ -883,7 +1114,7 @@ function loadTrack(genre,index,autoplay){
   setNowPlayingText(t.title, t.artist, true);
 
   const playerThumbEl=document.querySelector('.player-thumb'),miniThumbEl=document.querySelector('.mini-thumb');
-  const thumbSrc = t.thumb || GENRES[genre].cover || '';
+  const thumbSrc=t.thumb||GENRES[genre].cover||'';
   if(thumbSrc){
     playerThumbEl.innerHTML=`<img src="${thumbSrc}" alt="${t.title}" style="width:100%;height:100%;object-fit:cover;">`;
     miniThumbEl.innerHTML=`<img src="${thumbSrc}" alt="${t.title}" style="width:100%;height:100%;object-fit:cover;">`;
@@ -1040,7 +1271,17 @@ playerAudio.addEventListener('pause',()=>{
     vinylToggle.setAttribute('aria-pressed','true');
   }
 });
-playerAudio.addEventListener('loadedmetadata',()=>{ playerScrub.max=playerAudio.duration||0; playerTimeTot.textContent=formatTime(playerAudio.duration); });
+playerAudio.addEventListener('loadedmetadata',()=>{
+  const dur=playerAudio.duration||0;
+  playerScrub.max=dur;
+  const fmt=formatTime(dur);
+  playerTimeTot.textContent=fmt;
+  if(playingGenre&&playingIndex>=0){
+    GENRES[playingGenre].tracks[playingIndex].dur=fmt;
+    const rows=trackListEl.querySelectorAll('.track-row');
+    if(rows[playingIndex]) rows[playingIndex].querySelector('.track-dur').textContent=fmt;
+  }
+});
 playerAudio.addEventListener('timeupdate',()=>{
   if(!playerScrub.matches(':active'))playerScrub.value=playerAudio.currentTime;
   playerTimeCur.textContent=formatTime(playerAudio.currentTime);
@@ -1051,8 +1292,40 @@ playerVol.addEventListener('input',()=>{ playerAudio.volume=parseFloat(playerVol
 
 renderTrackList('chill');
 
+// ===== BACKGROUND PRELOADER =====
+(function(){
+  const allTracks = [];
+  Object.entries(GENRES).forEach(([genre, g]) => {
+    g.tracks.forEach((t, i) => allTracks.push({genre, i, t}));
+  });
+
+  // Preload thumbnails
+  allTracks.forEach(({t}) => {
+    if(t.thumb){ const img=new Image(); img.src=t.thumb; }
+  });
+
+  // Preload durations — stagger so we don't hammer the server
+  allTracks.forEach(({genre, i, t}, idx) => {
+    if(!t.src) return;
+    setTimeout(() => {
+      const a = new Audio();
+      a.preload = 'metadata';
+      a.src = t.src;
+      a.addEventListener('loadedmetadata', () => {
+        const fmt = formatTime(a.duration);
+        t.dur = fmt;
+        if(genre === currentGenre){
+          const rows = trackListEl.querySelectorAll('.track-row');
+          if(rows[i]) rows[i].querySelector('.track-dur').textContent = fmt;
+        }
+        a.src = '';
+      }, {once: true});
+    }, idx * 80);
+  });
+})();
+
 // Start idle marquee & visualizer on load
-buildMarquee('♪  nothing playing yet  —  open the player below');
+buildMarquee('♪  nothing playing yet. open the player below');
 startViz();
 
 // Genre tabs drag-to-scroll
@@ -1101,37 +1374,95 @@ function showToast(msg, isError) {
 }
 
 function renderGuestbookEntries(data) {
-  const log   = document.getElementById('gb-log');
-  const empty = document.getElementById('gb-empty');
+  const log    = document.getElementById('gb-log');
+  const empty  = document.getElementById('gb-empty');
+  const pinned = document.getElementById('gb-pinned');
   if (!log) return;
+
+  // Show pinned bubble now that we have a result
+  if (pinned) pinned.style.display = '';
+
   if (!data || !data.length) {
-    if (empty) empty.textContent = 'no notes yet — be the first! 🐾';
+    if (empty) { empty.innerHTML = '<span style="font-size:1.4rem">🐾</span><span>no messages yet — be the first!</span>'; }
     return;
   }
   if (empty) empty.remove();
-  log.innerHTML = '';
-  data.forEach(entry => {
-    const card = document.createElement('div');
-    card.style.cssText = 'background:#fef9c3;border:none;border-bottom:1.5px solid #e9d76a;padding:14px 4px 12px;position:relative;';
-    card.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
-        <span style="font-family:'Indie Flower',cursive;font-size:1.08rem;font-weight:700;color:#5a4a00;">${escapeHtml(entry.name||'anonymous')}</span>
-        <span style="font-family:'Indie Flower',cursive;font-size:.82rem;color:#92720a;white-space:nowrap;margin-left:8px;">${entry.from?escapeHtml(entry.from)+' · ':''}${escapeHtml(entry.date)}</span>
+
+  // Remove old visitor bubbles (keep spacer + pinned bubble)
+  log.querySelectorAll('.chat-bubble-row.visitor-row, .chat-date-divider').forEach(el => el.remove());
+
+  // Server returns newest-first (doGet does rows.reverse()), so flip it
+  // to get oldest → newest (first message at top, latest at bottom)
+  const sorted = data.slice().reverse();
+
+  // Emoji pool for random PFPs
+  const EMOJIS = ['🐱','🐶','🦊','🐸','🐼','🐨','🦋','🌸','🍀','🌙','⭐','🎈','🍓','🍉','🌊','🦄','🐙','🍄','🌻','🎀','🐧','🦝','🌈','🍪','🎸'];
+  // Bubble color palette (background + text pairs)
+  const BUBBLE_COLORS = [
+    { bg:'#ddd6fe', text:'#3b1f8c' }, // lavender
+    { bg:'#a7f3d0', text:'#064e3b' }, // mint
+    { bg:'#fde68a', text:'#713f12' }, // yellow
+    { bg:'#fca5a5', text:'#7f1d1d' }, // rose
+    { bg:'#bae6fd', text:'#0c4a6e' }, // sky
+    { bg:'#fbcfe8', text:'#831843' }, // pink
+    { bg:'#d9f99d', text:'#365314' }, // lime
+    { bg:'#fed7aa', text:'#7c2d12' }, // peach
+    { bg:'#e0e7ff', text:'#1e1b4b' }, // indigo
+    { bg:'#ccfbf1', text:'#134e4a' }, // teal
+  ];
+
+  // Seed per-user so same name always gets same emoji + color
+  function seededIndex(str, len) {
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+    return Math.abs(h) % len;
+  }
+
+  // Group by date for dividers — skip divider before very first message
+  let lastDate = null;
+  let isFirst = true;
+  sorted.forEach(entry => {
+    const dateStr = entry.date || '';
+    if (dateStr && dateStr !== lastDate) {
+      lastDate = dateStr;
+      if (!isFirst) {
+        const div = document.createElement('div');
+        div.className = 'chat-date-divider';
+        div.textContent = dateStr;
+        log.appendChild(div);
+      }
+    }
+    isFirst = false;
+
+    const seed    = (entry.name || '?') + (entry.from || '');
+    const emoji   = EMOJIS[seededIndex(seed, EMOJIS.length)];
+    const color   = BUBBLE_COLORS[seededIndex(seed + 'c', BUBBLE_COLORS.length)];
+    const fromText = entry.from ? ` · 📍 ${escapeHtml(entry.from)}` : '';
+
+    const row = document.createElement('div');
+    row.className = 'chat-bubble-row visitor-row';
+    row.innerHTML = `
+      <div class="bubble-avatar" style="background:${color.bg};font-size:1rem;">${emoji}</div>
+      <div class="bubble-col">
+        <div class="bubble-sender">${escapeHtml(entry.name||'anonymous')}<span class="bubble-from-inline">${fromText}</span></div>
+        <div class="bubble visitor-bubble" style="background:${color.bg};color:${color.text};border-color:transparent;">${escapeHtml(entry.message)}</div>
       </div>
-      <p style="font-family:'Indie Flower',cursive;font-size:1rem;color:#6b5700;margin:0;line-height:1.6;">${escapeHtml(entry.message)}</p>
     `;
-    log.appendChild(card);
+    log.appendChild(row);
   });
+
+  // Scroll to bottom so the latest message is visible
+  requestAnimationFrame(() => { log.scrollTop = log.scrollHeight; });
 }
 
 function loadGuestbook() {
   if (gbCache) { renderGuestbookEntries(gbCache); return; }
   const callbackName = 'gbCallback_' + Date.now();
   const script = document.createElement('script');
-  const timeout = setTimeout(() => { cleanup(); const e=document.getElementById('gb-empty'); if(e) e.textContent="couldn't load notes right now 😿"; }, 8000);
+  const timeout = setTimeout(() => { cleanup(); const e=document.getElementById('gb-empty'); if(e){ e.innerHTML='<span style="font-size:1.4rem">😿</span><span>couldn\'t load messages right now</span>'; } }, 8000);
   function cleanup() { clearTimeout(timeout); delete window[callbackName]; if(script.parentNode) script.remove(); }
   window[callbackName] = (data) => { cleanup(); gbCache=data; renderGuestbookEntries(data); };
-  script.onerror = () => { cleanup(); const e=document.getElementById('gb-empty'); if(e) e.textContent="couldn't load notes right now 😿"; };
+  script.onerror = () => { cleanup(); const e=document.getElementById('gb-empty'); if(e){ e.innerHTML='<span style="font-size:1.4rem">😿</span><span>couldn\'t load messages right now</span>'; } };
   script.src = APPS_SCRIPT_URL + '?action=get&callback=' + callbackName;
   document.head.appendChild(script);
 }
@@ -1143,35 +1474,54 @@ function submitGuestbook() {
   const status  = document.getElementById('gb-status');
   const btn     = document.getElementById('gb-submit');
   if (!name || !message) { status.textContent='name and message are required! 🐱'; return; }
-  btn.disabled=true; btn.textContent='sending...'; status.textContent='';
-  const callbackName = 'gbSubmit_' + Date.now();
-  const script = document.createElement('script');
-  const timeout = setTimeout(() => { delete window[callbackName]; if(script.parentNode) script.remove(); onSuccess(); }, 5000);
+
+  const sendIcon = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:16px;height:16px;fill:var(--bg)"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
+  btn.disabled=true;
+  btn.innerHTML='<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:16px;height:16px;fill:var(--bg);opacity:.5"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
+  status.textContent='sending...';
+
   function onSuccess() {
-    clearTimeout(timeout);
     document.getElementById('gb-name').value='';
     document.getElementById('gb-from').value='';
     document.getElementById('gb-msg').value='';
-    status.textContent=''; btn.disabled=false; btn.textContent='leave a note ✉️';
-    showToast('note left! thanks for visiting', false);
+    const ta = document.getElementById('gb-msg'); if(ta) ta.style.height='';
+    status.textContent=''; btn.disabled=false; btn.innerHTML=sendIcon;
+    showToast('message sent! thanks for visiting 🐾', false);
     gbCache=null; setTimeout(()=>loadGuestbook(),1500);
   }
   function onFail() {
-    btn.disabled=false; btn.textContent='leave a note ✉️';
+    btn.disabled=false; btn.innerHTML=sendIcon;
+    status.textContent='';
     showToast('something went wrong, try again', true);
   }
-  window[callbackName] = (res) => { delete window[callbackName]; if(script.parentNode) script.remove(); clearTimeout(timeout); if(res&&res.ok){onSuccess();}else{onFail();} };
-  script.onerror = () => { delete window[callbackName]; clearTimeout(timeout); onFail(); };
-  const params = new URLSearchParams({ action:'post', callback:callbackName, name, from, message });
-  script.src = APPS_SCRIPT_URL + '?' + params.toString();
-  document.head.appendChild(script);
+
+  // Apps Script doPost uses e.postData — must use fetch with no-cors
+  // (response will be opaque, so we treat the attempt as success after a short delay)
+  fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, from, message })
+  })
+  .then(() => onSuccess())
+  .catch(() => onFail());
 }
 
 // Wire up submit button
 document.getElementById('gb-submit').addEventListener('click', submitGuestbook);
 
 // Load guestbook when logs window opens
-document.querySelector('button[data-win="logs"]').addEventListener('click', () => { setTimeout(loadGuestbook, 80); });
+document.querySelector('button[data-win="logs"]').addEventListener('click', () => { setTimeout(()=>{ loadGuestbook(); const feed=document.getElementById('gb-log'); if(feed) feed.scrollTop=feed.scrollHeight; }, 80); });
+
+// Auto-resize textarea + Enter to send (Shift+Enter = newline)
+(function(){
+  const ta = document.getElementById('gb-msg');
+  if(!ta) return;
+  ta.addEventListener('input', function(){ this.style.height='auto'; this.style.height=Math.min(this.scrollHeight,80)+'px'; });
+  ta.addEventListener('keydown', function(e){
+    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); submitGuestbook(); }
+  });
+})();
 
 // Preload in background
 setTimeout(() => { gbCache=null; loadGuestbook(); }, 1800);
@@ -1487,4 +1837,3205 @@ setTimeout(() => { gbCache=null; loadGuestbook(); }, 1800);
     }));
     setTimeout(dismiss, AUTO_HIDE);
   }, SHOW_DELAY);
+})();
+
+// ===== KITTY TAMAGOTCHI =====
+(function(){
+'use strict';
+
+// ─────────────────────────────────────────────
+//  CREATURE DEFINITIONS  — 9 unique tamagotchi-style creatures
+//  rarity: 'common' | 'rare' | 'legendary'
+// ─────────────────────────────────────────────
+const CAT_DEFS = [
+  // ── COMMON ──
+  {
+    id:'blobby', name:'Blobby', type:'blob',
+    desc:'a wobbly lil blob. loves cuddles & snacks.',
+    icon:'🫧', rarity:'common',
+    c1:'#a78bfa', c2:'#ddd6fe', c3:'#7c3aed', c4:'#f0e6ff', c5:'#ffffff',
+  },
+  {
+    id:'drako', name:'Drako', type:'dragon',
+    desc:'tiny dragon. breathes tiny sparks.',
+    icon:'🐲', rarity:'common',
+    c1:'#34d399', c2:'#6ee7b7', c3:'#059669', c4:'#fbbf24', c5:'#ffffff',
+  },
+  {
+    id:'boo', name:'Boo', type:'ghost',
+    desc:'a shy little ghost. floats around nervously.',
+    icon:'👻', rarity:'common',
+    c1:'#e2e8f0', c2:'#f8fafc', c3:'#94a3b8', c4:'#f472b6', c5:'#ffffff',
+  },
+  {
+    id:'bolto', name:'Bolto', type:'robot',
+    desc:'a clunky lil robot. loves electricity.',
+    icon:'🤖', rarity:'common',
+    c1:'#60a5fa', c2:'#bfdbfe', c3:'#1d4ed8', c4:'#fbbf24', c5:'#ffffff',
+  },
+  {
+    id:'sprout', name:'Sprout', type:'plant',
+    desc:'a round plant buddy. grows when happy.',
+    icon:'🌱', rarity:'common',
+    c1:'#4ade80', c2:'#bbf7d0', c3:'#15803d', c4:'#a3e635', c5:'#fde68a',
+  },
+  // ── RARE ──
+  {
+    id:'glubby', name:'Glubby', type:'jellyfish',
+    desc:'a glowing jellyfish. drifts wherever it wants.',
+    icon:'🪼', rarity:'rare',
+    c1:'#818cf8', c2:'#c7d2fe', c3:'#4338ca', c4:'#f0abfc', c5:'#e0f2fe',
+  },
+  {
+    id:'flaff', name:'Flaff', type:'fairy',
+    desc:'a tiny sparkly fairy. leaves glitter everywhere.',
+    icon:'🧚', rarity:'rare',
+    c1:'#f9a8d4', c2:'#fce7f3', c3:'#be185d', c4:'#fde68a', c5:'#ffffff',
+  },
+  // ── LEGENDARY ──
+  {
+    id:'wulfy', name:'Wulfy', type:'wolf',
+    desc:'a lone cosmic wolf. howls at digital moons.',
+    icon:'🐺', rarity:'legendary',
+    c1:'#94a3b8', c2:'#e2e8f0', c3:'#334155', c4:'#7dd3fc', c5:'#ffffff',
+  },
+  {
+    id:'zorp', name:'Zorp', type:'alien',
+    desc:'lost their spaceship. vibing on earth now.',
+    icon:'👾', rarity:'legendary',
+    c1:'#86efac', c2:'#dcfce7', c3:'#15803d', c4:'#fbbf24', c5:'#ffffff',
+  },
+];
+
+// ─────────────────────────────────────────────
+//  PIXEL ART RENDERER  — each creature type has its own draw fn
+//  Scale: S=5 → each "pixel" is 5×5 real px
+// ─────────────────────────────────────────────
+const S = 5;
+
+function drawCreature(ctx, def, state, frame, x, y, tier){
+  const fn = DRAW_FNS[def.type];
+  if(fn) fn(ctx, def, state, frame, x, y, tier||0);
+}
+
+// life stage from tier: 0-1 = baby, 2-3 = adult, 4-5 = elder
+function lifeStage(tier){ return tier<=1 ? 'baby' : tier<=3 ? 'adult' : 'elder'; }
+
+// ── shared pixel helper (closure per draw call) ──
+function makePx(ctx, ox, oy){
+  return function px(col, px, py, w=1, h=1){
+    ctx.fillStyle = col;
+    ctx.fillRect(ox + px*S, oy + py*S, w*S, h*S);
+  };
+}
+
+// ─── BLOB ────────────────────────────────────
+function drawBlob(ctx, d, state, fr, x, y, tier){
+  const px = makePx(ctx, x, y);
+  const [b,lt,dk,ac,wh] = [d.c1,d.c2,d.c3,d.c4,d.c5];
+  const stage = lifeStage(tier);
+  const bob = (state==='idle'||state==='walk') ? fr : 0;
+
+  if(stage === 'baby'){
+    // ── BABY: tiny pea-sized blob, huge eyes, no feet ──
+    px('rgba(0,0,0,.10)', 4,11+bob,8,1);
+    // body
+    px(b,3,4+bob,10,6); px(b,2,5+bob,12,4); px(b,4,3+bob,8,2);
+    px(lt,4,4+bob,4,2); px(lt,3,5+bob,2,2);
+    // stubby nubs
+    px(dk,4,9+bob,2,2); px(dk,10,9+bob,2,2);
+    // face — oversized sparkly eyes
+    if(state==='sleep'){
+      px(dk,5,6+bob,2); px(dk,9,6+bob,2); px(dk,6,8+bob,4);
+      px(ac,12,3+bob); px(ac,13,4+bob);
+    } else if(state==='sick'){
+      px(dk,5,6+bob); px(dk,6,7+bob); px(dk,6,6+bob); px(dk,5,7+bob);
+      px(dk,9,6+bob); px(dk,10,7+bob); px(dk,10,6+bob); px(dk,9,7+bob);
+      px(dk,6,8+bob,4);
+    } else {
+      const blink=(state==='idle'&&fr===1);
+      if(blink){ px(dk,5,7+bob,2); px(dk,9,7+bob,2); }
+      else { px(dk,4,5+bob,3,3); px(dk,9,5+bob,3,3); px(wh,4,5+bob,2,2); px(wh,9,5+bob,2,2); px(ac,4,5+bob); px(ac,9,5+bob); }
+      px(dk,6,8+bob,4);
+      px(ac+'aa',3,7+bob,2); px(ac+'aa',11,7+bob,2);
+    }
+    if(state==='play'){ px(ac,7,-1+bob); px(ac,9,fr?-1:0); }
+
+  } else if(stage === 'adult'){
+    // ── ADULT: original blob ──
+    px('rgba(0,0,0,.15)', 3,14+bob,10,2);
+    px(b, 2,4+bob,12,8); px(b, 1,5+bob,14,6); px(b, 3,3+bob,10,2); px(b, 4,2+bob,8,2);
+    px(lt,4,3+bob,4,3); px(lt,3,4+bob,2,2);
+    if(state==='walk'){
+      if(fr===0){ px(b,2,11,12,2); px(dk,2,13,12,1); }
+      else       { px(b,1,12,14,2); px(dk,1,14,14,1); }
+    } else { px(b,2,11+bob,12,2); }
+    px(dk,3,13+bob,3,2); px(dk,9,13+bob,3,2);
+    if(state==='sleep'){
+      px(dk,5,6+bob,2); px(dk,9,6+bob,2); px(ac,8,6+bob); px(ac,10,5+bob); px(dk,6,9+bob,4);
+    } else if(state==='eat'){
+      px(dk,5,6+bob,2,2); px(dk,9,6+bob,2,2); px(wh,5,6+bob); px(wh,9,6+bob);
+      px(dk,5,9+bob,6,2); px(ac,6,10+bob,4);
+    } else if(state==='sick'){
+      px(dk,5,6+bob); px(dk,6,7+bob); px(dk,6,6+bob); px(dk,5,7+bob);
+      px(dk,9,6+bob); px(dk,10,7+bob); px(dk,10,6+bob); px(dk,9,7+bob);
+      px(dk,6,9+bob,4);
+    } else {
+      const blink=(state==='idle'&&fr===1);
+      if(blink){ px(dk,5,7+bob,2); px(dk,9,7+bob,2); }
+      else { px(dk,5,6+bob,2,2); px(dk,9,6+bob,2,2); px(wh,5,6+bob); px(wh,9,6+bob); }
+      if(state==='play'){ px(ac,6,9+bob,4,2); } else { px(dk,6,9+bob,4); }
+      px(ac+'88',4,8+bob,2); px(ac+'88',10,8+bob,2);
+    }
+    if(state==='play'){ px(dk,8,0+bob); px(ac,7,fr===0?-1:0); px(ac,9,fr===1?-1:0); }
+
+  } else {
+    // ── ELDER: saggy, grey patches, droopy eyes, cane ──
+    const grey = '#9ca3af';
+    px('rgba(0,0,0,.20)', 2,15+bob,12,2);
+    // saggier body with grey spots
+    px(b, 2,5+bob,12,8); px(b, 1,6+bob,14,6); px(b, 3,4+bob,10,2); px(b, 4,3+bob,8,2);
+    px(lt,4,4+bob,3,2);
+    // grey age patches
+    px(grey,10,5+bob,3,2); px(grey,2,7+bob,2,2); px(grey,11,9+bob,2,2);
+    // droopy bottom
+    if(state==='walk'){
+      if(fr===0){ px(b,1,12,14,3); px(dk,1,15,14,1); }
+      else       { px(b,2,13,12,3); px(dk,2,16,12,1); }
+    } else { px(b,1,13+bob,14,2); }
+    // big chunky feet + cane
+    px(dk,2,14+bob,4,2); px(dk,9,14+bob,4,2);
+    px(dk,1,11+bob,1,4); px(dk,0,14+bob,2,1); // cane
+    // face — droopy tired eyes, wrinkles
+    px(dk,4,13+bob,2); px(dk,9,13+bob,2); // wrinkle lines on body
+    if(state==='sleep'){
+      px(dk,5,7+bob,2); px(dk,9,7+bob,2); px(grey,5,6+bob,4); px(grey,9,6+bob,2);
+      px(ac,13,3+bob); px(ac,14,2+bob); px(dk,6,9+bob,4);
+    } else if(state==='sick'){
+      px(dk,5,7+bob); px(dk,6,8+bob); px(dk,6,7+bob); px(dk,5,8+bob);
+      px(dk,9,7+bob); px(dk,10,8+bob); px(dk,10,7+bob); px(dk,9,8+bob);
+      px(dk,6,10+bob,4);
+    } else {
+      // half-lidded tired eyes
+      px(dk,5,6+bob,2,3); px(dk,9,6+bob,2,3);
+      px(wh,5,7+bob); px(wh,9,7+bob);
+      px(grey,5,6+bob,2,1); px(grey,9,6+bob,2,1); // heavy lids
+      if(state==='eat'){ px(ac,6,10+bob,4); px(dk,5,9+bob,6,2); }
+      else if(state==='play'){ px(ac,6,10+bob,4,2); }
+      else { px(dk,6,10+bob,4); }
+    }
+  }
+}
+
+// ─── DRAGON ──────────────────────────────────
+function drawDragon(ctx, d, state, fr, x, y, tier){
+  const px = makePx(ctx, x, y);
+  const [b,sc,dk,fi,wh] = [d.c1,d.c2,d.c3,d.c4,d.c5];
+  const stage = lifeStage(tier);
+  const bob = (state==='idle') ? fr : 0;
+
+  if(stage === 'baby'){
+    // ── BABY DRAGON: stumpy, big head, tiny wings, egg-tooth ──
+    // tail (small)
+    px(b,9,9+fr); px(fi,10,8);
+    // body (chubby)
+    px(b,3,7+bob,9,6); px(b,2,8+bob,11,4); px(sc,4,8+bob,7,3);
+    // tiny wings
+    px(fi,1,7+bob,2,3); px(fi,12,7+bob,2,3);
+    // stubby legs
+    px(b,4,13+bob,2,2); px(b,9,13+bob,2,2);
+    // big head
+    px(b,3,2+bob,9,5); px(b,2,3+bob,11,3);
+    px(dk,4,1+bob); px(dk,9,1+bob); // tiny horn nubs
+    px(sc,4,5+bob,7,2); // snout
+    px(dk,6,6+bob); // egg tooth
+    // face
+    if(state==='sleep'){ px(dk,5,3+bob,2); px(dk,9,3+bob,2); }
+    else if(state==='sick'){
+      px(dk,5,3+bob); px(dk,6,4+bob); px(dk,6,3+bob); px(dk,5,4+bob);
+      px(dk,9,3+bob); px(dk,10,4+bob); px(dk,10,3+bob); px(dk,9,4+bob);
+    } else {
+      px(fi,5,2+bob,2,3); px(fi,9,2+bob,2,3); px(dk,5,2+bob); px(dk,9,2+bob); px(wh,6,2+bob); px(wh,10,2+bob);
+      px(dk,6,5+bob,3);
+    }
+
+  } else if(stage === 'adult'){
+    // ── ADULT: original dragon ──
+    if(state==='sleep'){ px(b,10,12); px(b,11,11); px(b,12,10); px(fi,13,10); }
+    else { px(b,12,10+fr); px(b,13,9+fr); px(b,14,8); px(fi,14,7); px(b,12,11); px(b,11,12); }
+    px(b,3,6+bob,10,7); px(b,2,7+bob,12,5); px(sc,4,7+bob,8,4);
+    if(state==='play'||state==='walk'){
+      const wOff=fr===0?-1:1;
+      px(fi,0,4+bob+wOff,3,4); px(fi,1,3+bob+wOff,2,2);
+      px(fi,13,4+bob-wOff,3,4); px(fi,14,3+bob-wOff,2,2);
+    } else { px(fi,1,6+bob,2,3); px(fi,13,6+bob,2,3); }
+    if(state==='walk'){
+      if(fr===0){ px(b,4,13); px(b,5,14); px(b,9,12); px(b,10,13); }
+      else       { px(b,4,12); px(b,5,13); px(b,9,13); px(b,10,14); }
+    } else { px(b,4,13+bob,2,2); px(b,9,13+bob,2,2); }
+    px(b,4,1+bob,8,5); px(b,3,2+bob,10,4);
+    px(dk,4,0+bob); px(dk,5,1+bob); px(dk,11,0+bob); px(dk,10,1+bob);
+    px(sc,5,4+bob,6,2); px(dk,6,5+bob); px(dk,9,5+bob);
+    if(state==='eat'||state==='play'){
+      const fOff=fr===0?0:1; px(fi,0,4+bob+fOff,3,2); px('#fef08a',1,5+bob+fOff,2); px(fi,-1,3+bob,2);
+    }
+    if(state==='sleep'){ px(dk,5,3+bob,2); px(dk,9,3+bob,2); px(dk,14,1); px(dk,15,2); }
+    else if(state==='sick'){
+      px(dk,5,2+bob); px(dk,6,3+bob); px(dk,6,2+bob); px(dk,5,3+bob);
+      px(dk,9,2+bob); px(dk,10,3+bob); px(dk,10,2+bob); px(dk,9,3+bob); px(dk,6,5+bob,4);
+    } else {
+      px(fi,5,2+bob,2,2); px(fi,9,2+bob,2,2); px(dk,5,2+bob); px(dk,9,2+bob); px(wh,6,2+bob); px(wh,10,2+bob); px(dk,6,5+bob,4);
+    }
+
+  } else {
+    // ── ELDER DRAGON: huge, battle-scarred, greying scales, bigger horns, scar ──
+    const grey = '#6b7280';
+    // long heavy tail
+    if(state==='sleep'){ px(b,11,13); px(b,12,12); px(b,13,11); px(fi,14,10); px(fi,15,9); }
+    else { px(b,13,11+fr); px(b,14,10+fr); px(b,15,9); px(b,16,8); px(fi,16,7); px(fi,15,6); px(b,12,12); }
+    // bigger body
+    px(b,2,5+bob,13,8); px(b,1,6+bob,14,6); px(sc,3,6+bob,10,5);
+    // grey worn patches on scales
+    px(grey,4,7+bob,3,2); px(grey,9,8+bob,3,2); px(grey,6,5+bob,2,1);
+    // big battle wings
+    if(state==='play'||state==='walk'){
+      const wOff=fr===0?-2:2;
+      px(fi,-1,3+bob+wOff,4,5); px(fi,0,2+bob+wOff,3,3);
+      px(fi,14,3+bob-wOff,4,5); px(fi,15,2+bob-wOff,3,3);
+      px(dk,-1,3+bob+wOff,1,2); px(dk,14,3+bob-wOff,1,2); // wing claw
+    } else { px(fi,0,5+bob,2,4); px(fi,14,5+bob,2,4); px(dk,0,6+bob); px(dk,14,6+bob); }
+    // heavy legs
+    if(state==='walk'){
+      if(fr===0){ px(b,3,13,3,3); px(b,4,16); px(b,10,12,3,3); px(b,11,15); }
+      else       { px(b,3,12,3,3); px(b,4,15); px(b,10,13,3,3); px(b,11,16); }
+    } else { px(b,3,13+bob,3,3); px(b,10,13+bob,3,3); }
+    // big head + long horns
+    px(b,3,0+bob,11,6); px(b,2,1+bob,13,5);
+    px(dk,3,-2+bob,2,3); px(dk,12,-2+bob,2,3); // tall curved horns
+    px(dk,4,-1+bob); px(dk,11,-1+bob);
+    px(sc,4,4+bob,8,3); px(dk,5,6+bob); px(dk,10,6+bob);
+    // scar across face
+    px(grey,7,2+bob,3,1);
+    // bigger fire
+    if(state==='eat'||state==='play'){
+      const fOff=fr===0?0:1;
+      px(fi,-1,3+bob+fOff,4,3); px('#fef08a',0,4+bob+fOff,3,2); px(fi,-2,2+bob,3);
+      px('#fde68a',-1,5+bob+fOff,2);
+    }
+    if(state==='sleep'){ px(dk,5,2+bob,2); px(dk,9,2+bob,2); px(grey,5,1+bob,4); }
+    else if(state==='sick'){
+      px('#ef4444',5,1+bob,2,2); px('#ef4444',9,1+bob,2,2); px(grey,5,1+bob); px(grey,9,1+bob); px(dk,6,5+bob,4);
+    } else {
+      // old tired slit pupils
+      px(fi,5,1+bob,2,3); px(fi,9,1+bob,2,3); px(dk,5,1+bob); px(dk,9,1+bob);
+      px(wh,6,2+bob); px(wh,10,2+bob);
+      px(grey,5,1+bob,2,1); px(grey,9,1+bob,2,1); // heavy brow
+      px(dk,5,5+bob,6);
+    }
+  }
+}
+
+// ─── GHOST ───────────────────────────────────
+function drawGhost(ctx, d, state, fr, x, y, tier){
+  const px = makePx(ctx, x, y);
+  const [b,lt,dk,ac,wh] = [d.c1,d.c2,d.c3,d.c4,d.c5];
+  const stage = lifeStage(tier);
+
+  // ghost floats up/down
+  const floatY = fr===0 ? 0 : (state==='sleep'?2:1);
+
+  if(stage === 'baby'){
+    // ── BABY GHOST: tiny puff, stubby wisps, huge eyes ──
+    px(b,4,11+floatY,2); px(b,9,11+floatY,2); px(b,6,12+floatY,3);
+    px(b, 3,4+floatY,9,7); px(b, 2,5+floatY,11,5); px(b,4,3+floatY,7,2);
+    px(lt,3,4+floatY,4,3);
+    px('rgba(0,0,0,.08)',4,13,7,2);
+    if(state==='sleep'){
+      px(dk,4,6+floatY,2); px(dk,8,6+floatY,2); px(dk,6,8+floatY,2);
+      px(ac,12,3+floatY); px(ac,13,2+floatY);
+    } else if(state==='sick'){
+      px(dk,4,6+floatY); px(dk,5,7+floatY); px(dk,5,6+floatY); px(dk,4,7+floatY);
+      px(dk,8,6+floatY); px(dk,9,7+floatY); px(dk,9,6+floatY); px(dk,8,7+floatY);
+      px(dk,6,8+floatY,3);
+    } else {
+      const blink=(fr===1&&state==='idle');
+      if(blink){ px(dk,4,7+floatY,2); px(dk,8,7+floatY,2); }
+      else { px(dk,3,5+floatY,3,3); px(dk,8,5+floatY,3,3); px(wh,3,5+floatY,2,2); px(wh,8,5+floatY,2,2); px(ac,3,5+floatY); px(ac,8,5+floatY); }
+      px(dk,6,8+floatY,2);
+      px(ac+'99',2,7+floatY,2); px(ac+'99',9,7+floatY,2);
+    }
+
+  } else if(stage === 'adult'){
+    // ── ADULT: original ghost ──
+    px(b, 2,12+floatY,2,2); px(b,5,13+floatY,2,2);
+    px(b, 8,12+floatY,2,2); px(b,11,13+floatY,2,2);
+    px(b, 3,14+floatY,2); px(b,7,14+floatY,2); px(b,10,14+floatY,2);
+    px(b, 2,4+floatY,12,9);
+    px(b, 1,5+floatY,14,7);
+    px(b, 3,3+floatY,10,2);
+    px(lt,3,4+floatY,5,4);
+    px('rgba(0,0,0,.10)',3,16,10,2);
+    if(state==='sleep'){
+      px(dk,5,7+floatY,2); px(dk,9,7+floatY,2);
+      px(dk,7,9+floatY,2);
+      px(ac,13,2+floatY); px(ac,14,1+floatY);
+    } else if(state==='sick'){
+      px(dk,5,6+floatY); px(dk,6,7+floatY); px(dk,6,6+floatY); px(dk,5,7+floatY);
+      px(dk,9,6+floatY); px(dk,10,7+floatY); px(dk,10,6+floatY); px(dk,9,7+floatY);
+      px(dk,6,9+floatY,4);
+    } else if(state==='eat'){
+      px(dk,4,6+floatY,3,3); px(dk,9,6+floatY,3,3);
+      px(wh,5,7+floatY); px(wh,10,7+floatY);
+      px(dk,5,9+floatY,6,2); px(wh,6,10+floatY,4);
+    } else {
+      const blink=(fr===1&&state==='idle');
+      if(blink){ px(dk,5,7+floatY,2); px(dk,9,7+floatY,2); }
+      else {
+        px(dk,5,6+floatY,2,2); px(dk,9,6+floatY,2,2);
+        px(wh,5,6+floatY); px(wh,9,6+floatY);
+      }
+      if(state==='play'){
+        px(ac,5,9+floatY,6,2); px(wh,6,10+floatY,4);
+      } else {
+        px(dk,6,9+floatY,4);
+      }
+      px(ac+'99',3,8+floatY,2); px(ac+'99',11,8+floatY,2);
+    }
+
+  } else {
+    // ── ELDER GHOST: tattered hem, faded grey patches, droopy eyes ──
+    const grey = '#9ca3af';
+    px(b, 2,12+floatY,2,3); px(b,6,13+floatY,1,2);
+    px(b, 9,12+floatY,2,3); px(b,12,13+floatY,1,2);
+    px(b, 4,15+floatY,1); px(b,11,15+floatY,1);
+    px(b, 2,4+floatY,12,9);
+    px(b, 1,5+floatY,14,7);
+    px(b, 3,3+floatY,10,2);
+    px(lt,3,4+floatY,4,3);
+    px(grey,9,5+floatY,3,3); px(grey,3,9+floatY,2,2); // faded patches
+    px('rgba(0,0,0,.08)',3,16,10,2);
+    if(state==='sleep'){
+      px(dk,5,8+floatY,2); px(dk,9,8+floatY,2); px(grey,5,7+floatY,4);
+      px(ac,13,2+floatY); px(ac,14,1+floatY);
+    } else if(state==='sick'){
+      px(dk,5,7+floatY); px(dk,6,8+floatY); px(dk,6,7+floatY); px(dk,5,8+floatY);
+      px(dk,9,7+floatY); px(dk,10,8+floatY); px(dk,10,7+floatY); px(dk,9,8+floatY);
+      px(dk,6,10+floatY,4);
+    } else {
+      // heavy-lidded tired eyes
+      px(dk,5,7+floatY,2,3); px(dk,9,7+floatY,2,3);
+      px(wh,5,8+floatY); px(wh,9,8+floatY);
+      px(grey,5,7+floatY,2,1); px(grey,9,7+floatY,2,1);
+      if(state==='play'){ px(ac,5,10+floatY,6,2); }
+      else { px(dk,6,10+floatY,4); }
+    }
+  }
+}
+
+// ─── ROBOT ───────────────────────────────────
+function drawRobot(ctx, d, state, fr, x, y, tier){
+  const px = makePx(ctx, x, y);
+  const [b,lt,dk,ac,wh] = [d.c1,d.c2,d.c3,d.c4,d.c5];
+  const stage = lifeStage(tier);
+  const bob = (state==='walk') ? fr : 0;
+
+  if(stage === 'baby'){
+    // ── BABY ROBOT: tiny round bot, no arms yet, big screen ──
+    px(dk,7,1); px(ac,7,2);
+    px(b,3,3,9,5); px(lt,4,3,3,2);
+    px(dk,4,4,7,3);
+    if(state==='sleep'){ px(ac,5,5,5); px(ac,5,6,5); }
+    else if(state==='sick'){ px('#ef4444',4,4,2,2); px('#ef4444',9,4,2,2); px(wh,5,5); px(wh,10,5); }
+    else {
+      const eyeC = state==='play' ? ac : state==='eat' ? '#fde68a' : lt;
+      px(eyeC,4,4,2,2); px(eyeC,9,4,2,2); px(wh,5,5); px(wh,10,5);
+      if(state==='play'){ px(ac,5,7,4); } else { px(ac,5,6,4); }
+    }
+    px(b,4,8+bob,8,3); px(lt,5,8+bob,2,1);
+    px(dk,7,9+bob,1,1);
+    px(b,3,11+bob,3,2); px(b,8,11+bob,3,2);
+    px(dk,3,13,3,1); px(dk,8,13,3,1);
+
+  } else if(stage === 'adult'){
+    // ── ADULT: original robot ──
+    px(dk,7,0); px(dk,7,1);
+    if(state==='play'||state==='eat'){
+      px(ac,6,0+fr); px(ac,8,1-fr);
+    } else {
+      px(ac,6,1); px(ac,8,1);
+    }
+    px(b,  2,2,12,6);
+    px(lt, 3,2,4,2);
+    px(dk,3,3,10,4);
+    if(state==='sleep'){
+      px(ac,4,5,8); px(ac,4,6,8);
+    } else if(state==='sick'){
+      px('#ef4444',4,4,3,3); px('#ef4444',9,4,3,3);
+      px(wh,5,5); px(wh,10,5);
+    } else {
+      const eyeC = state==='play' ? ac : state==='eat' ? '#fde68a' : lt;
+      px(eyeC,4,4,3,3); px(eyeC,9,4,3,3);
+      px(wh,5,5); px(wh,10,5);
+      if(state==='play')      { px(ac,4,7,8); }
+      else if(state==='eat')  { px('#fde68a',4,6,3,2); px('#fde68a',9,6,3,2); }
+      else                    { px(ac,5,7,6); }
+    }
+    px(b,  3,8+bob,10,5);
+    px(lt, 4,8+bob,3,2);
+    const chL = (fr===0&&state!=='sleep') ? ac : dk;
+    px(chL,7,9+bob,2,2);
+    if(state==='walk'||state==='play'){
+      px(b,1,8+bob+(fr===0?0:1),2,3);
+      px(b,13,8+bob+(fr===0?1:0),2,3);
+    } else {
+      px(b,1,9+bob,2,3); px(b,13,9+bob,2,3);
+    }
+    px(dk,0,11+bob,2,2); px(dk,13,11+bob,2,2);
+    if(state==='walk'){
+      if(fr===0){ px(b,5,13,3,3); px(b,8,14,3,3); }
+      else      { px(b,5,14,3,3); px(b,8,13,3,3); }
+    } else {
+      px(b,5,13+bob,3,3); px(b,8,13+bob,3,3);
+    }
+    px(dk,4,15,4,2); px(dk,8,15,4,2);
+
+  } else {
+    // ── ELDER ROBOT: rusted patches, dimmer light, antenna bent ──
+    const rust = '#8a6a4a';
+    px(dk,7,0,1,2); px(dk,8,1); // bent antenna
+    if(state==='play'||state==='eat'){
+      px(ac,7,0+fr); px(ac,9,1-fr);
+    } else {
+      px('#94a3b8',8,1); // dimmer light
+    }
+    px(b,  2,2,12,6);
+    px(lt, 3,2,3,2);
+    px(rust,11,3,2,2); px(rust,2,6,2,2); // rust spots
+    px(dk,3,3,10,4);
+    if(state==='sleep'){
+      px('#94a3b8',4,5,8); px('#94a3b8',4,6,8);
+    } else if(state==='sick'){
+      px('#ef4444',4,4,3,3); px('#ef4444',9,4,3,3);
+      px(wh,5,5); px(wh,10,5);
+    } else {
+      // half-lit dimmer LED eyes
+      px('#94a3b8',4,4,3,3); px('#94a3b8',9,4,3,3);
+      px(wh,5,5); px(wh,10,5);
+      px('#94a3b8',5,7,6);
+    }
+    px(b,  3,8+bob,10,5);
+    px(rust,9,9+bob,2,2);
+    const chL = (fr===0&&state!=='sleep') ? '#94a3b8' : dk;
+    px(chL,7,9+bob,2,2);
+    px(b,1,9+bob,2,3); px(b,13,9+bob,2,3); // stiff arms (no swing)
+    px(dk,0,11+bob,2,2); px(dk,13,11+bob,2,2);
+    if(state==='walk'){
+      if(fr===0){ px(b,5,13,3,3); px(b,8,14,3,3); }
+      else      { px(b,5,14,3,3); px(b,8,13,3,3); }
+    } else {
+      px(b,5,13+bob,3,3); px(b,8,13+bob,3,3);
+    }
+    px(rust,4,15,4,2); px(rust,8,15,4,2);
+  }
+}
+
+// ─── PLANT / SPROUT ─────────────────────────
+function drawPlant(ctx, d, state, fr, x, y, tier){
+  const px = makePx(ctx, x, y);
+  const [b,lt,dk,sp,fl] = [d.c1,d.c2,d.c3,d.c4,d.c5];
+  const stage = lifeStage(tier);
+  const bob = fr===0?0:1;
+
+  if(stage === 'baby'){
+    // ── BABY PLANT: tiny sprout, small pot, no flower yet ──
+    px(dk,5,13,6,3);
+    px('#a0522d',6,13,4,3);
+    px(d.c3,7,10,1,3);
+    if(state==='sleep'){ px(b,5,9,3,2); px(b,9,9,3,2); }
+    else if(state==='walk'){ const lf=fr===0?0:1; px(b,4,8+lf,3,2); px(b,9,7-lf+1,3,2); }
+    else { px(b,4,8,3,2); px(b,9,8,3,2); }
+    px(lt,5,9+bob,6,3);
+    if(state==='sleep'){
+      px(dk,6,10+bob,2); px(dk,9,10+bob,2);
+    } else if(state==='sick'){
+      px(dk,6,9+bob); px(dk,7,10+bob); px(dk,7,9+bob); px(dk,6,10+bob);
+      px(dk,9,9+bob); px(dk,10,10+bob); px(dk,10,9+bob); px(dk,9,10+bob);
+    } else {
+      const blink=(state==='idle'&&fr===1);
+      px(dk,6,9+bob,2,blink?1:2); px(dk,9,9+bob,2,blink?1:2);
+      px(sp+'99',5,11+bob,1); px(sp+'99',11,11+bob,1);
+    }
+
+  } else if(stage === 'adult'){
+    // ── ADULT: original plant ──
+    px(dk,  4,12,8,4);
+    px(dk,  3,11,10,2);
+    px('#a0522d',5,12,6,4);
+    px('#7a3e1a',5,14,6,2);
+    px(d.c3,7,8,2,5);
+    if(state!=='sleep') px(d.c3,6,9,1);
+    if(state==='sleep'){
+      px(b,3,7,4,3);
+      px(b,9,8,4,3);
+    } else if(state==='play'){
+      px(b,1,5,5,4); px(b,3,4,4,2);
+      px(b,10,5,5,4); px(b,9,4,4,2);
+      px(fl,6,2+fr,4,3);
+      px('#fef9c3',7,3+fr,2,2);
+    } else if(state==='walk'){
+      const lf = fr===0?0:1;
+      px(b,2,6+lf,5,3); px(b,9,5-lf+1,5,3);
+    } else {
+      px(b,2,6,5,3); px(b,9,6,5,3);
+      px(b,4,4,4,3);
+    }
+    px(lt,4,7+bob,8,4);
+    px(lt,3,8+bob,10,3);
+    if(state==='sleep'){
+      px(dk,5,9+bob,2); px(dk,9,9+bob,2);
+      px(dk,6,10+bob,4);
+    } else if(state==='sick'){
+      px(dk,5,8+bob); px(dk,6,9+bob); px(dk,6,8+bob); px(dk,5,9+bob);
+      px(dk,9,8+bob); px(dk,10,9+bob); px(dk,10,8+bob); px(dk,9,9+bob);
+      px(dk,6,11+bob,4);
+    } else if(state==='eat'){
+      px(dk,5,8+bob,2,2); px(dk,9,8+bob,2,2);
+      px(fl,5,8+bob); px(fl,9,8+bob);
+      px(dk,5,11+bob,6,2); px(fl,6,12+bob,4);
+    } else {
+      const blink=(state==='idle'&&fr===1);
+      px(dk,5,8+bob,2,blink?1:2); px(dk,9,8+bob,2,blink?1:2);
+      px(fl,5,8+bob); px(fl,9,8+bob);
+      if(state==='play') px(dk,5,11+bob,6,2);
+      else               px(dk,6,11+bob,4);
+      px(sp+'99',3,10+bob,2); px(sp+'99',11,10+bob,2);
+    }
+
+  } else {
+    // ── ELDER PLANT: thick gnarled stem, wilting brown-edged leaves, full bloom crown ──
+    const brown = '#8a6a4a';
+    px(dk,  3,12,10,4);
+    px(dk,  2,11,12,2);
+    px('#a0522d',4,12,8,4);
+    px('#7a3e1a',4,14,8,2);
+    px(d.c3,6,7,3,6); // thicker gnarled stem
+    px(brown,6,9,1); px(brown,10,8,1);
+    if(state==='sleep'){
+      px(brown,2,7,5,3); px(brown,9,8,5,3);
+    } else if(state==='play'){
+      px(b,0,4,6,4); px(brown,2,3,3,2);
+      px(b,10,4,6,4); px(brown,11,3,3,2);
+      px(fl,5,1+fr,6,3); px('#fef9c3',7,2+fr,2,2);
+    } else if(state==='walk'){
+      const lf = fr===0?0:1;
+      px(b,1,5+lf,6,3); px(brown,2,5+lf,2,1);
+      px(b,9,4-lf+1,6,3); px(brown,11,4-lf+1,2,1);
+    } else {
+      px(b,1,5,6,4); px(brown,2,5,2,1);
+      px(b,9,5,6,4); px(brown,11,5,2,1);
+      px(fl,5,2,6,3); px('#fef9c3',7,3,2,2); // always blooming, fuller crown
+    }
+    px(lt,4,8+bob,8,4);
+    px(lt,3,9+bob,10,3);
+    if(state==='sleep'){
+      px(dk,5,10+bob,2); px(dk,9,10+bob,2); px(brown,5,9+bob,4);
+    } else if(state==='sick'){
+      px(dk,5,9+bob); px(dk,6,10+bob); px(dk,6,9+bob); px(dk,5,10+bob);
+      px(dk,9,9+bob); px(dk,10,10+bob); px(dk,10,9+bob); px(dk,9,10+bob);
+      px(dk,6,12+bob,4);
+    } else {
+      // heavy-lidded eyes
+      px(dk,5,9+bob,2,3); px(dk,9,9+bob,2,3);
+      px(brown,5,9+bob,2,1); px(brown,9,9+bob,2,1);
+      if(state==='play') px(dk,5,12+bob,6,2);
+      else               px(dk,6,12+bob,4);
+    }
+  }
+}
+
+// ─── JELLYFISH ───────────────────────────────
+function drawJellyfish(ctx, d, state, fr, x, y, tier){
+  const px = makePx(ctx, x, y);
+  const [b,lt,dk,ac,wh] = [d.c1,d.c2,d.c3,d.c4,d.c5];
+  const stage = lifeStage(tier);
+  const floatY = fr===0 ? 0 : (state==='sleep'?2:1);
+  const glow = `${ac}66`;
+
+  if(stage === 'baby'){
+    // ── BABY JELLYFISH: tiny bell, two short tentacles, huge eyes ──
+    if(state==='sleep'){
+      px(b,6,12+floatY,1,2); px(b,9,12+floatY,1,2);
+    } else {
+      const sw = fr===0;
+      px(b,5,12+floatY,1,2+(sw?1:0)); px(b,10,12+floatY,1,2+(sw?0:1));
+    }
+    px(b, 3,5+floatY,9,5); px(b, 2,6+floatY,11,4); px(b,4,4+floatY,7,2);
+    px(lt,3,5+floatY,4,2);
+    px(glow,5,8+floatY,5,1);
+    if(state==='sleep'){
+      px(dk,5,6+floatY,2); px(dk,9,6+floatY,2); px(dk,6,8+floatY,2);
+    } else if(state==='sick'){
+      px(dk,5,5+floatY); px(dk,6,6+floatY); px(dk,6,5+floatY); px(dk,5,6+floatY);
+      px(dk,9,5+floatY); px(dk,10,6+floatY); px(dk,10,5+floatY); px(dk,9,6+floatY);
+    } else {
+      const blink=(fr===1&&state==='idle');
+      if(blink){ px(ac,5,6+floatY,2); px(ac,9,6+floatY,2); }
+      else { px(ac,4,5+floatY,3,3); px(ac,8,5+floatY,3,3); px(wh,4,5+floatY,2,2); px(wh,8,5+floatY,2,2); }
+      if(state==='play') px(dk,5,8+floatY,5,2);
+      else               px(dk,6,8+floatY,3);
+    }
+
+  } else if(stage === 'adult'){
+    // ── ADULT: original jellyfish ──
+    if(state==='sleep'){
+      px(b,4,12+floatY,2,3); px(b,7,13+floatY,2,3); px(b,10,12+floatY,2,3);
+    } else {
+      const sw = fr===0;
+      px(b,3,12+floatY,2,3+(sw?1:0)); px(b,6,13+floatY,2,2+(sw?0:1));
+      px(b,9,12+floatY,2,3+(sw?1:0)); px(b,12,13+floatY,2,2+(sw?0:1));
+    }
+    px(b, 2,4+floatY,12,7);
+    px(b, 1,5+floatY,14,5);
+    px(b, 3,3+floatY,10,2);
+    px(lt,3,4+floatY,6,3);
+    px(glow,4,8+floatY,8,2);
+    px(ac, 5,9+floatY,6,1);
+    if(state==='sleep'){
+      px(dk,5,6+floatY,2); px(dk,9,6+floatY,2);
+      px(dk,6,8+floatY,4);
+    } else if(state==='sick'){
+      px(dk,5,5+floatY); px(dk,6,6+floatY); px(dk,6,5+floatY); px(dk,5,6+floatY);
+      px(dk,9,5+floatY); px(dk,10,6+floatY); px(dk,10,5+floatY); px(dk,9,6+floatY);
+      px(dk,6,8+floatY,4);
+    } else {
+      const blink=(fr===1&&state==='idle');
+      if(blink){ px(ac,5,6+floatY,2); px(ac,9,6+floatY,2); }
+      else { px(ac,5,5+floatY,2,2); px(ac,9,5+floatY,2,2); px(wh,5,5+floatY); px(wh,9,5+floatY); }
+      if(state==='play') px(dk,5,8+floatY,6,2);
+      else               px(dk,6,8+floatY,4);
+      px(ac+'88',3,7+floatY,2); px(ac+'88',11,7+floatY,2);
+    }
+
+  } else {
+    // ── ELDER JELLYFISH: bigger bell, longer trailing tentacles, faded glow ──
+    const grey = '#9ca3af';
+    if(state==='sleep'){
+      px(b,3,13+floatY,2,4); px(b,6,14+floatY,2,4); px(b,9,13+floatY,2,4); px(b,12,14+floatY,2,4);
+    } else {
+      const sw = fr===0;
+      px(b,2,13+floatY,2,4+(sw?1:0)); px(b,5,14+floatY,2,3+(sw?0:1));
+      px(b,9,13+floatY,2,4+(sw?1:0)); px(b,12,14+floatY,2,3+(sw?0:1));
+    }
+    px(b, 1,3+floatY,14,8);
+    px(b, 0,4+floatY,16,6);
+    px(b, 2,2+floatY,12,2);
+    px(lt,2,3+floatY,6,3);
+    px(grey,10,5+floatY,3,2); // faded patch
+    px(glow,3,9+floatY,10,2);
+    px(grey, 5,10+floatY,6,1); // dim ring
+    if(state==='sleep'){
+      px(dk,5,7+floatY,2); px(dk,9,7+floatY,2); px(grey,5,6+floatY,4);
+    } else if(state==='sick'){
+      px(dk,5,6+floatY); px(dk,6,7+floatY); px(dk,6,6+floatY); px(dk,5,7+floatY);
+      px(dk,9,6+floatY); px(dk,10,7+floatY); px(dk,10,6+floatY); px(dk,9,7+floatY);
+      px(dk,6,9+floatY,4);
+    } else {
+      px(grey,5,6+floatY,2,3); px(grey,9,6+floatY,2,3); // heavy-lidded
+      px(wh,5,7+floatY); px(wh,9,7+floatY);
+      if(state==='play') px(dk,5,9+floatY,6,2);
+      else               px(dk,6,9+floatY,4);
+    }
+  }
+}
+
+// ─── FAIRY ───────────────────────────────────
+function drawFairy(ctx, d, state, fr, x, y, tier){
+  const px = makePx(ctx, x, y);
+  const [b,lt,dk,ac,wh] = [d.c1,d.c2,d.c3,d.c4,d.c5];
+  const stage = lifeStage(tier);
+  const floatY = fr===0 ? 0 : 1;
+
+  if(stage === 'baby'){
+    if(state==='sleep'){
+      px(lt,1,7+floatY,3,4); px(lt,11,7+floatY,3,4);
+    } else {
+      const wf = fr===0?0:1;
+      px(lt, 1,5+floatY-wf,3,4); px(lt,11,5+floatY+wf,3,4);
+      px(ac+'66',1,6+floatY-wf,2,2); px(ac+'66',12,6+floatY+wf,2,2);
+    }
+    px(b, 4,5+floatY,8,6); px(b, 3,6+floatY,10,4); px(lt,5,5+floatY,4,2);
+    px(b, 4,1+floatY,8,5); px(b, 3,2+floatY,10,4); px(lt,5,2+floatY,4,2);
+    px(dk,5,0+floatY,5,2);
+    if(state==='sleep'){
+      px(dk,5,3+floatY,2); px(dk,9,3+floatY,2);
+      px(dk,6,5+floatY,3);
+    } else if(state==='sick'){
+      px(dk,5,2+floatY); px(dk,6,3+floatY); px(dk,6,2+floatY); px(dk,5,3+floatY);
+      px(dk,9,2+floatY); px(dk,10,3+floatY); px(dk,10,2+floatY); px(dk,9,3+floatY);
+      px(dk,6,5+floatY,3);
+    } else {
+      const blink=(state==='idle'&&fr===1);
+      if(blink){ px(dk,5,3+floatY,2); px(dk,9,3+floatY,2); }
+      else { px(dk,4,2+floatY,3,3); px(dk,9,2+floatY,3,3); px(wh,4,2+floatY,2,2); px(wh,9,2+floatY,2,2); }
+      if(state==='play') px(ac,5,5+floatY,4,2);
+      else               px(dk,6,5+floatY,3);
+      px(ac+'99',3,4+floatY,1); px(ac+'99',10,4+floatY,1);
+    }
+
+  } else if(stage === 'adult'){
+    if(state==='sleep'){
+      px(lt,0,6+floatY,4,5); px(lt,12,6+floatY,4,5);
+    } else {
+      const wf = fr===0?0:1;
+      px(lt,  0,4+floatY-wf,5,6); px(lt,1,3+floatY-wf,3,3);
+      px(lt, 11,4+floatY+wf,5,6); px(lt,12,3+floatY+wf,3,3);
+      px(ac+'66',1,5+floatY-wf,3,3); px(ac+'66',12,5+floatY+wf,3,3);
+    }
+    px(b, 4,6+floatY,8,7);
+    px(b, 3,7+floatY,10,5);
+    px(lt,5,6+floatY,4,3);
+    px(b, 4,1+floatY,8,5);
+    px(b, 3,2+floatY,10,4);
+    px(lt,5,2+floatY,4,2);
+    px(dk,5,0+floatY,6,2);
+    if(state==='play'||state==='idle'){ px(ac,8,fr===0?-1:0); px(ac,6,fr===0?0:-1); }
+    if(state==='play'){
+      px(dk,13,1+floatY);
+      px(ac,14,0+floatY); px(ac,15,1+floatY); px(ac,14,2+floatY);
+    }
+    if(state==='sleep'){
+      px(dk,5,3+floatY,2); px(dk,9,3+floatY,2);
+      px(dk,6,5+floatY,4);
+    } else if(state==='sick'){
+      px(dk,5,2+floatY); px(dk,6,3+floatY); px(dk,6,2+floatY); px(dk,5,3+floatY);
+      px(dk,9,2+floatY); px(dk,10,3+floatY); px(dk,10,2+floatY); px(dk,9,3+floatY);
+      px(dk,6,5+floatY,4);
+    } else {
+      const blink=(state==='idle'&&fr===1);
+      if(blink){ px(dk,5,3+floatY,2); px(dk,9,3+floatY,2); }
+      else { px(dk,5,2+floatY,2,2); px(dk,9,2+floatY,2,2); px(wh,5,2+floatY); px(wh,9,2+floatY); }
+      if(state==='play') px(ac,5,5+floatY,6,2);
+      else               px(dk,6,5+floatY,4);
+      px(ac+'88',3,4+floatY,2); px(ac+'88',11,4+floatY,2);
+    }
+
+  } else {
+    const grey = '#9ca3af';
+    if(state==='sleep'){
+      px(lt,-1,5+floatY,5,6); px(lt,12,5+floatY,5,6);
+    } else {
+      const wf = fr===0?0:1;
+      px(lt, -1,3+floatY-wf,6,7); px(lt,0,2+floatY-wf,4,3);
+      px(lt, 11,3+floatY+wf,6,7); px(lt,12,2+floatY+wf,4,3);
+      px(grey,0,4+floatY-wf,3,3); px(grey,12,4+floatY+wf,3,3);
+    }
+    px(b, 4,6+floatY,8,7);
+    px(b, 3,7+floatY,10,5);
+    px(lt,5,6+floatY,4,3);
+    px(b, 4,1+floatY,8,5);
+    px(b, 3,2+floatY,10,4);
+    px(lt,5,2+floatY,4,2);
+    px(grey,4,0+floatY,7,2);
+    px(grey,3,8+floatY,1,4); px(grey,12,8+floatY,1,4);
+    px(dk,13,1+floatY);
+    px(ac,14,0+floatY); px(ac,15,1+floatY); px(ac,14,2+floatY);
+    if(state==='sleep'){
+      px(dk,5,3+floatY,2); px(dk,9,3+floatY,2);
+      px(dk,6,5+floatY,4);
+    } else if(state==='sick'){
+      px(dk,5,2+floatY); px(dk,6,3+floatY); px(dk,6,2+floatY); px(dk,5,3+floatY);
+      px(dk,9,2+floatY); px(dk,10,3+floatY); px(dk,10,2+floatY); px(dk,9,3+floatY);
+      px(dk,6,5+floatY,4);
+    } else {
+      px(dk,5,3+floatY,2,2); px(dk,9,3+floatY,2,2);
+      px(wh,5,3+floatY); px(wh,9,3+floatY);
+      px(grey,5,3+floatY,2,1); px(grey,9,3+floatY,2,1);
+      if(state==='play') px(ac,5,5+floatY,6,2);
+      else               px(dk,6,5+floatY,4);
+    }
+  }
+}
+
+// ─── WOLF ────────────────────────────────────
+function drawWolf(ctx, d, state, fr, x, y, tier){
+  const px = makePx(ctx, x, y);
+  const [b,lt,dk,ac,wh] = [d.c1,d.c2,d.c3,d.c4,d.c5];
+  const stage = lifeStage(tier);
+  const bob = (state==='idle'||state==='walk') ? fr : 0;
+
+  if(stage === 'baby'){
+    // ── BABY WOLF (pup): stubby tail, oversized head, tiny paws ──
+    if(state==='sleep'){
+      px(b,9,11); px(b,10,10); px(b,11,9);
+    } else {
+      const tf = fr===0?0:1;
+      px(b,9,10+tf); px(b,10,9); px(lt,11,8-tf);
+    }
+    px(b, 3,8+bob,8,5);
+    px(b, 2,9+bob,10,3);
+    px(lt,4,9+bob,4,2);
+    if(state==='walk'){
+      if(fr===0){ px(b,4,13,2,2); px(b,8,13,2,2); }
+      else       { px(b,4,12,2,2); px(b,8,14,2,2); }
+    } else {
+      px(b,4,13+bob,2,2); px(b,8,13+bob,2,2);
+    }
+    px(b, 3,2+bob,9,6);
+    px(b, 2,3+bob,11,4);
+    px(b,3,1+bob,2,2); px(dk,4,1+bob,1,1);
+    px(b,10,1+bob,2,2); px(dk,10,1+bob,1,1);
+    px(lt,5,5+bob,5,2);
+    px(dk,6,6+bob,2);
+    if(state==='play'||state==='eat'){
+      px(dk,5,7+bob,5,1); px(wh,6,7+bob,3);
+    } else {
+      px(dk,6,7+bob,3);
+    }
+    if(state==='sleep'){
+      px(dk,4,3+bob,2); px(dk,9,3+bob,2);
+      px(ac,13,0);
+    } else if(state==='sick'){
+      px(dk,4,3+bob); px(dk,5,4+bob); px(dk,5,3+bob); px(dk,4,4+bob);
+      px(dk,9,3+bob); px(dk,10,4+bob); px(dk,10,3+bob); px(dk,9,4+bob);
+    } else {
+      const blink=(state==='idle'&&fr===1);
+      if(blink){ px(ac,4,4+bob,2); px(ac,9,4+bob,2); }
+      else { px(ac,4,3+bob,2,2); px(ac,9,3+bob,2,2); px(wh,4,3+bob); px(wh,9,3+bob); }
+    }
+
+  } else if(stage === 'adult'){
+    // ── ADULT: original wolf ──
+    if(state==='sleep'){
+      px(b,10,10); px(b,11,9); px(b,12,8); px(b,13,7);
+    } else {
+      const tf = fr===0?0:1;
+      px(b,11,9+tf); px(b,12,8); px(b,13,7-tf); px(lt,13,6-tf);
+    }
+    px(b, 2,7+bob,10,6);
+    px(b, 1,8+bob,12,4);
+    px(lt,3,8+bob,5,3);
+    if(state==='walk'){
+      if(fr===0){ px(b,3,13,2,3); px(b,7,14,2,2); px(b,9,13,2,3); px(b,12,14,2,2); }
+      else       { px(b,3,14,2,2); px(b,7,13,2,3); px(b,9,14,2,2); px(b,12,13,2,3); }
+    } else {
+      px(b,3,13+bob,2,3); px(b,7,13+bob,2,3); px(b,9,13+bob,2,3); px(b,12,13+bob,2,3);
+    }
+    px(b, 3,1+bob,10,6);
+    px(b, 2,2+bob,12,4);
+    px(b,3,0+bob,2,2); px(dk,4,0+bob,1,1);
+    px(b,11,0+bob,2,2); px(dk,11,0+bob,1,1);
+    px(lt,5,4+bob,6,3);
+    px(dk,7,5+bob,2);
+    if(state==='play'||state==='eat'){
+      px(dk,5,6+bob,6,2); px(wh,6,7+bob,4);
+    } else {
+      px(dk,6,6+bob,4);
+    }
+    if(state==='sleep'){
+      px(dk,4,2+bob,2); px(dk,10,2+bob,2);
+      px(ac,14,0);
+    } else if(state==='sick'){
+      px(dk,4,2+bob); px(dk,5,3+bob); px(dk,5,2+bob); px(dk,4,3+bob);
+      px(dk,10,2+bob); px(dk,11,3+bob); px(dk,11,2+bob); px(dk,10,3+bob);
+      px(dk,6,6+bob,4);
+    } else {
+      const blink=(state==='idle'&&fr===1);
+      if(blink){ px(ac,4,3+bob,2); px(ac,10,3+bob,2); }
+      else { px(ac,4,2+bob,2,2); px(ac,10,2+bob,2,2); px(wh,4,2+bob); px(wh,10,2+bob); }
+    }
+
+  } else {
+    // ── ELDER WOLF: greyed muzzle, scarred ear, bushier tail ──
+    const grey = '#9ca3af';
+    if(state==='sleep'){
+      px(b,10,11); px(b,11,10); px(b,12,9); px(grey,13,8); px(grey,14,7);
+    } else {
+      const tf = fr===0?0:1;
+      px(b,11,10+tf); px(b,12,9); px(grey,13,8-tf); px(grey,14,7-tf); px(lt,14,6-tf);
+    }
+    px(b, 2,8+bob,10,6);
+    px(b, 1,9+bob,12,4);
+    px(lt,3,9+bob,5,3);
+    px(grey,8,9+bob,3,2); // grey saddle patch
+    if(state==='walk'){
+      if(fr===0){ px(b,3,14,2,3); px(b,7,15,2,2); px(b,9,14,2,3); px(b,12,15,2,2); }
+      else       { px(b,3,15,2,2); px(b,7,14,2,3); px(b,9,15,2,2); px(b,12,14,2,3); }
+    } else {
+      px(b,3,14+bob,2,3); px(b,7,14+bob,2,3); px(b,9,14+bob,2,3); px(b,12,14+bob,2,3);
+    }
+    px(b, 3,2+bob,10,6);
+    px(b, 2,3+bob,12,4);
+    px(b,3,1+bob,2,2); px(grey,4,1+bob,1,1); // notched ear
+    px(b,11,1+bob,2,1); px(dk,11,1+bob,1,1);
+    px(grey,5,5+bob,6,3); // grey muzzle
+    px(dk,7,6+bob,2);
+    if(state==='play'||state==='eat'){
+      px(dk,5,7+bob,6,2); px(wh,6,8+bob,4);
+    } else {
+      px(dk,6,7+bob,4);
+    }
+    if(state==='sleep'){
+      px(dk,4,3+bob,2); px(dk,10,3+bob,2);
+      px(ac,14,1);
+    } else if(state==='sick'){
+      px(dk,4,3+bob); px(dk,5,4+bob); px(dk,5,3+bob); px(dk,4,4+bob);
+      px(dk,10,3+bob); px(dk,11,4+bob); px(dk,11,3+bob); px(dk,10,4+bob);
+      px(dk,6,7+bob,4);
+    } else {
+      // tired half-lidded eyes
+      px(ac,4,3+bob,2,2); px(ac,10,3+bob,2,2);
+      px(wh,4,3+bob); px(wh,10,3+bob);
+      px(grey,4,3+bob,2,1); px(grey,10,3+bob,2,1);
+    }
+  }
+}
+
+// ─── ALIEN ───────────────────────────────────
+function drawAlien(ctx, d, state, fr, x, y, tier){
+  const px = makePx(ctx, x, y);
+  const [b,lt,dk,ac,wh] = [d.c1,d.c2,d.c3,d.c4,d.c5];
+  const stage = lifeStage(tier);
+  const bob = (state==='idle'||state==='walk') ? fr : 0;
+
+  if(stage === 'baby'){
+    // ── BABY ALIEN: tiny head-heavy body, short antennae, huge eyes ──
+    px(dk,6,1+bob); px(dk,5,2+bob);
+    const antCol = state==='sick' ? '#ef4444' : ac;
+    px(antCol,5,1+bob); px(antCol,11,1+bob);
+    px(dk,10,1+bob); px(dk,11,2+bob);
+    px(b, 3,3+bob,9,6); px(b, 2,5+bob,11,4); px(b,4,2+bob,7,2);
+    px(lt,4,4+bob,4,3);
+    if(state==='eat'||state==='play'){
+      px(dk,5,8+bob,4,1); px(ac,6,9+bob,2);
+    } else if(state==='sick'){
+      px(dk,6,8+bob,3);
+    } else {
+      px(dk,5,8+bob,4);
+    }
+    px(b,4,10+bob,6,3);
+    px(b,3,11+bob,8,2);
+    px(dk,5,11+bob,4,2);
+    px(ac,5,12+bob,3,1);
+    px(b,1,11+bob,2,2); px(b,11,11+bob,2,2);
+    px(b,5,14+bob,2,2); px(b,8,14+bob,2,2);
+    if(state==='sleep'){
+      px(dk,3,5+bob,2); px(dk,9,5+bob,2);
+    } else if(state==='sick'){
+      px('#ef4444',3,4+bob,2,2); px('#ef4444',9,4+bob,2,2);
+      px(wh,3,4+bob); px(wh,9,4+bob);
+    } else {
+      const eyeC = state==='play' ? ac : state==='eat' ? '#fde68a' : dk;
+      px(eyeC,2,4+bob,3,3); px(eyeC,8,4+bob,3,3);
+      px(wh,2,4+bob); px(wh,8,4+bob);
+      const blink=(state==='idle'&&fr===1);
+      if(!blink){ px(dk,3,5+bob,1,1); px(9,5+bob); }
+    }
+
+  } else if(stage === 'adult'){
+    // ── ADULT: original alien ──
+    px(dk,5,0+bob); px(dk,4,1+bob);
+    px(dk,11,0+bob); px(dk,12,1+bob);
+    const antCol = state==='sick' ? '#ef4444' : ac;
+    px(antCol,4,0+bob); px(antCol,12,0+bob);
+    px(b, 2,2+bob,12,8);
+    px(b, 1,4+bob,14,5);
+    px(b, 3,1+bob,10,2);
+    px(lt,3,3+bob,5,4);
+    if(state==='eat'||state==='play'){
+      px(dk,5,8+bob,6,2); px(ac,6,9+bob,4);
+    } else if(state==='sick'){
+      px(dk,6,8+bob,4);
+    } else {
+      px(dk,5,8+bob,6);
+    }
+    px(b,4,10+bob,8,5);
+    px(b,3,11+bob,10,3);
+    px(dk,5,11+bob,6,3);
+    px(ac,6,12+bob,4,1);
+    if(fr===0) px(ac+'bb',6,12+bob,2); else px(ac+'bb',8,12+bob,2);
+    if(state==='walk'||state==='play'){
+      px(b,0,10+bob+(fr===0?0:1),3,3);
+      px(b,13,10+bob+(fr===0?1:0),3,3);
+    } else {
+      px(b,0,11+bob,3,3); px(b,13,11+bob,3,3);
+    }
+    if(state==='walk'){
+      if(fr===0){ px(b,5,15,3,2); px(b,8,16,3,2); }
+      else       { px(b,5,16,3,2); px(b,8,15,3,2); }
+    } else {
+      px(b,5,15+bob,3,2); px(b,8,15+bob,3,2);
+    }
+    if(state==='sleep'){
+      px(dk,3,4+bob,3); px(dk,10,4+bob,3);
+    } else if(state==='sick'){
+      px('#ef4444',3,3+bob,3,3); px('#ef4444',10,3+bob,3,3);
+      px(wh,4,4+bob); px(wh,11,4+bob);
+    } else {
+      const eyeC = state==='play' ? ac : state==='eat' ? '#fde68a' : dk;
+      px(eyeC,3,3+bob,3,4); px(eyeC,10,3+bob,3,4);
+      px(wh,3,3+bob); px(wh,10,3+bob);
+      const blink=(state==='idle'&&fr===1);
+      if(!blink){ px(dk,4,4+bob,2,2); px(dk,11,4+bob,2,2); }
+      else { px(eyeC,3,5+bob,3); px(eyeC,10,5+bob,3); }
+    }
+
+  } else {
+    // ── ELDER ALIEN: bigger cranium, drooping antennae, dim belly lights ──
+    const grey = '#9ca3af';
+    px(dk,4,1+bob,1,2); px(dk,3,2+bob); // drooping antennae
+    px(dk,12,1+bob,1,2); px(dk,13,2+bob);
+    const antCol = state==='sick' ? '#ef4444' : grey;
+    px(antCol,3,2+bob); px(antCol,13,2+bob);
+    px(b, 1,2+bob,14,9);
+    px(b, 0,4+bob,16,6);
+    px(b, 2,1+bob,12,2);
+    px(lt,2,3+bob,5,4);
+    px(grey,10,5+bob,3,2); // grey age patch on cranium
+    if(state==='eat'||state==='play'){
+      px(dk,6,9+bob,6,2); px(ac,7,10+bob,4);
+    } else if(state==='sick'){
+      px(dk,7,9+bob,4);
+    } else {
+      px(dk,6,9+bob,6);
+    }
+    px(b,4,11+bob,8,5);
+    px(b,3,12+bob,10,3);
+    px(dk,5,12+bob,6,3);
+    px('#94a3b8',6,13+bob,4,1); // dimmer belly lights
+    if(fr===0) px('#94a3b8'+'bb',6,13+bob,2); else px('#94a3b8'+'bb',8,13+bob,2);
+    px(b,0,12+bob,3,3); px(b,13,12+bob,3,3); // stiff arms
+    if(state==='walk'){
+      if(fr===0){ px(b,5,16,3,2); px(b,8,17,3,2); }
+      else       { px(b,5,17,3,2); px(b,8,16,3,2); }
+    } else {
+      px(b,5,16+bob,3,2); px(b,8,16+bob,3,2);
+    }
+    if(state==='sleep'){
+      px(dk,4,5+bob,3); px(dk,11,5+bob,3); px(grey,3,4+bob,4); px(grey,10,4+bob,4);
+    } else if(state==='sick'){
+      px('#ef4444',4,4+bob,3,3); px('#ef4444',11,4+bob,3,3);
+      px(wh,5,5+bob); px(wh,12,5+bob);
+    } else {
+      // heavy-lidded large eyes
+      px(dk,4,4+bob,3,4); px(dk,11,4+bob,3,4);
+      px(wh,4,4+bob); px(wh,11,4+bob);
+      px(grey,4,4+bob,3,1); px(grey,11,4+bob,3,1);
+    }
+  }
+}
+
+const DRAW_FNS = {
+  blob:      drawBlob,
+  dragon:    drawDragon,
+  ghost:     drawGhost,
+  robot:     drawRobot,
+  plant:     drawPlant,
+  jellyfish: drawJellyfish,
+  fairy:     drawFairy,
+  wolf:      drawWolf,
+  alien:     drawAlien,
+};
+
+// ─────────────────────────────────────────────
+//  BACKGROUND LAYERS (scrolling floor + stars/sun)
+// ─────────────────────────────────────────────
+function drawBackground(ctx, W, H, tick, theme){
+  // sky gradient
+  if(theme==='night'){
+    const g = ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#1a1430'); g.addColorStop(1,'#2c2440');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    // stars
+    ctx.fillStyle='#f3ead9';
+    const stars=[[20,10],[60,5],[100,15],[140,8],[200,12],[260,6],[310,14],[350,9]];
+    stars.forEach(([sx,sy])=>{
+      const twinkle = Math.sin(tick/30 + sx) > 0.3;
+      if(twinkle){ ctx.fillRect(sx,sy,2,2); }
+    });
+    // moon
+    ctx.fillStyle='#f3ead9'; ctx.beginPath(); ctx.arc(W-30,18,10,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#2c2440'; ctx.beginPath(); ctx.arc(W-26,16,8,0,Math.PI*2); ctx.fill();
+  } else {
+    const g = ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#aee0e6'); g.addColorStop(1,'#f6d8a3');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    // sun
+    ctx.fillStyle='#f9d878';
+    ctx.beginPath(); ctx.arc(W-30,20,14,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#f9e8a0'; ctx.lineWidth=2;
+    for(let a=0;a<8;a++){
+      const ang=a*Math.PI/4 + tick/80;
+      ctx.beginPath();
+      ctx.moveTo(W-30+Math.cos(ang)*16, 20+Math.sin(ang)*16);
+      ctx.lineTo(W-30+Math.cos(ang)*22, 20+Math.sin(ang)*22);
+      ctx.strokeStyle='#f9d060'; ctx.stroke();
+    }
+    // little cloud
+    const cx = 40 + (tick/2 % (W+60)) - 30;
+    ctx.fillStyle='rgba(255,255,255,0.8)';
+    ctx.beginPath(); ctx.arc(cx,22,10,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx+14,26,8,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx-10,26,7,0,Math.PI*2); ctx.fill();
+    ctx.fillRect(cx-16,26,60,10);
+  }
+
+  // Ground
+  ctx.fillStyle = theme==='night' ? '#2a1f3d' : '#8bc34a';
+  ctx.fillRect(0, H-18, W, 18);
+  // Ground detail
+  ctx.fillStyle = theme==='night' ? '#3d2e55' : '#6aaa2a';
+  ctx.fillRect(0, H-18, W, 4);
+
+  // Scrolling floor tiles
+  const tileW=16, offset = (tick*1.5) % tileW;
+  ctx.fillStyle = theme==='night' ? '#241d33' : '#72b830';
+  for(let tx=(-tileW+offset);tx<W;tx+=tileW){
+    ctx.fillRect(tx, H-14, tileW-2, 4);
+  }
+}
+
+// ─────────────────────────────────────────────
+//  MINIGAME — Fishing Bar
+//  Hold/click to keep the GREEN zone over the FISH icon on the bar.
+//  Fill the catch meter 3 times to win. Don't let the fish escape!
+// ─────────────────────────────────────────────
+function runFishGame(mgCanvas, mgMsg, onDone){
+  const ctx  = mgCanvas.getContext('2d');
+  const W = 320, H = 110;
+
+  // ── Layout constants ──
+  const BAR_X = 30, BAR_Y = 18, BAR_W = 18, BAR_H = 72; // the vertical catch bar
+  const SCENE_W = W - BAR_X - BAR_W - 10;                // water scene to the right
+
+  // ── Game state ──
+  let level      = 1;    // increases each catch
+  let catches    = 0;
+  let score      = 0;
+  let timeLeft   = 15;
+  let gameActive = true;
+  let holding    = false; // player pressing / holding
+
+  // Bar objects (0 = top, 1 = bottom in bar space)
+  let fishPos  = 0.3;   // fish icon position on bar (0–1)
+  let fishVel  = 0.012; // fish moves up/down
+  let greenPos = 0.35;  // green zone centre (0–1)
+  const GREEN_SIZE = ()=> Math.max(0.18, 0.30 - level*0.025); // shrinks per level
+
+  // Catch meter (0–1): fills when green is over fish, drains otherwise
+  let catchMeter = 0;
+
+  // Pixel fish for the water scene
+  const FISHES = Array.from({length:3}, (_,i)=>({
+    x: 60 + i*70 + Math.random()*20,
+    y: 30 + Math.random()*30,
+    vx: (Math.random()>0.5?1:-1)*(0.4+Math.random()*0.5),
+    vy: (Math.random()-.5)*0.3,
+    col: ['#f3b27a','#a0d8f0','#f4a0c8'][i],
+  }));
+
+  // Bubbles
+  const BUBBLES = Array.from({length:6}, ()=>({
+    x: Math.random()*SCENE_W, y: Math.random()*60+10,
+    vy: -(0.2+Math.random()*0.4), r:2+Math.random()*3,
+  }));
+
+  let raf = null, timerInterval = null;
+
+  // ── Draw ──
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+
+    // ── Water scene (right side) ──
+    const sceneX = BAR_X + BAR_W + 8;
+
+    // water bg
+    const wg = ctx.createLinearGradient(sceneX,0,sceneX,H);
+    wg.addColorStop(0,'#1a3a5c'); wg.addColorStop(1,'#0d1f38');
+    ctx.fillStyle=wg; ctx.fillRect(sceneX,0,SCENE_W,H);
+
+    // surface shimmer
+    ctx.fillStyle='rgba(100,200,255,.12)'; ctx.fillRect(sceneX,0,SCENE_W,12);
+    ctx.strokeStyle='rgba(130,210,255,.3)'; ctx.lineWidth=1;
+    for(let wx=0;wx<SCENE_W;wx+=18){
+      const wy=5+Math.sin(Date.now()/500+wx/12)*3;
+      ctx.beginPath(); ctx.moveTo(sceneX+wx,wy); ctx.lineTo(sceneX+wx+10,wy+2); ctx.stroke();
+    }
+
+    // bubbles
+    BUBBLES.forEach(b=>{
+      ctx.strokeStyle='rgba(130,200,255,.35)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.arc(sceneX+b.x,b.y,b.r,0,Math.PI*2); ctx.stroke();
+    });
+
+    // pixel fish
+    FISHES.forEach(f=>{
+      const flip = f.vx < 0;
+      ctx.save(); ctx.translate(sceneX+f.x, f.y);
+      if(flip) ctx.scale(-1,1);
+      // body
+      ctx.fillStyle=f.col; ctx.fillRect(-8,-4,12,8);
+      // tail
+      ctx.fillStyle=f.col; ctx.fillRect(4,-6,5,12);
+      // eye
+      ctx.fillStyle='#fff'; ctx.fillRect(-6,-2,3,3);
+      ctx.fillStyle='#222'; ctx.fillRect(-5,-1,2,2);
+      ctx.restore();
+    });
+
+    // fishing line from top-centre of bar area down to fish position
+    const lineX = BAR_X + BAR_W/2;
+    const fishBarY = BAR_Y + fishPos * BAR_H;
+    ctx.strokeStyle='rgba(200,200,200,.55)'; ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(lineX, 0);
+    ctx.lineTo(lineX, fishBarY);
+    ctx.stroke();
+
+    // ── Vertical catch bar ──
+    // background track
+    ctx.fillStyle='#0d1f38';
+    ctx.strokeStyle='rgba(255,255,255,.15)'; ctx.lineWidth=1;
+    roundRect(ctx, BAR_X, BAR_Y, BAR_W, BAR_H, 6);
+    ctx.fill(); ctx.stroke();
+
+    // green zone
+    const gs = GREEN_SIZE();
+    const gTop = BAR_Y + (greenPos - gs/2) * BAR_H;
+    const gH   = gs * BAR_H;
+    const inZone = Math.abs(fishPos - greenPos) < gs/2;
+    ctx.fillStyle = inZone ? '#4ade80' : '#22c55e';
+    roundRect(ctx, BAR_X+2, Math.max(BAR_Y+1, gTop), BAR_W-4, Math.min(gH, BAR_H-2), 4);
+    ctx.fill();
+    // glow when catching
+    if(inZone){
+      ctx.shadowColor='#4ade80'; ctx.shadowBlur=8;
+      ctx.fillStyle='rgba(74,222,128,.3)';
+      roundRect(ctx, BAR_X+2, Math.max(BAR_Y+1, gTop), BAR_W-4, Math.min(gH, BAR_H-2), 4);
+      ctx.fill();
+      ctx.shadowBlur=0;
+    }
+
+    // fish icon on bar (pixel fish)
+    const fiY = BAR_Y + fishPos * BAR_H;
+    ctx.fillStyle='#fbbf24';
+    ctx.fillRect(BAR_X+4, fiY-3, 8, 6);   // body
+    ctx.fillRect(BAR_X+11,fiY-5, 5, 10);  // tail
+    ctx.fillStyle='#fff'; ctx.fillRect(BAR_X+4,fiY-2,3,3);
+    ctx.fillStyle='#222'; ctx.fillRect(BAR_X+5,fiY-1,2,2);
+
+    // ── Catch meter ──
+    const METER_X=6, METER_Y=BAR_Y, METER_W=10, METER_H=BAR_H;
+    ctx.fillStyle='#0d1f38';
+    ctx.strokeStyle='rgba(255,255,255,.15)';
+    roundRect(ctx, METER_X, METER_Y, METER_W, METER_H, 4);
+    ctx.fill(); ctx.stroke();
+    // fill
+    const mFill = catchMeter * METER_H;
+    const mCol = catchMeter > 0.7 ? '#f59e0b' : catchMeter > 0.4 ? '#facc15' : '#a3e635';
+    ctx.fillStyle=mCol;
+    roundRect(ctx, METER_X+1, METER_Y + METER_H - mFill, METER_W-2, mFill, 3);
+    ctx.fill();
+    // meter label
+    ctx.fillStyle='rgba(255,255,255,.5)'; ctx.font='6px monospace';
+    ctx.textAlign='center'; ctx.fillText('CATCH',METER_X+5,METER_Y-4);
+
+    // ── HUD bar across top ──
+    ctx.fillStyle='rgba(0,0,0,.5)'; ctx.fillRect(0,0,W,14);
+    ctx.fillStyle='#f3ead9'; ctx.font='bold 8px monospace'; ctx.textAlign='left';
+    ctx.fillText('🐟 '+catches+'/3  LVL '+level, sceneX+4, 10);
+    // time bar
+    const tFrac = timeLeft/15;
+    ctx.fillStyle='#374151'; ctx.fillRect(W-62,3,58,8);
+    ctx.fillStyle = tFrac>0.5?'#4ade80':tFrac>0.25?'#facc15':'#f87171';
+    ctx.fillRect(W-62,3,Math.round(58*tFrac),8);
+    ctx.fillStyle='rgba(255,255,255,.6)'; ctx.font='6px monospace';
+    ctx.textAlign='right'; ctx.fillText(Math.ceil(timeLeft)+'s',W-2,10);
+
+    // ── HOLD hint ──
+    ctx.fillStyle='rgba(255,255,255,.45)'; ctx.font='7px monospace';
+    ctx.textAlign='center';
+    ctx.fillText(holding?'holding!':'hold / tap', BAR_X+BAR_W/2, BAR_Y+BAR_H+12);
+  }
+
+  function roundRect(ctx,x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
+    ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+    ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+    ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y);
+    ctx.closePath();
+  }
+
+  // ── Update ──
+  function update(){
+    if(!gameActive) return;
+
+    // Fish bounces up/down — speed increases with level
+    const speed = 0.005 + level*0.0018;
+    fishPos += fishVel * (speed/0.012);
+    if(fishPos <= 0){ fishPos=0; fishVel=Math.abs(fishVel)*(0.9+Math.random()*0.2); }
+    if(fishPos >= 1){ fishPos=1; fishVel=-Math.abs(fishVel)*(0.9+Math.random()*0.2); }
+    // Occasional random nudge (harder each level)
+    if(Math.random() < 0.01 + level*0.005) fishVel += (Math.random()-.5)*0.022;
+    fishVel = Math.max(-0.024, Math.min(0.024, fishVel));
+
+    // Green zone — rises when holding, falls when not
+    const riseSpeed = 0.014 + level*0.002;
+    const fallSpeed = 0.010 + level*0.001;
+    if(holding) greenPos = Math.max(0.0 + GREEN_SIZE()/2, greenPos - riseSpeed);
+    else        greenPos = Math.min(1.0 - GREEN_SIZE()/2, greenPos + fallSpeed);
+
+    // Catch meter
+    const inZone = Math.abs(fishPos - greenPos) < GREEN_SIZE()/2;
+    if(inZone) catchMeter = Math.min(1, catchMeter + 0.018);
+    else       catchMeter = Math.max(0, catchMeter - 0.022);
+
+    // Full catch!
+    if(catchMeter >= 1){
+      catches++;
+      score += 10 + level*5;
+      catchMeter = 0;
+      level = Math.min(level+1, 5);
+      mgMsg.textContent = catches>=3 ? 'got \'em all!! 🐟' : `nice! ${3-catches} more! (lv${level})`;
+      if(catches>=3){ endGame(true); return; }
+      // reset fish to a new position
+      fishPos = Math.random(); fishVel = (Math.random()>0.5?1:-1)*0.015;
+    }
+
+    // Update scene fish
+    FISHES.forEach(f=>{
+      f.x+=f.vx; f.y+=f.vy;
+      if(f.x<0||f.x>SCENE_W) f.vx*=-1;
+      if(f.y<8||f.y>H-20) f.vy*=-1;
+    });
+    // bubbles
+    BUBBLES.forEach(b=>{
+      b.y+=b.vy;
+      if(b.y<-4){ b.y=H-10; b.x=Math.random()*SCENE_W; }
+    });
+
+    draw();
+    raf = requestAnimationFrame(update);
+  }
+
+  function endGame(won){
+    gameActive=false;
+    cancelAnimationFrame(raf); clearInterval(timerInterval);
+    onDone(won, score);
+  }
+
+  // ── Input: hold to raise green zone ──
+  function onDown(){ holding=true; }
+  function onUp()  { holding=false; }
+
+  mgCanvas.addEventListener('mousedown',  onDown);
+  mgCanvas.addEventListener('mouseup',    onUp);
+  mgCanvas.addEventListener('mouseleave', onUp);
+  const onTouchStart = e=>{ e.preventDefault(); onDown(); };
+  const onTouchEnd   = e=>{ e.preventDefault(); onUp(); };
+  mgCanvas.addEventListener('touchstart', onTouchStart, {passive:false});
+  mgCanvas.addEventListener('touchend',   onTouchEnd,   {passive:false});
+
+  timerInterval = setInterval(()=>{
+    timeLeft -= 0.1;
+    if(timeLeft<=0) endGame(catches>0);
+  }, 100);
+
+  mgMsg.textContent = 'hold to raise the green bar — keep it on the fish!';
+  update();
+
+  return ()=>{
+    gameActive=false;
+    cancelAnimationFrame(raf); clearInterval(timerInterval);
+    mgCanvas.removeEventListener('mousedown',  onDown);
+    mgCanvas.removeEventListener('mouseup',    onUp);
+    mgCanvas.removeEventListener('mouseleave', onUp);
+    mgCanvas.removeEventListener('touchstart', onTouchStart);
+    mgCanvas.removeEventListener('touchend',   onTouchEnd);
+  };
+}
+
+// ─────────────────────────────────────────────
+//  MAIN GAME
+// ─────────────────────────────────────────────
+const MESSAGES = {
+  idle:    ['hii~ ✨','just vibing...','*yawn*','peek-a-boo 👀'],
+  walk:    ['exploring!','where am i going...','zoomies!','look at me go~'],
+  eat:     ['nom nom! 🍣','so yummy!!','*happy munch*','feast mode on'],
+  sleep:   ['zzz... 💤','*soft snoring*','dreaming of snacks~','nap time 🌙'],
+  play:    ['yay!! 🎀','zoom!!','wheee~','so much fun!'],
+  sick:    ['i don\'t feel good...','please give me medicine 💊','ouchie...','🤒'],
+  feed_ok: ['nom nom nom! 🍣','yummy!! ✨','thank you!!','*happy wiggles*'],
+  play_ok: ['let\'s go!! 🎮','yay game time!','i love games~','ready!!'],
+  sleep_ok:['zzz... 💤','nap time 🌙','goodnight~ ⭐','*yawn*'],
+  heal_ok: ['thank you!! 💊','feeling better~','medicine works! ✨','owie... but ok'],
+  overcare:['i\'m already full!','too much!','not tired yet~','i\'m fine!'],
+  wakeup:  ['good morning! ☀️','i\'m awake!','ready for today!','*stretches*'],
+};
+function rand(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+// RANDOM EVENTS
+const EVENTS = [
+  { icon:'🐭', msg:'a mouse ran by! your creature is spooked!\n(-10 fun)',           shake:4, apply:s=>{ s.fun=Math.max(0,s.fun-10); } },
+  { icon:'🌧️', msg:'it started raining. cozy nap time~\n(+10 rest)',                 shake:1, apply:s=>{ s.rest=Math.min(100,s.rest+10); } },
+  { icon:'🐟', msg:'a fish jumped by the window!\n(+8 hunger)',                       shake:2, apply:s=>{ s.hunger=Math.min(100,s.hunger+8); } },
+  { icon:'😿', msg:'your creature knocked something over and got scared!\n(-8 health)',shake:5, apply:s=>{ s.health=Math.max(0,s.health-8); } },
+  { icon:'🌸', msg:'your creature found a sunny spot!\n(+10 fun, +5 rest)',           shake:1, apply:s=>{ s.fun=Math.min(100,s.fun+10); s.rest=Math.min(100,s.rest+5); } },
+  { icon:'🧶', msg:'found a yarn ball!\n(+15 fun)',                                   shake:2, apply:s=>{ s.fun=Math.min(100,s.fun+15); } },
+  { icon:'🤒', msg:'your creature caught a cold!\n(-20 health, gets sick!)',          shake:6, apply:(s,g)=>{ s.health=Math.max(0,s.health-20); g.sick=true; } },
+  { icon:'✨', msg:'your creature did something cute and gained a fan!\n(+5 score, +5 fun)', shake:1, apply:(s,g)=>{ g.score+=5; s.fun=Math.min(100,s.fun+5); } },
+  { icon:'🌈', msg:'a rainbow appeared! your creature is inspired!\n(+12 fun, +5 health)',   shake:1, apply:s=>{ s.fun=Math.min(100,s.fun+12); s.health=Math.min(100,s.health+5); } },
+  { icon:'🍬', msg:'a mysterious candy appeared!\n(+15 hunger)',                      shake:2, apply:s=>{ s.hunger=Math.min(100,s.hunger+15); } },
+];
+
+// ---- DOM ----
+const pickScreen   = document.getElementById('tama-pick');
+const gameScreen   = document.getElementById('tama-game');
+const gameoverScreen = document.getElementById('tama-gameover');
+const nameEl       = document.getElementById('tama-name');
+const sickBadge    = document.getElementById('tama-sick-badge');
+const ageEl        = document.getElementById('tama-age');
+const scoreEl      = document.getElementById('tama-score');
+const canvas       = document.getElementById('tama-canvas');
+const ctx          = canvas.getContext('2d');
+const fxEl         = document.getElementById('tama-fx');
+const msgEl        = document.getElementById('tama-msg');
+const btnFeed      = document.getElementById('tama-btn-feed');
+const btnPlay      = document.getElementById('tama-btn-play');
+const btnSleep     = document.getElementById('tama-btn-sleep');
+const btnHeal      = document.getElementById('tama-btn-heal');
+const mgOverlay    = document.getElementById('tama-minigame');
+const mgCanvas     = document.getElementById('tama-mg-canvas');
+const mgMsg        = document.getElementById('tama-mg-msg');
+const evOverlay    = document.getElementById('tama-event-overlay');
+const evIcon       = document.getElementById('tama-event-icon');
+const evMsg        = document.getElementById('tama-event-msg');
+const evOk         = document.getElementById('tama-event-ok');
+const goMsg        = document.getElementById('tama-go-msg');
+const finalScore   = document.getElementById('tama-final-score');
+const finalAge     = document.getElementById('tama-final-age');
+const restartBtn   = document.getElementById('tama-restart-btn');
+
+// ---- State ----
+let G = null; // game state object
+let raf = null, decayTimer=null, ageTimer=null, eventTimer=null;
+let cleanupMG = null;
+
+function freshStats(){ return { hunger:80, fun:75, rest:80, health:100 }; }
+function freshGame(cat){
+  return { cat, stats:freshStats(), sleeping:false, eating:false, playing:false,
+           sick:false, score:0, age:0, catX:80, catDx:1, animFrame:0, animTick:0,
+           catState:'idle', msgCooldown:0,
+           // ── extended animation state ──
+           catY:0,          // vertical offset from ground (positive = up)
+           catVY:0,         // vertical velocity
+           jumpCooldown:0,  // ticks until next allowed jump
+           sitTimer:0,      // ticks remaining in "sit idle" pose
+           zoomies:false,   // zoomies mode (speed burst)
+           zoomTicks:0,
+           spinAngle:0,     // canvas rotation for play spin
+           spinDir:1,
+           wobble:0,        // sick wobble phase
+           trailParticles:[], // [{x,y,life,maxLife,col}]
+           shakeTicks:0,    // screen shake remaining ticks
+           shakeAmp:0,
+         };
+}
+
+// ---- EGG HATCHING ----
+const eggCanvas  = document.getElementById('tama-egg-canvas');
+const eggHint    = document.getElementById('tama-egg-hint');
+const eggDots    = document.querySelectorAll('.egg-dot');
+const eggCtx     = eggCanvas.getContext('2d');
+
+let eggTaps = 0;
+const EGG_TAPS_NEEDED = 5;
+let eggRafId = null;
+let eggTick  = 0;
+let eggWiggling = false;
+let eggCracks = [];   // [{x,y,len,angle}] revealed as taps go
+let pendingCreature = null;
+
+// Pick a random creature on load (hidden from user), weighted by rarity
+function resetEgg(){
+  eggTaps = 0;
+  eggCracks = [];
+  eggWiggling = false;
+  // Weighted pool: common=5x, rare=2x, legendary=1x
+  const pool = [];
+  CAT_DEFS.forEach(c => {
+    const w = c.rarity==='legendary' ? 1 : c.rarity==='rare' ? 2 : 5;
+    for(let i=0; i<w; i++) pool.push(c);
+  });
+  pendingCreature = pool[Math.floor(Math.random()*pool.length)];
+  eggDots.forEach(d=>d.classList.remove('lit'));
+  eggHint.textContent = 'tap the egg to wake it up!';
+  startEggLoop();
+}
+
+// Draw the egg each frame
+function drawEgg(tick, cracks, wiggle){
+  const W=120, H=130;
+  eggCtx.clearRect(0,0,W,H);
+
+  // shadow
+  eggCtx.fillStyle='rgba(0,0,0,.12)';
+  eggCtx.beginPath(); eggCtx.ellipse(60,118,28,6,0,0,Math.PI*2); eggCtx.fill();
+
+  // wiggle offset
+  const rot = wiggle ? Math.sin(tick/3)*0.18 : 0;
+  eggCtx.save();
+  eggCtx.translate(60, 65);
+  eggCtx.rotate(rot);
+
+  // egg body — layered ellipses for a pixel-ish look
+  // base colour gets warmer as taps increase
+  const warmth = eggTaps / EGG_TAPS_NEEDED;
+  const r = Math.round(200 + 30*warmth);
+  const g = Math.round(210 + 10*warmth);
+  const b = Math.round(240 - 40*warmth);
+  eggCtx.fillStyle = `rgb(${r},${g},${b})`;
+  eggCtx.beginPath(); eggCtx.ellipse(0,8,36,44,0,0,Math.PI*2); eggCtx.fill();
+
+  // shimmer highlight
+  eggCtx.fillStyle='rgba(255,255,255,0.35)';
+  eggCtx.beginPath(); eggCtx.ellipse(-10,-14,14,20,-.3,0,Math.PI*2); eggCtx.fill();
+
+  // speckles (pixel dots)
+  const speckles=[[-18,10],[-20,-2],[-8,24],[10,18],[16,4],[8,-20],[-6,-26],[18,-12]];
+  eggCtx.fillStyle=`rgba(${r-40},${g-40},${b+10},.6)`;
+  speckles.forEach(([sx,sy])=>{
+    eggCtx.fillRect(sx-3,sy-3,5,5);
+  });
+
+  // cracks
+  if(cracks.length){
+    eggCtx.strokeStyle='rgba(80,50,20,.55)';
+    eggCtx.lineWidth=2;
+    cracks.forEach(cr=>{
+      eggCtx.beginPath();
+      eggCtx.moveTo(cr.x, cr.y);
+      eggCtx.lineTo(cr.x+Math.cos(cr.angle)*cr.len, cr.y+Math.sin(cr.angle)*cr.len);
+      eggCtx.moveTo(cr.x, cr.y);
+      eggCtx.lineTo(cr.x+Math.cos(cr.angle+.9)*cr.len*.6, cr.y+Math.sin(cr.angle+.9)*cr.len*.6);
+      eggCtx.stroke();
+    });
+  }
+
+  // glow ring when almost hatched
+  if(eggTaps >= EGG_TAPS_NEEDED-1){
+    const glow = (Math.sin(tick/8)+1)/2;
+    eggCtx.strokeStyle=`rgba(255,220,80,${glow*.7})`;
+    eggCtx.lineWidth=4;
+    eggCtx.beginPath(); eggCtx.ellipse(0,8,40,48,0,0,Math.PI*2); eggCtx.stroke();
+  }
+
+  eggCtx.restore();
+
+  // "?" text when taps=0
+  if(eggTaps===0){
+    eggCtx.fillStyle='rgba(100,80,160,.5)';
+    eggCtx.font='bold 22px Fredoka, sans-serif';
+    eggCtx.textAlign='center';
+    eggCtx.fillText('?', 60, 72);
+  }
+}
+
+function startEggLoop(){
+  if(eggRafId) cancelAnimationFrame(eggRafId);
+  function frame(){
+    eggTick++;
+    drawEgg(eggTick, eggCracks, eggWiggling);
+    eggRafId = requestAnimationFrame(frame);
+  }
+  eggRafId = requestAnimationFrame(frame);
+}
+
+function stopEggLoop(){
+  if(eggRafId){ cancelAnimationFrame(eggRafId); eggRafId=null; }
+}
+
+// Crack positions (relative to egg centre)
+const CRACK_PRESETS = [
+  {x:-5,  y:-20, angle:1.2,  len:18},
+  {x:12,  y:5,   angle:2.4,  len:14},
+  {x:-14, y:10,  angle:0.3,  len:16},
+  {x:4,   y:22,  angle:3.8,  len:12},
+  {x:-8,  y:-5,  angle:5.1,  len:20},
+];
+
+eggCanvas.addEventListener('click', onEggTap);
+eggCanvas.addEventListener('touchstart', e=>{ e.preventDefault(); onEggTap(); }, {passive:false});
+
+function onEggTap(){
+  if(eggTaps >= EGG_TAPS_NEEDED) return;
+  eggTaps++;
+
+  // Wiggle
+  eggWiggling = true;
+  eggCanvas.style.animation='egg-wiggle .45s ease';
+  eggCanvas.addEventListener('animationend',()=>{
+    eggCanvas.style.animation='';
+    eggWiggling=false;
+  },{once:true});
+
+  // Add crack
+  if(eggTaps <= CRACK_PRESETS.length){
+    eggCracks.push(CRACK_PRESETS[eggTaps-1]);
+  }
+
+  // Light up dots
+  eggDots.forEach((d,i)=>{ if(i<eggTaps) d.classList.add('lit'); });
+
+  // Update hint
+  const hints=[
+    'tap the egg to wake it up!',
+    'something\'s stirring inside... 👀',
+    'it\'s moving!! keep going!',
+    'almost there... tap faster!! 💥',
+    'one more!! 🌟',
+  ];
+  eggHint.textContent = hints[Math.min(eggTaps-1, hints.length-1)];
+
+  // HATCH!
+  if(eggTaps >= EGG_TAPS_NEEDED){
+    eggHint.textContent='hatching!! ✨';
+    setTimeout(doHatch, 300);
+  }
+}
+
+function doHatch(){
+  stopEggLoop();
+  // Burst animation on the egg canvas
+  eggCanvas.style.animation='egg-hatch-burst .5s ease forwards';
+  setTimeout(()=>{
+    eggCanvas.style.animation='';
+    startGame(pendingCreature);
+  }, 500);
+}
+
+// init egg on load
+resetEgg();
+
+function startGame(catDef){
+  G = freshGame(catDef);
+  lastTier = 0;
+  updateTierBadge();
+  pickScreen.style.display='none';
+  gameoverScreen.style.display='none';
+  gameScreen.style.display='block';
+  nameEl.textContent = catDef.name+' '+catDef.icon;
+  sickBadge.style.display='none';
+  // Show rarity badge
+  const rarityBadge = document.getElementById('tama-rarity-badge');
+  if(rarityBadge){
+    const r = catDef.rarity||'common';
+    rarityBadge.style.display='inline';
+    if(r==='legendary'){
+      rarityBadge.textContent='✦ LEGENDARY';
+      rarityBadge.style.background='linear-gradient(90deg,#fbbf24,#f59e0b)';
+      rarityBadge.style.color='#1a1000';
+      rarityBadge.style.boxShadow='0 0 8px #fbbf2488';
+    } else if(r==='rare'){
+      rarityBadge.textContent='◈ RARE';
+      rarityBadge.style.background='linear-gradient(90deg,#818cf8,#a78bfa)';
+      rarityBadge.style.color='#fff';
+      rarityBadge.style.boxShadow='0 0 6px #818cf844';
+    } else {
+      rarityBadge.style.display='none';
+    }
+  }
+  const rarityMsg = catDef.rarity==='legendary' ? '✨ a legendary creature!! you got so lucky!!' :
+                    catDef.rarity==='rare'       ? '◈ ooh, a rare one!! lucky you!!' : '';
+  setMsg((rarityMsg||('it\'s '+catDef.name+'!! '+catDef.icon+' hi!!'))  );
+  updateStatBars();
+  stopAll();
+  startLoops();
+  startRenderLoop();
+}
+
+restartBtn.addEventListener('click', ()=>{
+  gameoverScreen.style.display='none';
+  pickScreen.style.display='block';
+  resetEgg();
+});
+
+// ─── ACTIONS ───
+btnFeed.addEventListener('click', ()=>{
+  if(!G||G.sleeping||G.playing||G.eating) return;
+  if(G.stats.hunger>=95){ setMsg(rand(MESSAGES.overcare)); return; }
+  G.stats.hunger=Math.min(100,G.stats.hunger+22);
+  G.eating=true; G.catState='eat';
+  G.score+=2;
+  setMsg(rand(MESSAGES.feed_ok));
+  spawnFx('🍣');
+  // Happy little jump when fed
+  if(G.catY===0){ G.catVY=-(2+Math.random()); }
+  setTimeout(()=>{ if(G){G.eating=false; G.catState=G.sick?'sick':'idle';} },1800);
+  updateStatBars();
+});
+
+btnPlay.addEventListener('click', ()=>{
+  if(!G||G.sleeping||G.playing||G.eating) return;
+  if(G.stats.fun>=95){ setMsg(rand(MESSAGES.overcare)); return; }
+  // Launch fish minigame
+  G.playing=true; G.catState='play';
+  setMsg(rand(MESSAGES.play_ok));
+  mgOverlay.classList.add('active');
+  cleanupMG = runFishGame(mgCanvas, mgMsg, (won, mgScore)=>{
+    mgOverlay.classList.remove('active');
+    cleanupMG=null;
+    if(!G) return;
+    G.playing=false;
+    if(won){
+      G.stats.fun=Math.min(100,G.stats.fun+25);
+      G.stats.hunger=Math.max(0,G.stats.hunger-8);
+      G.score+=mgScore;
+      setMsg('caught \'em all! +'+mgScore+' score! 🐟');
+      spawnFx('⭐');
+    } else {
+      G.stats.fun=Math.min(100,G.stats.fun+10);
+      setMsg('good try! +10 fun 🎮');
+    }
+    G.catState=G.sick?'sick':'idle';
+    updateStatBars();
+  });
+});
+
+btnSleep.addEventListener('click', ()=>{
+  if(!G||G.playing||G.eating) return;
+  if(G.sleeping){
+    G.sleeping=false; G.catState=G.sick?'sick':'idle';
+    setMsg(rand(MESSAGES.wakeup));
+  } else {
+    if(G.stats.rest>=95){ setMsg(rand(MESSAGES.overcare)); return; }
+    G.sleeping=true; G.catState='sleep';
+    setMsg(rand(MESSAGES.sleep_ok));
+    spawnFx('💤');
+  }
+  updateBtnLabels();
+});
+
+btnHeal.addEventListener('click', ()=>{
+  if(!G||G.sleeping) return;
+  if(!G.sick && G.stats.health>=95){ setMsg('i\'m already healthy! 💪'); return; }
+  G.stats.health=Math.min(100,G.stats.health+30);
+  if(G.stats.health>=60){ G.sick=false; G.catState='idle'; sickBadge.style.display='none'; }
+  setMsg(rand(MESSAGES.heal_ok));
+  spawnFx('💊');
+  // Bounce on recovery
+  if(G.catY===0){ G.catVY=-(3+Math.random()); }
+  triggerShake(2,8);
+  updateStatBars();
+});
+
+function updateBtnLabels(){
+  if(!G) return;
+  const sl=btnSleep.querySelectorAll('span');
+  if(G.sleeping){ sl[0].textContent='☀️'; sl[1].textContent='wake'; }
+  else { sl[0].textContent='💤'; sl[1].textContent='sleep'; }
+}
+
+evOk.addEventListener('click', ()=>{ evOverlay.classList.remove('active'); });
+
+// ─── LOOPS ───
+// Difficulty scales with age. Every 10 days is a new tier (max tier 5).
+// Multipliers affect hunger drain, fun drain, rest drain, health penalty,
+// sick damage, and random-event frequency.
+function difficultyScale(){
+  if(!G) return 1;
+  const tier = Math.min(5, Math.floor(G.age / 10));
+  return 1 + tier * 0.35;   // tier 0 → ×1.0 | tier 5 → ×2.75
+}
+function difficultyTier(){
+  if(!G) return 0;
+  return Math.min(5, Math.floor(G.age / 10));
+}
+const TIER_LABELS = ['🌱 baby','🐣 young','🔥 teen','💀 adult','☠️ elder','👾 ancient'];
+
+// Show a little age-up toast when the difficulty tier changes
+let lastTier = 0;
+const TIER_COLORS = [
+  {bg:'#4ade8022',border:'#4ade80',text:'#15803d'},   // 0 baby   – green
+  {bg:'#fbbf2422',border:'#fbbf24',text:'#92400e'},   // 1 young  – yellow
+  {bg:'#fb923c22',border:'#fb923c',text:'#9a3412'},   // 2 teen   – orange
+  {bg:'#f8717122',border:'#f87171',text:'#991b1b'},   // 3 adult  – red
+  {bg:'#a78bfa22',border:'#a78bfa',text:'#5b21b6'},   // 4 elder  – purple
+  {bg:'#22d3ee22',border:'#22d3ee',text:'#155e75'},   // 5 ancient– cyan
+];
+function updateTierBadge(){
+  const t = difficultyTier();
+  const badge = document.getElementById('tama-tier-badge');
+  if(!badge) return;
+  badge.textContent = TIER_LABELS[t] || `tier ${t}`;
+  const col = TIER_COLORS[t] || TIER_COLORS[0];
+  badge.style.background = col.bg;
+  badge.style.borderColor = col.border;
+  badge.style.color = col.text;
+}
+function checkTierUp(){
+  const t = difficultyTier();
+  if(t > lastTier){
+    lastTier = t;
+    updateTierBadge();
+    const label = TIER_LABELS[t] || `tier ${t}`;
+    setMsg(`age up! now ${label} — things get harder! ⚠️`);
+    spawnFx(t>=4?'💀':'⚡');
+    triggerShake(t>=4?6:3, 18);
+  }
+}
+
+function startLoops(){
+  // Decay every 3s
+  decayTimer = setInterval(()=>{
+    if(!G) return;
+    const m = difficultyScale();   // multiplier — grows with age
+
+    if(!G.sleeping){
+      G.stats.hunger = Math.max(0, G.stats.hunger - 1.5 * m);
+      G.stats.fun    = Math.max(0, G.stats.fun    - 1.1 * m);
+      G.stats.rest   = Math.max(0, G.stats.rest   - 0.8 * m);
+    } else {
+      G.stats.rest   = Math.min(100, G.stats.rest+3);
+      G.stats.hunger = Math.max(0, G.stats.hunger - 0.4 * m);
+      if(G.stats.rest>=100){ btnSleep.click(); }
+    }
+    // Sick damages health — gets nastier with age
+    if(G.sick) G.stats.health = Math.max(0, G.stats.health - 0.8 * m);
+    // Low stats damage health — penalty grows with age too
+    if(G.stats.hunger<15||G.stats.fun<15||G.stats.rest<15)
+      G.stats.health = Math.max(0, G.stats.health - 0.5 * m);
+    // Score for surviving
+    G.score += 1;
+    updateStatBars();
+    // Game over?
+    if(G.stats.health<=0){ triggerGameOver(); return; }
+    // Auto-idle message
+    if(--G.msgCooldown<=0){
+      G.msgCooldown=4+Math.floor(Math.random()*4);
+      const s=G.catState;
+      setMsg(rand(MESSAGES[s]||MESSAGES.idle));
+    }
+  }, 3000);
+
+  // Age every 30s — also checks for tier-up
+  ageTimer = setInterval(()=>{
+    if(!G) return;
+    G.age++;
+    ageEl.textContent=G.age;
+    G.score+=5;
+    scoreEl.textContent=G.score;
+    checkTierUp();
+    // Random events accelerate with age: shrink the window floor
+    // (handled in scheduleEvent via difficultyScale)
+  }, 30000);
+
+  // Random events — fire faster as creature ages
+  function scheduleEvent(){
+    const m   = difficultyScale();
+    // Base window 20–40s shrinks to 10–20s at max tier
+    const lo  = Math.max(8,  20 / m);
+    const hi  = Math.max(15, 40 / m);
+    const delay = (lo + Math.random()*(hi-lo)) * 1000;
+    eventTimer = setTimeout(()=>{
+      if(!G||G.playing) { scheduleEvent(); return; }
+      const ev=EVENTS[Math.floor(Math.random()*EVENTS.length)];
+      ev.apply(G.stats, G);
+      evIcon.textContent=ev.icon;
+      evMsg.textContent=ev.msg;
+      evOverlay.classList.add('active');
+      if(G.sick){ sickBadge.style.display='inline'; G.catState='sick'; }
+      triggerShake(ev.shake||2, 12);
+      updateStatBars();
+      scheduleEvent();
+    }, delay);
+  }
+  scheduleEvent();
+}
+
+function stopAll(){
+  clearInterval(decayTimer); clearInterval(ageTimer); clearTimeout(eventTimer);
+  decayTimer=null; ageTimer=null; eventTimer=null;
+  if(cleanupMG){ cleanupMG(); cleanupMG=null; }
+  if(raf){ cancelAnimationFrame(raf); raf=null; }
+  mgOverlay.classList.remove('active');
+  evOverlay.classList.remove('active');
+}
+
+// ─── RENDER LOOP ───
+let tick=0;
+function startRenderLoop(){
+  if(raf) cancelAnimationFrame(raf);
+  function frame(){
+    if(!G){ raf=null; return; }
+    raf=requestAnimationFrame(frame);
+    tick++;
+
+    const W=canvas.width, H=canvas.height;
+    const groundY = H-18;           // y of the ground surface
+    const creatureH = 15*S;         // pixel height of creature sprite
+    const creatureW = 16*S;         // pixel width of creature sprite
+
+    // ── ANIMATION FRAME TOGGLE (sprite flip, every 20 ticks) ──
+    G.animTick++;
+    if(G.animTick>=20){ G.animTick=0; G.animFrame=1-G.animFrame; }
+
+    // ── SLEEPING: gentle vertical drift ──
+    if(G.sleeping){
+      G.catState='sleep';
+      G.catY = Math.sin(tick/40) * 3;  // float gently
+      G.catVY=0; G.jumpCooldown=0;
+    }
+    // ── EATING: stay in place, tiny bounce ──
+    else if(G.eating){
+      G.catY = Math.abs(Math.sin(tick/8)) * 4;
+    }
+    // ── SICK: side-to-side wobble, slow drift ──
+    else if(G.sick){
+      G.catState='sick';
+      G.wobble = Math.sin(tick/10) * 6;   // used as x offset
+      G.catY   = Math.abs(Math.sin(tick/14)) * 2;
+      // slow walk continues
+      G.catX += G.catDx * 0.3;
+      if(G.catX > W-creatureW-10) G.catDx=-1;
+      if(G.catX < 10)             G.catDx=1;
+    }
+    // ── NORMAL ACTIVE MOVEMENT ──
+    else {
+      G.wobble = 0;
+
+      // ── ZOOMIES MODE ──
+      if(G.zoomies){
+        G.zoomTicks--;
+        if(G.zoomTicks<=0){ G.zoomies=false; }
+        G.catState='walk';
+        G.catX += G.catDx * 4.5;           // ultra fast
+        if(G.catX > W-creatureW-10){ G.catDx=-1; spawnFx('💨'); }
+        if(G.catX < 10)             { G.catDx=1;  spawnFx('💨'); }
+      } else {
+        // Normal walk speed
+        G.catX += G.catDx * 0.9;
+        if(G.catX > W-creatureW-10){ G.catDx=-1; }
+        if(G.catX < 10)            { G.catDx=1;  }
+        if(!G.sick) G.catState = 'walk';
+
+        // ── RANDOM BEHAVIOURS (every ~200 ticks) ──
+        if(G.jumpCooldown > 0) G.jumpCooldown--;
+        if(!G.sleeping && !G.playing && G.jumpCooldown===0 && Math.random()<0.003){
+          const roll = Math.random();
+          if(roll < 0.35){
+            // Happy jump
+            G.catVY = -(4 + Math.random()*2);
+            G.jumpCooldown = 80;
+            spawnFx(G.stats.fun>60 ? '✨' : '❗');
+          } else if(roll < 0.55 && !G.zoomies){
+            // ZOOMIES!
+            G.zoomies=true; G.zoomTicks=90;
+            setMsg(rand(['zoomies!!','ZOOM!!','fast fast fast!','WHEEEEE~']));
+            spawnFx('🌀');
+            G.jumpCooldown=120;
+          } else if(roll < 0.72){
+            // Sit & look around (idle pose)
+            G.sitTimer = 60 + Math.floor(Math.random()*80);
+            G.catState='idle';
+            G.jumpCooldown = 100;
+          } else if(roll < 0.85){
+            // Spin twirl
+            G.spinAngle = G.spinAngle || 0;
+            G.spinDir   = Math.random()>0.5 ? 1 : -1;
+            G.jumpCooldown = 60;
+          }
+        }
+
+        // sit timer countdown
+        if(G.sitTimer>0){
+          G.sitTimer--;
+          G.catState='idle';
+        }
+      }
+
+      // ── GRAVITY & JUMP PHYSICS ──
+      if(G.catVY !== 0 || G.catY > 0){
+        G.catVY += 0.55;                // gravity
+        G.catY  -= G.catVY;             // catY positive = up
+        if(G.catY <= 0){
+          G.catY = 0;
+          if(G.catVY > 1) spawnFx('💥'); // land impact dust
+          G.catVY = 0;
+          // Slight bounce if landed hard
+          // (already zeroed)
+        }
+        G.catState = G.catY > 2 ? 'play' : G.catState;
+      }
+
+      // ── PLAY SPIN (scales X to simulate twirl) ──
+      if(G.spinAngle !== undefined && G.spinAngle !== 0){
+        G.spinAngle += G.spinDir * 0.28;
+        if(Math.abs(G.spinAngle) >= Math.PI*2){ G.spinAngle=0; }
+      }
+
+      // ── SPARKLE TRAIL while walking or zoomies ──
+      if(G.zoomies || (G.catState==='walk' && Math.random()<0.12)){
+        G.trailParticles.push({
+          x: G.catX + creatureW/2 + (Math.random()-0.5)*12,
+          y: groundY - G.catY - Math.random()*10,
+          life: 18+Math.floor(Math.random()*12),
+          maxLife: 30,
+          col: G.zoomies ? '#fbbf24' : G.cat.c4 || '#f3b27a',
+          size: G.zoomies ? 3+Math.random()*3 : 2+Math.random()*2,
+        });
+      }
+    }
+
+    // ── UPDATE TRAIL PARTICLES ──
+    G.trailParticles = G.trailParticles.filter(p=>{
+      p.life--;
+      p.y -= 0.4;
+      return p.life > 0;
+    });
+
+    // ── SCREEN SHAKE ──
+    let shakeX=0, shakeY=0;
+    if(G.shakeTicks>0){
+      G.shakeTicks--;
+      shakeX = (Math.random()-0.5)*G.shakeAmp*2;
+      shakeY = (Math.random()-0.5)*G.shakeAmp;
+    }
+
+    // ── DRAW ──
+    const theme = document.documentElement.getAttribute('data-theme')||'night';
+    ctx.clearRect(0,0,W,H);
+
+    ctx.save();
+    if(shakeX||shakeY) ctx.translate(shakeX,shakeY);
+
+    drawBackground(ctx,W,H,tick,theme);
+
+    // Draw trail particles (behind creature)
+    G.trailParticles.forEach(p=>{
+      const alpha = p.life/p.maxLife;
+      ctx.globalAlpha = alpha*0.7;
+      ctx.fillStyle = p.col;
+      const sz = p.size * alpha;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, sz, 0, Math.PI*2);
+      ctx.fill();
+    });
+    ctx.globalAlpha=1;
+
+    // Compute final draw position
+    const drawX = Math.round(G.catX + (G.wobble||0));
+    const drawY = Math.round(groundY - creatureH - Math.max(0, G.catY));
+
+    // Apply spin (scaleX trick — negative scaleX = mirror twirl)
+    ctx.save();
+    if(G.spinAngle){
+      const cx = drawX + creatureW/2;
+      const cy = drawY + creatureH/2;
+      ctx.translate(cx, cy);
+      ctx.scale(Math.cos(G.spinAngle), 1);
+      ctx.translate(-cx, -cy);
+    }
+    // Mirror creature when moving left
+    if(G.catDx < 0){
+      ctx.translate(drawX + creatureW/2, 0);
+      ctx.scale(-1,1);
+      ctx.translate(-(drawX + creatureW/2), 0);
+    }
+    drawCreature(ctx, G.cat, G.catState, G.animFrame, drawX, drawY, difficultyTier());
+    ctx.restore();
+
+    // ── SHADOW on ground ──
+    const shadowScale = Math.max(0.3, 1 - G.catY/60);
+    ctx.save();
+    ctx.globalAlpha = 0.18 * shadowScale;
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.ellipse(
+      Math.round(G.catX + creatureW/2),
+      groundY,
+      Math.round(creatureW*0.35*shadowScale),
+      4*shadowScale,
+      0, 0, Math.PI*2
+    );
+    ctx.fill();
+    ctx.globalAlpha=1;
+    ctx.restore();
+
+    ctx.restore(); // end shake transform
+
+    // Score HUD
+    scoreEl.textContent=G.score;
+    ageEl.textContent=G.age;
+  }
+  raf=requestAnimationFrame(frame);
+}
+
+// Helper to trigger screen shake from events
+function triggerShake(amp=3, ticks=10){
+  if(!G) return;
+  G.shakeTicks=ticks; G.shakeAmp=amp;
+}
+
+// ─── HELPERS ───
+function updateStatBars(){
+  if(!G) return;
+  setBar('hunger',G.stats.hunger);
+  setBar('fun',G.stats.fun);
+  setBar('rest',G.stats.rest);
+  setBar('health',G.stats.health,'#ff6b8a');
+  updateBtnLabels();
+  if(G.sick){ sickBadge.style.display='inline'; }
+}
+function setBar(id,val,overrideColor){
+  const bar=document.getElementById('bar-'+id);
+  const lbl=document.getElementById('val-'+id);
+  if(bar){ bar.style.width=Math.round(Math.max(0,val))+'%';
+    if(val<20) bar.style.background='#ff4444';
+    else bar.style.background=overrideColor||(id==='hunger'?'var(--accent)':id==='fun'?'var(--accent-2)':'#a0c4ff'); }
+  if(lbl) lbl.textContent=Math.round(val);
+}
+function setMsg(txt){ if(msgEl) msgEl.textContent=txt; }
+function spawnFx(emoji){
+  const el=document.createElement('span');
+  el.textContent=emoji;
+  el.style.cssText='position:absolute;font-size:1.3rem;left:'+Math.round(20+Math.random()*60)+'%;bottom:12px;animation:tama-fx-float .9s ease forwards;pointer-events:none;';
+  fxEl.appendChild(el);
+  setTimeout(()=>el.remove(),1000);
+}
+function triggerGameOver(){
+  stopAll();
+  const fs=G.score, fa=G.age;
+  const reason = G.stats.hunger<=0?'starved away 😢':G.stats.fun<=0?'was too bored 😔':G.stats.rest<=0?'collapsed from exhaustion 😴':'health dropped to zero 💔';
+  G=null;
+  gameScreen.style.display='none';
+  gameoverScreen.style.display='block';
+  goMsg.textContent=`your creature ${reason}`;
+  finalScore.textContent=fs;
+  finalAge.textContent=fa;
+}
+
+// Pause/resume on window visibility
+const winGameEl=document.getElementById('win-game');
+if(winGameEl){
+  new MutationObserver(()=>{
+    const hidden=!winGameEl.classList.contains('visible')||winGameEl.classList.contains('minimized');
+    if(hidden){ if(raf){cancelAnimationFrame(raf);raf=null;} }
+    else { if(G&&!raf) startRenderLoop(); }
+  }).observe(winGameEl,{attributes:true,attributeFilter:['class']});
+}
+
+// Help / how-to-play overlay
+const helpBtn     = document.getElementById('tama-help-btn');
+const helpOverlay = document.getElementById('tama-help-overlay');
+const helpClose   = document.getElementById('tama-help-close');
+if(helpBtn && helpOverlay && helpClose){
+  helpBtn.addEventListener('click', ()=> helpOverlay.classList.add('active'));
+  helpClose.addEventListener('click', ()=> helpOverlay.classList.remove('active'));
+  helpOverlay.addEventListener('click', e=>{
+    if(e.target === helpOverlay) helpOverlay.classList.remove('active'); // backdrop click
+  });
+}
+
+})();
+
+
+// ===== MAGIC 8-BALL =====
+(function(){
+  const ANSWERS = [
+    // positive
+    'it is certain ✨','it is decidedly so 🌟','without a doubt 💫','yes definitely 🎉','you may rely on it 🐾',
+    'as i see it, yes 🔮','most likely 🌸','outlook good 🍀','yes 💚','signs point to yes ⭐',
+    // neutral
+    'reply hazy, try again 🌫️','ask again later ⏳','better not tell you now 🤫','cannot predict now 🌙','concentrate and ask again 🎱',
+    // negative
+    "don't count on it 😬","my reply is no 🙅","my sources say no 🚫","outlook not so good 😅","very doubtful 💀",
+  ];
+  const wrap    = document.getElementById('ball-wrap');
+  const numEl   = document.getElementById('ball-num');
+  const ansEl   = document.getElementById('ball-answer');
+  const textEl  = document.getElementById('ball-text');
+  const shakeBtn= document.getElementById('ball-shake');
+  const qInput  = document.getElementById('ball-q');
+  if(!wrap) return;
+
+  let spinning = false;
+  function shake(){
+    if(spinning) return;
+    spinning = true;
+    // hide old answer, show 8
+    ansEl.style.opacity = '0';
+    numEl.style.opacity = '1';
+    // shake anim
+    wrap.style.animation = 'ball-shake .7s cubic-bezier(.36,.07,.19,.97)';
+    wrap.addEventListener('animationend', ()=>{
+      wrap.style.animation = '';
+      const ans = ANSWERS[Math.floor(Math.random()*ANSWERS.length)];
+      textEl.textContent = ans;
+      numEl.style.opacity = '0';
+      ansEl.style.opacity = '1';
+      spinning = false;
+    }, {once:true});
+  }
+  shakeBtn.addEventListener('click', shake);
+  wrap.addEventListener('click', shake);
+  qInput.addEventListener('keydown', e=>{ if(e.key==='Enter') shake(); });
+})();
+
+// ===== VIRTUAL PLANT =====
+(function(){
+  const canvas  = document.getElementById('plant-canvas');
+  const nameEl  = document.getElementById('plant-name');
+  const stageEl = document.getElementById('plant-stage');
+  const barEl   = document.getElementById('plant-bar');
+  const tipEl   = document.getElementById('plant-tip');
+  const waterBtn= document.getElementById('plant-water');
+  if(!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  const STAGES = [
+    { name:'sprout 🌱',     maxWater:5,  tips:['just sprouted!','needs sunshine ☀️','growing slowly...'] },
+    { name:'seedling 🌿',   maxWater:8,  tips:['leaves forming!','looking healthy!','keep watering 💧'] },
+    { name:'plant 🪴',      maxWater:12, tips:['thriving!','bushy and green 🍃','almost there!'] },
+    { name:'flower 🌸',     maxWater:16, tips:['blooming!!','so pretty ✨','full of life!'] },
+    { name:'big tree 🌳',   maxWater:Infinity, tips:['fully grown!','a majestic tree 🌳','you did it! 🎉'] },
+  ];
+
+  // Persist in localStorage
+  let waterCount = parseInt(localStorage.getItem('plant_water')||'0');
+
+  function getStage(){
+    let total = 0;
+    for(let i=0;i<STAGES.length;i++){
+      total += STAGES[i].maxWater;
+      if(waterCount < total || i===STAGES.length-1) return {idx:i, stage:STAGES[i], prev: total - STAGES[i].maxWater};
+    }
+  }
+
+  function drawPlant(){
+    ctx.clearRect(0,0,W,H);
+    const theme = document.documentElement.getAttribute('data-theme')||'night';
+    const isDark = theme==='night';
+
+    // sky bg
+    ctx.fillStyle = isDark ? '#1a1430' : '#e8f4f8';
+    ctx.fillRect(0,0,W,H);
+
+    // ground
+    ctx.fillStyle = isDark ? '#2c2440' : '#c8a96e';
+    ctx.fillRect(0,H-30,W,30);
+    ctx.fillStyle = isDark ? '#352b4c' : '#8fbc8f';
+    ctx.fillRect(0,H-34,W,8);
+
+    const {idx} = getStage();
+    const groundY = H - 34;
+    const cx = W/2;
+
+    if(idx===0){
+      // tiny sprout
+      ctx.strokeStyle='#4ade80'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(cx,groundY); ctx.lineTo(cx,groundY-22); ctx.stroke();
+      ctx.fillStyle='#4ade80';
+      ctx.beginPath(); ctx.ellipse(cx-8,groundY-22,8,5,-.4,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx+8,groundY-24,8,5,.4,0,Math.PI*2); ctx.fill();
+    } else if(idx===1){
+      // seedling with more leaves
+      ctx.strokeStyle='#22c55e'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.moveTo(cx,groundY); ctx.lineTo(cx,groundY-44); ctx.stroke();
+      [[cx-14,groundY-20,-.5],[cx+14,groundY-28,.5],[cx-10,groundY-40,-.3],[cx+10,groundY-44,.3]].forEach(([x,y,r])=>{
+        ctx.fillStyle='#4ade80';
+        ctx.beginPath(); ctx.ellipse(x,y,12,7,r,0,Math.PI*2); ctx.fill();
+      });
+    } else if(idx===2){
+      // potted plant
+      ctx.fillStyle=isDark?'#4a3b5c':'#c2845a';
+      ctx.beginPath(); ctx.moveTo(cx-14,groundY); ctx.lineTo(cx-18,groundY-22); ctx.lineTo(cx+18,groundY-22); ctx.lineTo(cx+14,groundY); ctx.fill();
+      ctx.strokeStyle='#22c55e'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.moveTo(cx,groundY-22); ctx.lineTo(cx,groundY-60); ctx.stroke();
+      for(let i=0;i<5;i++){
+        const ang = (i/5)*Math.PI*2 - Math.PI/2;
+        const lx = cx + Math.cos(ang)*22, ly = groundY-60 + Math.sin(ang)*14;
+        ctx.fillStyle=`hsl(${120+i*8},60%,50%)`;
+        ctx.beginPath(); ctx.ellipse(lx,ly,14,9,ang,0,Math.PI*2); ctx.fill();
+      }
+    } else if(idx===3){
+      // flowering plant
+      ctx.fillStyle=isDark?'#4a3b5c':'#c2845a';
+      ctx.beginPath(); ctx.moveTo(cx-14,groundY); ctx.lineTo(cx-18,groundY-22); ctx.lineTo(cx+18,groundY-22); ctx.lineTo(cx+14,groundY); ctx.fill();
+      ctx.strokeStyle='#16a34a'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.moveTo(cx,groundY-22); ctx.lineTo(cx,groundY-70); ctx.stroke();
+      for(let i=0;i<6;i++){
+        const ang = (i/6)*Math.PI*2 - Math.PI/2;
+        const lx = cx + Math.cos(ang)*26, ly = groundY-70 + Math.sin(ang)*18;
+        ctx.fillStyle='#f9a8d4';
+        ctx.beginPath(); ctx.arc(lx,ly,9,0,Math.PI*2); ctx.fill();
+      }
+      ctx.fillStyle='#fde68a';
+      ctx.beginPath(); ctx.arc(cx,groundY-70,8,0,Math.PI*2); ctx.fill();
+      // side stems
+      [-1,1].forEach(dir=>{
+        ctx.strokeStyle='#16a34a'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.moveTo(cx,groundY-50); ctx.quadraticCurveTo(cx+dir*30,groundY-58,cx+dir*34,groundY-68); ctx.stroke();
+        ctx.fillStyle='#fb7185'; ctx.beginPath(); ctx.arc(cx+dir*34,groundY-68,6,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='#fde68a'; ctx.beginPath(); ctx.arc(cx+dir*34,groundY-68,3,0,Math.PI*2); ctx.fill();
+      });
+    } else {
+      // big tree
+      ctx.strokeStyle='#92400e'; ctx.lineWidth=8;
+      ctx.beginPath(); ctx.moveTo(cx,groundY); ctx.lineTo(cx,groundY-90); ctx.stroke();
+      ctx.lineWidth=4;
+      [[-28,groundY-60],[28,groundY-65],[-20,groundY-80],[22,groundY-78]].forEach(([bx,by])=>{
+        ctx.beginPath(); ctx.moveTo(cx,by+10); ctx.lineTo(cx+bx,by); ctx.stroke();
+      });
+      [[0,groundY-100,42],[0,groundY-90,34],[-24,groundY-78,22],[24,groundY-82,22],[-16,groundY-68,18],[18,groundY-72,18]].forEach(([ox,oy,r])=>{
+        ctx.fillStyle=`hsl(${130+Math.random()*20},55%,${isDark?32:42}%)`;
+        ctx.beginPath(); ctx.arc(cx+ox,oy,r,0,Math.PI*2); ctx.fill();
+      });
+    }
+  }
+
+  function update(){
+    const {idx, stage, prev} = getStage();
+    const stageWater = waterCount - prev;
+    const pct = idx===STAGES.length-1 ? 100 : Math.min(100, (stageWater/stage.maxWater)*100);
+    nameEl.textContent = stage.name;
+    stageEl.textContent = `stage ${idx+1} / ${STAGES.length}`;
+    barEl.style.width = pct+'%';
+    tipEl.textContent = stage.tips[Math.floor(Math.random()*stage.tips.length)];
+    drawPlant();
+  }
+
+  waterBtn.addEventListener('click', ()=>{
+    const {idx} = getStage();
+    if(idx<STAGES.length-1){
+      waterCount++;
+      localStorage.setItem('plant_water', waterCount);
+    }
+    // water drop anim on button
+    waterBtn.textContent='💦 watered!';
+    setTimeout(()=>{ waterBtn.textContent='water 💧'; },900);
+    update();
+  });
+
+  // Redraw on theme change
+  const themeObs = new MutationObserver(drawPlant);
+  themeObs.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+  update();
+})();
+
+// ===== FAKE TV =====
+(function(){
+  const screen  = document.getElementById('tv-content');
+  const badge   = document.getElementById('tv-channel-badge');
+  const chLabel = document.getElementById('tv-ch-label');
+  const prevBtn = document.getElementById('tv-prev');
+  const nextBtn = document.getElementById('tv-next');
+  if(!screen) return;
+
+  // nekos.best — free, no API key, CORS enabled, returns real anime GIFs
+  // We keep a pool per channel; on first visit we fetch 20, then pick randomly from cache
+  const pool = { anime: [], lofi: [] };
+
+  // Cozy/chill anime GIF categories from nekos.best
+  const ANIME_CATS = ['sleep','smile','blush','happy','wink','sip','yawn','lurk','cuddle','pat','teehee','smug','bored'];
+  const LOFI_CATS  = ['stare','think','confused','shrug','nod','wave','poke','shocked','facepalm','spin'];
+
+  async function fillPool(key, cats) {
+    if(pool[key].length >= 5) return; // already got enough
+    try {
+      const cat = cats[Math.floor(Math.random()*cats.length)];
+      const res = await fetch(`https://nekos.best/api/v2/${cat}?amount=20`, {
+        headers: { 'User-Agent': 'cozy-corner-portfolio/1.0' }
+      });
+      const data = await res.json();
+      const urls = (data.results || []).map(r => r.url).filter(Boolean);
+      pool[key].push(...urls);
+    } catch(e) {}
+  }
+
+  function pickFromPool(key) {
+    if(!pool[key].length) return null;
+    const idx = Math.floor(Math.random() * pool[key].length);
+    return pool[key].splice(idx, 1)[0]; // remove so we don't repeat
+  }
+
+  function showLoading(el, label, bg) {
+    el.style.background = bg;
+    el.style.padding = '0'; el.style.gap = '0';
+    el.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px;color:rgba(255,255,255,.55);">
+        <div style="font-size:1.6rem;animation:tv-spin 1.2s linear infinite;display:inline-block;">📡</div>
+        <div style="font-family:'Space Mono',monospace;font-size:.6rem;letter-spacing:.06em;">tuning in...</div>
+      </div>`;
+  }
+
+  function showGif(el, url, label, emoji, animeInfo) {
+    el.style.background = '#080812';
+    el.style.padding = '0'; el.style.gap = '0';
+    el.innerHTML = `
+      <img src="${url}"
+        style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"
+        alt="${label}" />
+      <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.4) 0%,transparent 30%,transparent 65%,rgba(0,0,0,.5) 100%);pointer-events:none;"></div>
+      <div style="position:absolute;top:8px;left:10px;font-family:'Fredoka',sans-serif;font-size:.85rem;color:rgba(255,255,255,.92);font-weight:600;text-shadow:0 1px 6px rgba(0,0,0,.9);pointer-events:none;">${emoji} ${label}</div>
+      ${animeInfo ? `<div style="position:absolute;bottom:8px;left:10px;font-family:'Space Mono',monospace;font-size:.5rem;color:rgba(255,255,255,.4);pointer-events:none;">${animeInfo}</div>` : ''}
+      <div style="position:absolute;bottom:8px;right:10px;font-family:'Space Mono',monospace;font-size:.5rem;color:rgba(255,255,255,.35);pointer-events:none;">nekos.best</div>`;
+  }
+
+  function showError(el, emoji) {
+    el.style.background = '#0d0d1a';
+    el.style.padding = '24px';
+    el.innerHTML = `
+      <div style="font-size:2rem;">${emoji}</div>
+      <div style="color:rgba(255,255,255,.4);font-family:'Space Mono',monospace;font-size:.58rem;margin-top:8px;text-align:center;">no signal<br>check connection</div>`;
+  }
+
+  const CHANNELS = [
+    {
+      ch:'01', name:'anime vibes 🌸',
+      async render(el) {
+        showLoading(el, 'anime', 'linear-gradient(135deg,#0d0a1a,#1a0d2e)');
+        await fillPool('anime', ANIME_CATS);
+        // pre-fill next batch in background
+        fillPool('anime', ANIME_CATS);
+        const url = pickFromPool('anime');
+        if(url) showGif(el, url, 'anime vibes', '🌸', null);
+        else showError(el, '🌸');
+      }
+    },
+    {
+      ch:'02', name:'lofi mode 🎧',
+      async render(el) {
+        showLoading(el, 'lofi', 'linear-gradient(135deg,#0a0d1a,#0d1a2a)');
+        await fillPool('lofi', LOFI_CATS);
+        fillPool('lofi', LOFI_CATS);
+        const url = pickFromPool('lofi');
+        if(url) showGif(el, url, 'lofi mode', '🎧', null);
+        else showError(el, '🎧');
+      }
+    },
+  ];
+
+  let current = 0;
+
+  function goTo(idx){
+    if(screen._stopStatic) { screen._stopStatic(); screen._stopStatic=null; }
+    current = ((idx % CHANNELS.length) + CHANNELS.length) % CHANNELS.length;
+    const ch = CHANNELS[current];
+    screen.innerHTML='';
+    screen.style.cssText='width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:0;text-align:center;position:relative;overflow:hidden;';
+    ch.render(screen);
+    badge.textContent=`ch ${ch.ch}`;
+    chLabel.textContent=`${ch.ch} · ${ch.name}`;
+  }
+
+  // Pre-warm both pools on load
+  fillPool('anime', ANIME_CATS);
+  fillPool('lofi', LOFI_CATS);
+
+  prevBtn.addEventListener('click',()=>goTo(current-1));
+  nextBtn.addEventListener('click',()=>goTo(current+1));
+  let tvTimer = setInterval(()=>goTo(current+1), 20000);
+  [prevBtn,nextBtn].forEach(b=>b.addEventListener('click',()=>{ clearInterval(tvTimer); tvTimer=setInterval(()=>goTo(current+1),20000); }));
+
+  // init when window opens
+  document.querySelector('.dock button[data-win="tv"]')?.addEventListener('click',()=>{ setTimeout(()=>goTo(current),80); });
+  goTo(0);
+})();
+
+// ===== SLOT MACHINE =====
+(function(){
+  const spinBtn   = document.getElementById('slot-spin');
+  const resultEl  = document.getElementById('slot-result');
+  if(!spinBtn) return;
+
+  const REELS = [
+    ['⚛️','🟢','🔷','🐍','🐘','🦀','☕','🔥','⚡','🌊'],  // frontend/lang icons
+    ['🗄️','🌐','📱','🖥️','☁️','🐳','🤖','🎮','🔐','📊'],  // category
+    ['⚡','🎨','🛠️','🚀','💡','🔮','🌈','🎯','💎','🏗️'],  // vibe
+  ];
+  const COMBOS = [
+    {check:s=>s[0]===s[1]&&s[1]===s[2], msg:'JACKPOT!! triple match 🎉🎉🎉'},
+    {check:s=>s[0]===s[1]||s[1]===s[2]||s[0]===s[2], msg:'two of a kind! not bad 👀'},
+  ];
+  const STACKS = [
+    'React + Node + MongoDB 🍃','Next.js + Prisma + PostgreSQL 🐘','Vue + Django + Redis 🔴',
+    'Svelte + Go + SQLite ⚡','Angular + Spring + Oracle ☕','React Native + Firebase 🔥',
+    'Nuxt + Laravel + MySQL 🐬','Remix + Supabase + Deno 🦕','Astro + Netlify + Sanity ✨',
+    'SolidJS + Hono + Turso 🚀','Next.js + tRPC + PlanetScale 🌍','T3 Stack: trpc+next+prisma 💎',
+  ];
+
+  const CELL_H = 64;
+  const STRIP_LEN = 20; // how many cells per reel strip
+
+  // Build each reel strip
+  [0,1,2].forEach(i=>{
+    const inner = document.getElementById(`slot-inner-${i}`);
+    let html='';
+    for(let j=0;j<STRIP_LEN;j++){
+      const emoji = REELS[i][j % REELS[i].length];
+      html+=`<div class="slot-cell">${emoji}</div>`;
+    }
+    inner.innerHTML=html;
+    inner.style.transform=`translateY(0px)`;
+  });
+
+  let spinning=false;
+  function spin(){
+    if(spinning) return;
+    spinning=true;
+    spinBtn.disabled=true;
+    resultEl.textContent='';
+
+    const stops = [0,1,2].map(()=>Math.floor(Math.random()*REELS[0].length));
+    const finals = [];
+
+    [0,1,2].forEach((i,_)=>{
+      const inner = document.getElementById(`slot-inner-${i}`);
+      const delay = i*120;
+      const totalCells = 8 + Math.floor(Math.random()*6); // spin 8-13 cells
+      const targetCell = totalCells;
+      const targetY = -(targetCell * CELL_H);
+
+      // Reset to top without animation
+      inner.style.transition='none';
+      inner.style.transform='translateY(0px)';
+
+      setTimeout(()=>{
+        inner.style.transition=`transform ${0.6+i*0.18}s cubic-bezier(.17,.67,.35,1) ${delay}ms`;
+        inner.style.transform=`translateY(${targetY}px)`;
+      },30);
+
+      const stopDelay = delay + (0.6+i*0.18)*1000 + 80;
+      setTimeout(()=>{
+        const stopIdx = stops[i];
+        finals[i] = REELS[i][stopIdx];
+        if(finals.length===3 && finals.filter(Boolean).length===3){
+          showResult(finals);
+        }
+      }, stopDelay);
+    });
+
+    setTimeout(()=>{ spinning=false; spinBtn.disabled=false; }, 1400);
+  }
+
+  function showResult(s){
+    const combo = COMBOS.find(c=>c.check(s));
+    if(combo){
+      resultEl.textContent=combo.msg;
+    } else {
+      const stack=STACKS[Math.floor(Math.random()*STACKS.length)];
+      resultEl.textContent=`your stack: ${stack}`;
+    }
+  }
+
+  spinBtn.addEventListener('click',spin);
+})();
+
+// ===== TERMINAL =====
+/*
+  oh hey. you went deeper. bold move. 🐱
+  since you're already wrist-deep in the source, here's the full terminal command list:
+
+  sudo make me a sandwich · ls · pwd · cd .. · vim · :q · nano · git log ·
+  coffee · roll · flip · 42 · konami · ping cozycorner.dev · history ·
+  exit · matrix · htop (alias: top, stats)
+
+  now close devtools and go touch grass. just kidding. stay curious ~
+*/
+(function(){
+  const output = document.getElementById('terminal-output');
+
+  // ── cozy monitor: animated "hardware" graph ──
+  // Note: browsers can't read real OS-level CPU/RAM. This draws a live graph
+  // from real signals the page CAN see (main-thread frame timing + JS heap),
+  // labeled honestly so it doesn't pretend to be full system stats.
+  let monitorCancel = null;
+
+  function startMonitor(){
+    if(monitorCancel){ monitorCancel('stopped'); monitorCancel = null; }
+
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'margin:6px 0 10px;border:1px solid #2a2240;border-radius:8px;padding:10px 12px;background:#120f1d;';
+    wrap.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:10px;flex-wrap:wrap;">
+        <span style="color:#a0e6b8;font-weight:bold;">cozy monitor</span>
+        <span style="color:#ad9fc9;font-size:.65rem;" id="hm-status">live · page vitals (browsers can't see your real system stats 👀)</span>
+      </div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;">
+        <div>
+          <div style="color:#f3b27a;font-size:.65rem;margin-bottom:2px;">main-thread load</div>
+          <canvas id="hm-cpu" width="220" height="46" style="display:block;background:#0d0b14;border-radius:4px;"></canvas>
+        </div>
+        <div>
+          <div style="color:#f3b27a;font-size:.65rem;margin-bottom:2px;">js heap memory</div>
+          <canvas id="hm-mem" width="220" height="46" style="display:block;background:#0d0b14;border-radius:4px;"></canvas>
+        </div>
+      </div>
+      <div style="margin-top:6px;color:#ad9fc9;font-size:.68rem;" id="hm-text"></div>
+    `;
+    output.appendChild(wrap);
+    if (isNearBottom()) output.scrollTop = output.scrollHeight;
+
+    const cpuCv = wrap.querySelector('#hm-cpu');
+    const memCv = wrap.querySelector('#hm-mem');
+    const textEl = wrap.querySelector('#hm-text');
+    const statusEl = wrap.querySelector('#hm-status');
+    const cpuCtx = cpuCv.getContext('2d');
+    const memCtx = memCv.getContext('2d');
+
+    const N = 60;
+    const loadData = new Array(N).fill(0);
+    const memData = new Array(N).fill(0);
+
+    const SAMPLE_MS = 200;
+    const DURATION_MS = 14000;
+    const startT = performance.now();
+    let lastFrame = startT, lastSample = startT;
+    let frameCount = 0, frameAccum = 0;
+    let raf = null;
+
+    const hasMem = !!performance.memory;
+    const cores = navigator.hardwareConcurrency || '?';
+    const devMem = navigator.deviceMemory ? (navigator.deviceMemory + ' GB (approx, device-reported)') : 'n/a';
+
+    function draw(ctx, data, color){
+      const w = ctx.canvas.width, h = ctx.canvas.height;
+      ctx.clearRect(0,0,w,h);
+      ctx.beginPath();
+      const step = w / (N - 1);
+      data.forEach((v, i) => {
+        const x = i * step;
+        const y = h - (v * (h - 2)) - 1;
+        if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+      ctx.fillStyle = color + '26';
+      ctx.fill();
+    }
+
+    function loop(now){
+      const dt = now - lastFrame;
+      lastFrame = now;
+      frameCount++;
+      frameAccum += dt;
+
+      if(now - lastSample >= SAMPLE_MS){
+        lastSample = now;
+        const avgFrame = frameCount > 0 ? (frameAccum / frameCount) : 16.7;
+        const loadPct = Math.min(1, Math.max(0, avgFrame / 33));
+        frameCount = 0; frameAccum = 0;
+        loadData.push(loadPct); loadData.shift();
+
+        let memPct = 0, memText = 'unavailable in this browser';
+        if(hasMem){
+          const used = performance.memory.usedJSHeapSize;
+          const limit = performance.memory.jsHeapSizeLimit;
+          memPct = limit > 0 ? used / limit : 0;
+          memText = Math.round(used / 1048576) + ' / ' + Math.round(limit / 1048576) + ' MB heap';
+        }
+        memData.push(memPct); memData.shift();
+
+        draw(cpuCtx, loadData, '#a0e6b8');
+        draw(memCtx, memData, '#e6a0b8');
+
+        textEl.textContent = `cores: ${cores}  ·  device ram: ${devMem}  ·  ${memText}`;
+        if (isNearBottom()) output.scrollTop = output.scrollHeight;
+      }
+
+      if(now - startT < DURATION_MS){
+        raf = requestAnimationFrame(loop);
+      } else {
+        statusEl.textContent = "stopped · type htop to run again";
+        monitorCancel = null;
+      }
+    }
+
+    raf = requestAnimationFrame(loop);
+
+    monitorCancel = (msg) => {
+      if(raf) cancelAnimationFrame(raf);
+      statusEl.textContent = msg || 'stopped';
+    };
+
+    return null;
+  }
+
+  const input  = document.getElementById('terminal-input');
+  const artEl  = document.getElementById('terminal-art');
+  if(!output || !input) return;
+
+  // ── Render ASCII art into left panel ──
+  const ART_LINES = [
+    '   %#=:=*                                      %%#######%%%                                 ',
+    ' %*-::::=#%**%                   %##****++++++++++++++++++++*###%                           ',
+    '%+:::::::+-::*#              @##**+++++++++++++++++++++++++++++***##%                       ',
+    ' %=::::::::::=%           %#**++++++++++++++++++++++++++++++++++++++**%                     ',
+    '  *=:::::::::+%         %#***+++++*++++++++++++++++++++++++++++=-++++*+*#%                  ',
+    '%*::::::::-==#        %#**+++++++#*++++++++++++**++++++++++++++=--=**+++++##                ',
+    '*-:::-:::::-+       %**+++++++++*#*++++++++++++***+++++++++++=------+*++++++*#              ',
+    '%=-:::=+::::-#     *=+==++++++++#*++++++++++++++#*++++++++-=+=-------=###***+-*%            ',
+    '        %#=::=%  ---+=--+++++++*#*+++++++++++--=*#++++++++=--+=--------***%*+===#           ',
+    '            @%@ ---==------++++*+=====-----++---+%#++++++++=--++=+==----****#*+++*          ',
+    '               #=--+-------=-++*=----------=+---=***+++++++++=+++++++++==#****#*++#         ',
+    '              #=--+=------=--+**=-------=+-=++--++*+*+++++++++++++++++++++#***+*#***        ',
+    '             %==+=*=----=++-=+#==----=++++++++++++*-*+++++++*+++++++++++++*##*++*#*+*       ',
+    '            %++++#=+==++++++++*=+=++++++++++++++++*:+*++++++#*+++++**+++++****#*++#*+       ',
+    '           @*+++*#+++++++++++*==*+#*+++++++++++****:-*++**++*%+++++*#*+++++**+**#*+***@@    ',
+    '           #*+++**+++++++++++#:=*+%*+++++++++++##**:.*#%*+++*##+++++#*+++++***+++#**#=-=%   ',
+    '           #*+++#*+++++*+++++*.-*+%*+++++++++++*#*#*#*#++++++*+*++++#*++++++#*++++*#*#=+*   ',
+    '          #*++++#*++++*####**+.-*+#*++++++++++**#%%-..**+++++*:*++++**++++++*##*+++*#*=-+#  ',
+    '          %+++++#*++++*#****#%###*#+*+++++++++*++**...=*++++*+.+*+++**++++++*%###*+++**==*  ',
+    '          #+**++#*++++***+++*-.-###=*++++++++++-+*=:+--%#####=.=*+++#*+++++++%#####*++++-#  ',
+    '         @**#*++#*+++++=+*++*-...+#-=*=-:.......::.-*%%%%%%@@#*##+++#****++++########**+-#  ',
+    '         %*+#*++**++++*--*+*#--==-::..............-#=%%%%%%%%*-*#%**#****++++#####%%%#*+=#  ',
+    '         %++**+++#++++*-.-%*#%%%%%%#-...............:#%%%%%%%%..:#-+***#*++++##########*+#  ',
+    '         #+*#%+++*#++++-:*#%%@%%%%%*:...............:#%%%%%%%%.....+***#*++++#-#%%%%#***+*  ',
+    '         #+*%%#+++#*+++=+%*=#%%%%%%%-................=%%%%%%%-....:++**#+++++#::*###*****   ',
+    '         %**@###++*##++=*+.:*%%%%%%%=.................:+###=::::..:***#*+++++#-:-###***#%   ',
+    '         @## ####*+*###=....=%%%%%%#-...................:::::::::.-***#++++++#-:.####**%    ',
+    '          @% ###########=....-#%%##:.....................::::::...*****++++++#:::####**%    ',
+    '             ##########*+:.::::::..........................:......#+*#+++++++*::*####**@    ',
+    '             %#########*-=:::::::..........:.....................-****++++++*==######**@    ',
+    '             %*+*######*=-.:::...........-*:.....................+**#*++++++#######*#**%    ',
+    '             %*++*%####*=-...............:::....................:****+++++++*######****#    ',
+    '             %*+++#%###*-=......................................=****++++++*#######+++*#    ',
+    '              #+++*#+*#*:=-....................................:***#+++++++*%%#####*+++*    ',
+    '              #++++**+*####+:..............................:-*###*#*+++++++##%#####*+++*%   ',
+    '              %++++**++######*=:........................-+*#####**#+++++++*%#%#####*+++*#   ',
+    '              #*++++#*+*##########*+-:.............:::+#########*#++++++++###%#####*+#+**   ',
+    '              #*++++*#+*##################%%%%#:::::::*##**%#####*+++++++*###%#####*+***#   ',
+    '              %#+++++***#############%%%#=-=-++++=---::==-**##%*#*+++++++%###%######*+#+*%  ',
+    '               #*+++++#*#####%####%%%%#+=++--++++#-=++=-:====-#**+++++++#####%######*+#+*#  ',
+    '               %*+++++*######%#%%%%%%---+*=--*=---:-:::---=+=+***++++++*#@###%%#####*+***#  ',
+    '               #*++++++*#####%%%%%%%#-----=*+*-:::-=+*+---+=-#**+++++++*%#%##%%#####*++#+#  ',
+    '              #*#*++++++*%%%%%%%%%%%#---=-=+=+--+=-+=-+--=-.=*#++++++++#####%%%######*+*+*  ',
+    '              #***++++++*%#########%#--=+--=-+==*--==:--:-.=#*#+++++++*#######%%#####*+**+% ',
+    '              #**%+++++++#%#########*..=::-=+---+:.-:..=-.##*#++++++++%########%##***#+**+# ',
+    '              #+*##+++++++%#########*.-:..=::..:-..-...+=###*#+++++++#####%%###%##*****+*+*@',
+    '              #+*###++++++*%########*--..=.-==:--..-...*####**+++++++##%%#########*****+**+#',
+    '              *+**#%*++++++#%########+..:-.==*::...-..:#####++++++++*#############******+#+*',
+    '               **** *+++                                                        #****#***   ',
+    '',
+    '  ██████   ██████   █████████ █████ ████     ██████   ██████  ████████  ████████    ██████  ████████ ',
+    ' ███░░███ ███░░███ ░█░░░░███ ░░███ ░███     ███░░███ ███░░███░░███░░███░░███░░███  ███░░███░░███░░███',
+    '░███ ░░░ ░███ ░███ ░   ███░   ░███ ░███    ░███ ░░░ ░███ ░███ ░███ ░░░  ░███ ░███ ░███████  ░███ ░░░ ',
+    '░███  ███░███ ░███   ███░   █ ░███ ░███    ░███  ███░███ ░███ ░███      ░███ ░███ ░███░░░   ░███     ',
+    '░░██████ ░░██████   █████████ ░░███████    ░░██████ ░░██████  █████     ████ █████░░██████  █████    ',
+    ' ░░░░░░   ░░░░░░   ░░░░░░░░░   ░░░░░███     ░░░░░░   ░░░░░░  ░░░░░     ░░░░ ░░░░░  ░░░░░░  ░░░░░     ',
+    '                               ███ ░███                                                              ',
+    '                              ░░██████                                                               ',
+    '                               ░░░░░░                                                                ',
+  ];
+  if(artEl) {
+    artEl.textContent = ART_LINES.join('\n');
+  }
+
+
+  const PROMPT = '<span style="color:#f3b27a;">cozy@corner:~$</span> ';
+
+  const RESPONSES = {
+    help: () => `<span style="color:#f3b27a;">available commands:</span>
+  <span style="color:#a0e6b8;">whoami</span>       — who is this person?
+  <span style="color:#a0e6b8;">skills</span>       — tech stack & tools
+  <span style="color:#a0e6b8;">projects</span>     — things i've built
+  <span style="color:#a0e6b8;">contact</span>      — how to reach me
+  <span style="color:#a0e6b8;">date</span>         — current date & time
+  <span style="color:#a0e6b8;">fortune</span>      — get a random fortune 🔮
+  <span style="color:#a0e6b8;">cat vibe.txt</span> — read a cozy vibe file 🐱
+  <span style="color:#a0e6b8;">pet cat</span>      — pet the cat
+  <span style="color:#a0e6b8;">neofetch</span>     — system info
+  <span style="color:#a0e6b8;">htop</span>         — live page vitals graph 📊
+  <span style="color:#a0e6b8;">history</span>      — your command history
+  <span style="color:#a0e6b8;">hint</span>         — get a clue about hidden commands 🔍
+  <span style="color:#a0e6b8;">clear</span>        — clear terminal`,
+
+    whoami: () => `<span style="color:#e6a0b8;">you're a visitor at cozy corner ✨</span>
+as for me — i'm a developer who loves building things that feel good to use.
+i live somewhere between late-night coding sessions and lo-fi playlists.`,
+
+    skills: () => `<span style="color:#f3b27a;">── tech stack ──</span>
+  languages   <span style="color:#a0e6b8;">HTML · CSS · JavaScript · Dart · C#</span>
+  mobile      <span style="color:#a0e6b8;">Flutter</span>
+  backend     <span style="color:#a0e6b8;">Firebase · MySQL</span>
+  ai tools    <span style="color:#a0e6b8;">ChatGPT · Claude · Gemini · Blackbox · Deepseek</span>
+  vibes       <span style="color:#a0e6b8;">lofi · dark mode · too much coffee ☕</span>`,
+
+    projects: () => `<span style="color:#f3b27a;">── projects ──</span>
+  <span style="color:#a0e6b8;">cozy corner</span>    this very portfolio 🐱
+  check the <span style="color:#e6a0b8;">work</span> window in the dock for details!`,
+
+    contact: () => `<span style="color:#f3b27a;">── contact ──</span>
+  open the <span style="color:#e6a0b8;">contact</span> or <span style="color:#e6a0b8;">links</span> window in the dock
+  or leave a message in the <span style="color:#e6a0b8;">messages</span> tab 💌`,
+
+    date: () => {
+      const now = new Date();
+      return `<span style="color:#a0e6b8;">${now.toDateString()} ${now.toLocaleTimeString()}</span>`;
+    },
+
+    fortune: () => {
+      const fortunes = [
+        '🔮 the bug you\'re chasing is on line 42.',
+        '🔮 commit often. the universe rewards small wins.',
+        '🔮 your next side project will be your best one yet.',
+        '🔮 someone is thinking about your portfolio right now.',
+        '🔮 a well-named variable will bring you peace.',
+        '🔮 the answer is yes. deploy on friday.',
+        '🔮 great things are built one component at a time.',
+        '🔮 console.log is not a sin, it\'s a lifestyle.',
+        '🔮 the dark mode was always within you.',
+        '🔮 touch grass. then push to main.',
+      ];
+      return fortunes[Math.floor(Math.random() * fortunes.length)];
+    },
+
+    'cat vibe.txt': () => `<span style="color:#e6a0b8;">── vibe.txt ──────────────────────</span>
+  it's late. rain taps the window.
+  the cursor blinks.
+  one more function and then sleep.
+  (we both know that's a lie.)
+<span style="color:#e6a0b8;">──────────────────────────────────</span>`,
+
+    'pet cat': () => {
+      const reactions = [
+        '🐱 *purrs loudly* +10 happiness',
+        '🐾 the cat bonks your hand with its head',
+        '😸 the cat slow-blinks at you ♡',
+        '🐱 *kneads your arm* it loves you',
+        '😹 the cat ignores you completely (peak cat behavior)',
+      ];
+      return `<span style="color:#e6a0b8;">${reactions[Math.floor(Math.random()*reactions.length)]}</span>`;
+    },
+
+    'sudo rm -rf /': () => `<span style="color:#ff6b6b;">Permission denied.</span>
+<span style="color:#ad9fc9;">nice try though 😼</span>`,
+
+    'sudo make me a sandwich': () => `<span style="color:#a0e6b8;">okay.</span> 🥪`,
+
+    ls: () => `<span style="color:#6ee7f7;">vibes.txt</span>   <span style="color:#6ee7f7;">dreams/</span>   <span style="color:#f9e87a;">todo.md</span>   <span style="color:#ff9a9a;">secrets.enc</span>   <span style="color:#a0e6b8;">coffee.exe</span>   <span style="color:#c9b8e8;">cat.png</span>`,
+
+    pwd: () => `<span style="color:#a0e6b8;">/home/cozy/corner</span>`,
+
+    'cd ..': () => `<span style="color:#e6a0b8;">nope.</span> <span style="color:#ad9fc9;">there is no escaping the cozy corner 🐾</span>`,
+
+    vim: () => `<span style="color:#a0e6b8;">welcome to vim.</span> <span style="color:#ad9fc9;">type</span> <span style="color:#f3b27a;">:q</span> <span style="color:#ad9fc9;">to escape (good luck).</span>`,
+
+    ':q': () => `<span style="color:#a0e6b8;">phew. you made it out alive. 😌</span>`,
+
+    nano: () => `<span style="color:#ad9fc9;">opening nano... jk, this isn't a real text editor. it's all vibes here.</span>`,
+
+    'git log': () => `<span style="color:#f3b27a;">commit 4a2f9c1</span> <span style="color:#ad9fc9;">(HEAD -> main)</span>
+<span style="color:#a0e6b8;">    fix: the bug that was definitely not my fault</span>
+<span style="color:#f3b27a;">commit 9c01b3e</span>
+<span style="color:#a0e6b8;">    feat: add cat. everything is better now</span>
+<span style="color:#f3b27a;">commit 1d44aa0</span>
+<span style="color:#a0e6b8;">    chore: 3am commit, please forgive me</span>
+<span style="color:#f3b27a;">commit 0000001</span>
+<span style="color:#a0e6b8;">    init: cozy corner begins ✨</span>`,
+
+    coffee: () => `<span style="color:#f3b27a;">  ( (
+   ) )
+.........
+|       |]
+\\       /
+ \`-----'</span>
+<span style="color:#ad9fc9;">brewing... ☕ done. +20 energy, -2 sleep schedule</span>`,
+
+    roll: () => {
+      const n = Math.floor(Math.random()*6) + 1;
+      const faces = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+      return `<span style="color:#a0e6b8;">${faces[n-1]} you rolled a ${n}</span>`;
+    },
+
+    flip: () => {
+      const r = Math.random() < 0.5 ? 'heads' : 'tails';
+      return `<span style="color:#a0e6b8;">🪙 ${r}</span>`;
+    },
+
+    42: () => `<span style="color:#e6a0b8;">the answer to life, the universe, and everything.</span> <span style="color:#ad9fc9;">(now go touch grass)</span>`,
+
+    konami: () => `<span style="color:#f3b27a;">↑ ↑ ↓ ↓ ← → ← → B A</span>
+<span style="color:#a0e6b8;">cheat activated: infinite vibes unlocked ✨</span>`,
+
+    'ping cozycorner.dev': () => `<span style="color:#ad9fc9;">PING cozycorner.dev (127.0.0.1): 56 data bytes</span>
+<span style="color:#a0e6b8;">64 bytes from cozycorner.dev: time=0.04ms (it's always close, it's all local vibes)</span>
+<span style="color:#a0e6b8;">--- cozycorner.dev ping statistics ---</span>
+<span style="color:#a0e6b8;">1 packets transmitted, 1 received, 0% packet loss 🐾</span>`,
+
+    history: () => {
+      if(!history.length) return `<span style="color:#ad9fc9;">no history yet. type something!</span>`;
+      return history.slice().reverse().map((h,i) => `<span style="color:#ad9fc9;">${i+1}</span>  ${escapeHtml(h)}`).join('\n');
+    },
+
+    exit: () => `<span style="color:#ad9fc9;">you can't exit a vibe. closing is just pretending. 😼</span>`,
+
+    matrix: () => `<span style="color:#a0e6b8;">wake up, neo... jk it's just lofi beats here 🐱</span>`,
+
+    hint: () => `<span style="color:#f3b27a;">🔍 the full list of secret commands is hiding in the source code...</span>
+<span style="color:#ad9fc9;">check the source code. happy hunting 🐱</span>`,
+
+    htop: () => startMonitor(),
+    top: () => startMonitor(),
+    stats: () => startMonitor(),
+
+    neofetch: () => {
+      const theme = document.documentElement.getAttribute('data-theme') || 'night';
+      const or_ = '#f3b27a', pk = '#e6a0b8', ac = '#a0e6b8', mu = '#ad9fc9', pu = '#818cf8';
+      const c = (col, s) => '<span style="color:'+col+';">' + s + '</span>';
+      // Small cozy cat — raw lines are fixed-width so they line up inside a <pre>
+      const rawArt = [
+        '  /\\_/\\  ',
+        ' ( o.o ) ',
+        '  > ^ <  ',
+        ' /|   |\\ ',
+        '  |   |  ',
+        ' (_)-(_) ',
+      ];
+      const art = rawArt.map(l => c(or_, l));
+      const memMB = (function(){ try { return Math.round(performance.memory.usedJSHeapSize/1048576)+''; } catch(e){ return '??'; } })();
+      const now = new Date();
+      const hrs = now.getHours(), mins = now.getMinutes();
+      const upStr = (hrs > 0 ? hrs+'h ' : '') + mins + 'm';
+      const colorBar = c('#f3b27a','██')+c('#e6a0b8','██')+c('#a0e6b8','██')+c('#818cf8','██')+c('#6ee7f7','██')+c('#f9e87a','██')+c('#ff9a9a','██')+c('#c9b8e8','██');
+      const info = [
+        c(pk,'cozy') + c(mu,'@') + c(ac,'corner'),
+        c(mu, '────────────────────'),
+        c(pk,'OS:     ') + 'CozOS 1.0',
+        c(pk,'Kernel: ') + 'lofi-6.9-cozy',
+        c(pk,'Theme:  ') + theme + ' mode',
+        c(pk,'Shell:  ') + 'cozy-sh 2.0',
+        c(pk,'Music:  ') + 'lofi 24/7',
+        c(pk,'Uptime: ') + upStr,
+        c(pk,'Memory: ') + memMB + ' MB',
+        '',
+        colorBar,
+      ];
+      const rows = Math.max(art.length, info.length);
+      const artW = rawArt[0].length;
+      const out = [];
+      for (var i = 0; i < rows; i++) {
+        var a = art[i] !== undefined ? art[i] : ' '.repeat(artW);
+        var b = info[i] !== undefined ? info[i] : '';
+        out.push(a + '  ' + b);
+      }
+      return out.join('\n');
+    },
+
+    clear: () => { if(monitorCancel){ monitorCancel('stopped'); monitorCancel = null; } output.innerHTML = ''; return null; },
+  };
+
+  function isNearBottom() {
+    return output.scrollHeight - output.scrollTop - output.clientHeight < 60;
+  }
+
+  function writeLine(html) {
+    const stick = isNearBottom();
+    const line = document.createElement('div');
+    line.innerHTML = html;
+    output.appendChild(line);
+    if (stick) output.scrollTop = output.scrollHeight;
+  }
+
+  // Boot message
+  writeLine(`<span style="color:#e6a0b8;">cozy corner terminal v1.0.0</span>`);
+  writeLine(`<span style="color:#ad9fc9;">type <span style="color:#a0e6b8;">help</span> to see available commands. type <span style="color:#a0e6b8;">hint</span> if you like secrets 👀</span>`);
+  writeLine('');
+
+  function runCommand(raw) {
+    const cmd = raw.trim().toLowerCase();
+    writeLine(PROMPT + escapeHtml(raw));
+    if(!cmd){ writeLine(''); return; }
+
+    const handler = RESPONSES[cmd];
+    if(handler){
+      const result = handler();
+      if(result !== null && result !== undefined) { writeLine(result); }
+    } else {
+      writeLine(`<span style="color:#ff6b6b;">command not found: ${escapeHtml(cmd)}</span> — try <span style="color:#a0e6b8;">help</span>`);
+    }
+    writeLine('');
+  }
+
+  function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  // History
+  let history = [], histIdx = -1;
+
+  input.addEventListener('keydown', e => {
+    if(e.key === 'Enter'){
+      const val = input.value;
+      if(val.trim()){ history.unshift(val); histIdx = -1; }
+      runCommand(val);
+      input.value = '';
+    } else if(e.key === 'ArrowUp'){
+      e.preventDefault();
+      if(histIdx < history.length - 1){ histIdx++; input.value = history[histIdx]; }
+    } else if(e.key === 'ArrowDown'){
+      e.preventDefault();
+      if(histIdx > 0){ histIdx--; input.value = history[histIdx]; }
+      else { histIdx = -1; input.value = ''; }
+    }
+  });
+
+  // Focus input when terminal window is clicked
+  document.getElementById('win-terminal')?.addEventListener('click', () => input.focus());
+
+  // Auto-focus when opened from folder
+  document.querySelector('.folder-app-btn[data-win="terminal"]')?.addEventListener('click', () => {
+    setTimeout(() => input.focus(), 120);
+  });
+})();
+
+// ===== SCREENSAVER =====
+(function(){
+  const IDLE_MS = 30000; // 30s of no interaction
+
+  // Build the overlay
+  const ss = document.createElement('div');
+  ss.id = 'screensaver';
+  ss.style.cssText = `
+    position:fixed;inset:0;z-index:9999;
+    background:#080610;
+    display:none;opacity:0;
+    transition:opacity .8s ease;
+    cursor:pointer;overflow:hidden;
+    font-family:'Space Mono',monospace;
+  `;
+  ss.innerHTML = `
+    <canvas id="ss-canvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
+    <div id="ss-clock" style="
+      position:absolute;bottom:40px;left:50%;transform:translateX(-50%);
+      text-align:center;pointer-events:none;
+    ">
+      <div id="ss-time" style="font-size:clamp(2.5rem,8vw,5rem);font-weight:700;color:#f3ead9;letter-spacing:.08em;text-shadow:0 0 40px rgba(243,178,122,.4);"></div>
+      <div style="font-size:.75rem;color:rgba(243,234,217,.35);margin-top:6px;letter-spacing:.15em;">CLICK OR PRESS ANY KEY TO WAKE</div>
+    </div>
+  `;
+  document.body.appendChild(ss);
+
+  const canvas = document.getElementById('ss-canvas');
+  const ctx = canvas.getContext('2d');
+  const timeEl = document.getElementById('ss-time');
+
+  // Bouncing cat entities
+  const CATS = ['🐱','🐾','✨','🌙','⭐','🎧','☕','🌸'];
+  const entities = [];
+  let animId = null;
+  let clockTick = null;
+
+  function resize(){
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  function spawnEntities(){
+    entities.length = 0;
+    const count = Math.min(6, Math.floor(window.innerWidth / 150));
+    for(let i = 0; i < count; i++){
+      const size = 28 + Math.random() * 22;
+      entities.push({
+        x: Math.random() * (window.innerWidth  - size*2) + size,
+        y: Math.random() * (window.innerHeight - size*2) + size,
+        vx: (Math.random() * 1.4 + 0.6) * (Math.random()<.5?1:-1),
+        vy: (Math.random() * 1.4 + 0.6) * (Math.random()<.5?1:-1),
+        emoji: CATS[Math.floor(Math.random()*CATS.length)],
+        size,
+        // trail
+        trail: [],
+      });
+    }
+  }
+
+  function drawFrame(){
+    const W = canvas.width, H = canvas.height;
+    // Fade background each frame (creates trail effect)
+    ctx.fillStyle = 'rgba(8,6,16,0.18)';
+    ctx.fillRect(0,0,W,H);
+
+    for(const e of entities){
+      // Save trail
+      e.trail.push({x:e.x, y:e.y});
+      if(e.trail.length > 12) e.trail.shift();
+
+      // Draw fading trail dots
+      e.trail.forEach((pt, i) => {
+        const alpha = (i / e.trail.length) * 0.18;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, e.size * 0.28 * (i/e.trail.length), 0, Math.PI*2);
+        ctx.fillStyle = `rgba(243,178,122,${alpha})`;
+        ctx.fill();
+      });
+
+      // Draw emoji
+      ctx.font = `${e.size}px serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.globalAlpha = 0.88;
+      ctx.fillText(e.emoji, e.x, e.y);
+      ctx.globalAlpha = 1;
+
+      // Bounce
+      e.x += e.vx;
+      e.y += e.vy;
+      if(e.x < e.size)          { e.x = e.size;       e.vx = Math.abs(e.vx); }
+      if(e.x > W - e.size)      { e.x = W - e.size;   e.vx = -Math.abs(e.vx); }
+      if(e.y < e.size)          { e.y = e.size;        e.vy = Math.abs(e.vy); }
+      if(e.y > H - e.size)      { e.y = H - e.size;   e.vy = -Math.abs(e.vy); }
+    }
+
+    animId = requestAnimationFrame(drawFrame);
+  }
+
+  function updateClock(){
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2,'0');
+    const m = String(now.getMinutes()).padStart(2,'0');
+    const s = String(now.getSeconds()).padStart(2,'0');
+    if(timeEl) timeEl.textContent = `${h}:${m}:${s}`;
+  }
+
+  function show(){
+    resize();
+    spawnEntities();
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ss.style.display = 'block';
+    requestAnimationFrame(()=>{ ss.style.opacity = '1'; });
+    animId = requestAnimationFrame(drawFrame);
+    updateClock();
+    clockTick = setInterval(updateClock, 1000);
+    window.addEventListener('resize', resize);
+  }
+
+  function hide(){
+    ss.style.opacity = '0';
+    setTimeout(()=>{ ss.style.display='none'; }, 800);
+    if(animId){ cancelAnimationFrame(animId); animId=null; }
+    if(clockTick){ clearInterval(clockTick); clockTick=null; }
+    window.removeEventListener('resize', resize);
+    resetTimer();
+  }
+
+  ss.addEventListener('click', hide);
+  document.addEventListener('keydown', e => { if(ss.style.display==='block') hide(); });
+
+  // Idle timer
+  let idleTimer = null;
+  function resetTimer(){
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(()=>{ if(ss.style.display==='none') show(); }, IDLE_MS);
+  }
+
+  ['mousemove','mousedown','keydown','touchstart','wheel','click'].forEach(evt =>
+    document.addEventListener(evt, resetTimer, { passive:true })
+  );
+
+  resetTimer();
 })();
