@@ -163,7 +163,7 @@ window.initPortfolio = function(){
     let dragging=false,startX,startY,originLeft,originTop;
     function getRotation(){ const t=el.style.transform||'',m=t.match(/rotate\(([^)]+)\)/); return m?m[1]:'0deg'; }
     function startDrag(cx,cy){
-      if(window.innerWidth<=720)return;
+      if(isMobile())return;
       dragging=true; el.classList.add('dragging');
       const rect=el.getBoundingClientRect();
       el.style.right='auto'; el.style.bottom='auto';
@@ -193,11 +193,40 @@ window.initPortfolio = function(){
 const allWins=document.querySelectorAll('.win');
 let zTop=150;
 const defaultPositions={'win-about':{x:80,y:80},'win-links':{x:110,y:110},'win-work':{x:140,y:80},'win-faq':{x:170,y:110},'win-contact':{x:200,y:80},'win-logs':{x:220,y:100},'win-game':{x:250,y:90},'win-palette':{x:160,y:100},'win-tv':{x:140,y:100},'win-slots':{x:200,y:110},'win-terminal':{x:40,y:60},'win-wallpaper':{x:180,y:80}};
-function isMobile(){ return window.innerWidth<=720; }
+function isMobile(){ return window.innerWidth<=720 || (window.innerHeight<=500 && window.innerWidth<=1024); }
 function clampPosition(win,x,y){ const vw=window.innerWidth,vh=window.innerHeight,w=win.offsetWidth,h=win.offsetHeight; return{x:Math.max(0,Math.min(x,vw-w)),y:Math.max(0,Math.min(y,vh-40))}; }
 function focusWin(win){ zTop++; win.style.zIndex=zTop; win.classList.add('focused'); allWins.forEach(w=>{if(w!==win)w.classList.remove('focused');}); }
 
-function dockBtnFor(winId){ return document.querySelector(`.dock button[data-win="${winId.replace('win-','')}"]`); }
+// --- ACCESSIBILITY: give every floating app window real dialog semantics.
+// These were plain styled <div>s with no role, no label, and no way to
+// reach them via keyboard — display:none kept them out of the tab order
+// while closed (good), but once opened there was nothing telling AT users
+// what they were, and no keyboard path ever moved focus into one. ---
+allWins.forEach(win=>{
+  win.setAttribute('role','dialog');
+  win.setAttribute('aria-modal','false'); // these are non-modal floating/bottom-sheet windows; background stays reachable
+  const titleEl=win.querySelector('.win-title');
+  if(titleEl){
+    if(!titleEl.id) titleEl.id=win.id+'-title';
+    win.setAttribute('aria-labelledby',titleEl.id);
+  }
+  // makes the window itself a valid focus target (see openWin/focusWin below)
+  if(!win.hasAttribute('tabindex')) win.setAttribute('tabindex','-1');
+});
+
+// Returns the first naturally focusable element inside a window's body,
+// falling back to the window itself so focus always lands *somewhere*.
+function firstFocusable(win){
+  const sel='a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  const body=win.querySelector('.win-body')||win;
+  return body.querySelector(sel) || win;
+}
+
+function dockBtnFor(winId){
+  const name=winId.replace('win-','');
+  return document.querySelector(`.dock button[data-win="${name}"]`)
+      || document.querySelector(`.folder-app-btn[data-win="${name}"]`);
+}
 
 // Sets the CSS vars the genie animation reads: the dock icon's center
 // (the transform-origin, so the window visually shrinks INTO that point)
@@ -216,6 +245,11 @@ function setGenieTarget(win,btn){
   win.style.setProperty('--mz-sy', Math.max(.04, 26/wr.height));
 }
 
+// Remembers what had focus before a window opened, per window id, so
+// closing/minimizing can hand focus back to the dock button (or whatever
+// else) that triggered it instead of dropping focus into the page body.
+const lastFocusBeforeOpen={};
+
 function openWin(id){
   const win=document.getElementById(id); if(!win)return;
   if(win.classList.contains('visible')){
@@ -224,6 +258,7 @@ function openWin(id){
     minimizeWin(win);
     return;
   }
+  lastFocusBeforeOpen[id]=document.activeElement;
   if(!isMobile()){
     const pos=defaultPositions[id]||{x:120,y:120};
     const jitter={x:Math.random()*20-10,y:Math.random()*20-10};
@@ -237,6 +272,10 @@ function openWin(id){
   CuteSound.playOpen();
   // let the entrance pop play once, then never again until a real close
   requestAnimationFrame(()=>win.classList.add('opened-once'));
+  // Move keyboard focus into the window once it's actually visible/laid
+  // out — without this, a keyboard or screen-reader user has no way to
+  // know the window opened or reach anything inside it.
+  requestAnimationFrame(()=>firstFocusable(win).focus());
 }
 
 function minimizeWin(win){
@@ -247,6 +286,12 @@ function minimizeWin(win){
   win.classList.add('minimizing');
   win.classList.remove('focused');
   CuteSound.playMinimize();
+  // if focus is currently inside this window, it's about to vanish from
+  // the tab order — send focus back wherever it came from (or the dock
+  // icon) so keyboard users aren't left on a detached/invisible element
+  if(win.contains(document.activeElement)){
+    (lastFocusBeforeOpen[win.id]||btn||document.body).focus?.();
+  }
   const done=()=>{
     win.classList.remove('minimizing');
     win.classList.add('minimized');
@@ -276,16 +321,49 @@ function restoreWin(win){
   function onEnd(e){ if(e.propertyName==='transform'||e.propertyName==='opacity') done(); }
   win.addEventListener('transitionend',onEnd);
   setTimeout(done, 420);
+  // restoring brings the window back into view — give it focus again
+  // just like a fresh open, so keyboard users land back inside it
+  requestAnimationFrame(()=>firstFocusable(win).focus());
 }
 
 function closeWin(win){
   CuteSound.playClose();
+  const hadFocus=win.contains(document.activeElement);
   win.classList.remove('visible','focused','minimized','minimizing','restoring','opened-once');
   updateDockBtn(win.id,false);
   const body=win.querySelector('.win-body');
   if(body) body.scrollTop=0;
+  // window is gone from the tab order now (display:none) — if focus was
+  // inside it, it would otherwise silently fall back to <body>, leaving
+  // keyboard/AT users with no sense of where they are
+  if(hadFocus){
+    const btn=dockBtnFor(win.id);
+    (lastFocusBeforeOpen[win.id]||btn||document.body).focus?.();
+  }
+  delete lastFocusBeforeOpen[win.id];
 }
-function updateDockBtn(winId,open){ const btn=dockBtnFor(winId); if(btn)btn.classList.toggle('win-open',open); }
+function updateDockBtn(winId,open){
+  const btn=dockBtnFor(winId);
+  if(btn){
+    btn.classList.toggle('win-open',open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+}
+
+// --- ACCESSIBILITY: every app-launcher button (main dock + "more apps"
+// folder popup) relied entirely on visible text for its name, but that
+// text is hidden on mobile (.dock-label{display:none}) and several
+// buttons (moreAppsBtn) only have an emoji + label with no semantic
+// grouping. Give each one an explicit aria-label up front, and an
+// aria-expanded that starts false and tracks open/closed via updateDockBtn. ---
+document.querySelectorAll('.dock button[data-win], .folder-app-btn[data-win]').forEach(btn=>{
+  if(!btn.hasAttribute('aria-label')){
+    const label=btn.querySelector('.dock-label')?.textContent?.trim()
+             || btn.querySelector('span:last-child')?.textContent?.trim();
+    if(label) btn.setAttribute('aria-label', label);
+  }
+  btn.setAttribute('aria-expanded','false');
+});
 
 document.querySelectorAll('.dock button').forEach(btn=>{
   if(btn.dataset.win==='player')return;
@@ -305,9 +383,20 @@ document.querySelectorAll('.dock button').forEach(btn=>{
 
   const FOLDER_WINS = ['palette','tv','slots','terminal','wallpaper'];
 
+  // --- ACCESSIBILITY: this is a popup menu of app buttons triggered by
+  // moreBtn, but had no role/label on the popup and no aria state on the
+  // trigger, so a screen reader user had no indication it was a popup,
+  // whether it was open, or any way to reach it via keyboard. ---
+  moreBtn.setAttribute('aria-haspopup','true');
+  moreBtn.setAttribute('aria-expanded','false');
+  if(!moreBtn.hasAttribute('aria-label')) moreBtn.setAttribute('aria-label','more apps');
+  folder.setAttribute('role','dialog');
+  folder.setAttribute('aria-label','more apps');
+  if(!folder.hasAttribute('tabindex')) folder.setAttribute('tabindex','-1');
+
   function positionFolder(){
     const br = moreBtn.getBoundingClientRect();
-    const fw = 196;
+    const fw = folder.offsetWidth || 196; // measure actual width; 196 (desktop default) as a pre-layout fallback
     let left = br.left + br.width/2 - fw/2;
     left = Math.max(8, Math.min(left, window.innerWidth - fw - 8));
     folder.style.left = left + 'px';
@@ -332,10 +421,25 @@ document.querySelectorAll('.dock button').forEach(btn=>{
     const isOpen = folder.classList.contains('visible');
     if(isOpen){
       folder.classList.remove('visible');
+      moreBtn.setAttribute('aria-expanded','false');
     } else {
-      positionFolder();
       folder.classList.add('visible');
+      positionFolder();
+      moreBtn.setAttribute('aria-expanded','true');
+      // move focus into the popup once it's visible, same as the .win
+      // dialogs — otherwise a keyboard user opened something they can't reach
+      requestAnimationFrame(()=>{
+        const firstBtn=folder.querySelector('.folder-app-btn');
+        (firstBtn||folder).focus();
+      });
     }
+  }
+
+  function closeFolder(returnFocus){
+    if(!folder.classList.contains('visible')) return;
+    folder.classList.remove('visible');
+    moreBtn.setAttribute('aria-expanded','false');
+    if(returnFocus) moreBtn.focus();
   }
 
   moreBtn.addEventListener('click', e=>{ e.stopPropagation(); toggleFolder(); });
@@ -343,15 +447,21 @@ document.querySelectorAll('.dock button').forEach(btn=>{
   // clicking outside closes the folder
   document.addEventListener('click', e=>{
     if(!folder.contains(e.target) && e.target !== moreBtn){
-      folder.classList.remove('visible');
+      closeFolder(false);
     }
+  });
+
+  // Escape closes the folder and returns focus to its trigger, matching
+  // how Escape already works for the .win dialogs elsewhere
+  folder.addEventListener('keydown', e=>{
+    if(e.key==='Escape'){ e.stopPropagation(); closeFolder(true); }
   });
 
   // clicking app buttons inside folder
   folder.querySelectorAll('.folder-app-btn').forEach(btn=>{
     btn.addEventListener('click', e=>{
       e.stopPropagation();
-      folder.classList.remove('visible');
+      closeFolder(false); // openWin() below moves focus into the new window, no need to return it to moreBtn
       openWin('win-'+btn.dataset.win);
       setTimeout(updateFolderDot, 100);
     });
@@ -1853,7 +1963,7 @@ setTimeout(() => { gbCache=null; loadGuestbook(); }, 1800);
 
 // ===== PC-ONLY FEATURES NOTIFICATION TOAST (mobile only) =====
 (function(){
-  if(window.innerWidth > 720) return; // desktop already has everything, nothing to flag
+  if(!isMobile()) return; // desktop already has everything, nothing to flag
 
   const TOAST_ID   = 'pc-features-toast';
   const SHOW_DELAY = 9700; // appears right after the headphones toast clears
@@ -4225,9 +4335,16 @@ if(helpBtn && helpOverlay && helpClose){
   const nextBtn = document.getElementById('tv-next');
   if(!screen) return;
 
-  // nekos.best — free, no API key, CORS enabled, returns real anime GIFs
-  // We keep a pool per channel; on first visit we fetch 20, then pick randomly from cache
+  // nekos.best — free, no API key, CORS enabled, returns real anime GIFs.
+  // NOTE: nekos.best's own FAQ confirms 403s here can mean the calling
+  // IP/AS has been flagged at their edge — that's outside this code's
+  // control entirely (no header or CORS fix changes it). What we *can*
+  // control is not hammering a dead endpoint forever: once a pool has
+  // failed enough times in a row, stop auto-retrying it and show a
+  // clear "offline" state instead of silently erroring every 20s.
   const pool = { anime: [], lofi: [] };
+  const failCount = { anime: 0, lofi: 0 };
+  const MAX_CONSECUTIVE_FAILS = 2;
 
   // Cozy/chill anime GIF categories from nekos.best
   const ANIME_CATS = ['sleep','smile','blush','happy','wink','sip','yawn','lurk','cuddle','pat','teehee','smug','bored'];
@@ -4235,15 +4352,16 @@ if(helpBtn && helpOverlay && helpClose){
 
   async function fillPool(key, cats) {
     if(pool[key].length >= 5) return; // already got enough
+    if(failCount[key] >= MAX_CONSECUTIVE_FAILS) return; // stopped retrying — see showOffline
     try {
       const cat = cats[Math.floor(Math.random()*cats.length)];
-      const res = await fetch(`https://nekos.best/api/v2/${cat}?amount=20`, {
-        headers: { 'User-Agent': 'cozy-corner-portfolio/1.0' }
-      });
+      const res = await fetch(`https://nekos.best/api/v2/${cat}?amount=20`);
+      if(!res.ok){ failCount[key]++; return; }
       const data = await res.json();
       const urls = (data.results || []).map(r => r.url).filter(Boolean);
-      pool[key].push(...urls);
-    } catch(e) {}
+      if(urls.length){ pool[key].push(...urls); failCount[key]=0; }
+      else failCount[key]++;
+    } catch(e) { failCount[key]++; }
   }
 
   function pickFromPool(key) {
@@ -4283,6 +4401,19 @@ if(helpBtn && helpOverlay && helpClose){
       <div style="color:rgba(255,255,255,.4);font-family:'Space Mono',monospace;font-size:.58rem;margin-top:8px;text-align:center;">no signal<br>check connection</div>`;
   }
 
+  // Shown once a pool has failed enough times that we've stopped
+  // auto-retrying it (see MAX_CONSECUTIVE_FAILS) — distinct from the
+  // generic transient showError so it reads as "this channel is
+  // offline for now" rather than "something glitched, try again".
+  function showOffline(el, emoji, label) {
+    el.style.background = 'linear-gradient(135deg,#0d0a1a,#1a0d2e)';
+    el.style.padding = '24px';
+    el.innerHTML = `
+      <div style="font-size:1.8rem;opacity:.5;">📡</div>
+      <div style="color:rgba(255,255,255,.5);font-family:'Fredoka',sans-serif;font-size:.85rem;font-weight:600;margin-top:10px;">${label} is offline</div>
+      <div style="color:rgba(255,255,255,.35);font-family:'Space Mono',monospace;font-size:.56rem;margin-top:6px;text-align:center;line-height:1.5;">the gif source is unreachable<br>right now — try again later ${emoji}</div>`;
+  }
+
   const CHANNELS = [
     {
       ch:'01', name:'anime vibes 🌸',
@@ -4293,6 +4424,7 @@ if(helpBtn && helpOverlay && helpClose){
         fillPool('anime', ANIME_CATS);
         const url = pickFromPool('anime');
         if(url) showGif(el, url, 'anime vibes', '🌸', null);
+        else if(failCount.anime >= MAX_CONSECUTIVE_FAILS) showOffline(el, '🌸', 'anime vibes');
         else showError(el, '🌸');
       }
     },
@@ -4304,12 +4436,15 @@ if(helpBtn && helpOverlay && helpClose){
         fillPool('lofi', LOFI_CATS);
         const url = pickFromPool('lofi');
         if(url) showGif(el, url, 'lofi mode', '🎧', null);
+        else if(failCount.lofi >= MAX_CONSECUTIVE_FAILS) showOffline(el, '🎧', 'lofi mode');
         else showError(el, '🎧');
       }
     },
   ];
 
   let current = 0;
+  let started = false;
+  let tvTimer = null;
 
   function goTo(idx){
     if(screen._stopStatic) { screen._stopStatic(); screen._stopStatic=null; }
@@ -4322,18 +4457,43 @@ if(helpBtn && helpOverlay && helpClose){
     chLabel.textContent=`${ch.ch} · ${ch.name}`;
   }
 
-  // Pre-warm both pools on load
-  fillPool('anime', ANIME_CATS);
-  fillPool('lofi', LOFI_CATS);
+  function startAutoChannel(){
+    if(tvTimer) clearInterval(tvTimer);
+    tvTimer = setInterval(()=>goTo(current+1), 20000);
+  }
 
-  prevBtn.addEventListener('click',()=>goTo(current-1));
-  nextBtn.addEventListener('click',()=>goTo(current+1));
-  let tvTimer = setInterval(()=>goTo(current+1), 20000);
-  [prevBtn,nextBtn].forEach(b=>b.addEventListener('click',()=>{ clearInterval(tvTimer); tvTimer=setInterval(()=>goTo(current+1),20000); }));
+  // Was: pool pre-warmed + a 20s auto-channel interval ran unconditionally
+  // from page load, forever, whether or not the TV window was ever opened
+  // — that's what was hitting the nekos.best API repeatedly in the
+  // background on every visit. Now everything below only starts the
+  // first time the window is actually opened.
+  function startTv(){
+    if(started) return;
+    started = true;
+    fillPool('anime', ANIME_CATS);
+    fillPool('lofi', LOFI_CATS);
+    goTo(0);
+    startAutoChannel();
+  }
 
-  // init when window opens
-  document.querySelector('.dock button[data-win="tv"]')?.addEventListener('click',()=>{ setTimeout(()=>goTo(current),80); });
-  goTo(0);
+  prevBtn.addEventListener('click',()=>{ goTo(current-1); startAutoChannel(); });
+  nextBtn.addEventListener('click',()=>{ goTo(current+1); startAutoChannel(); });
+
+  const tvBtn = dockBtnFor('win-tv');
+  // init (or resume cycling) when window opens — tv lives in the "more
+  // apps" folder, not the main dock, so this must check both locations
+  // (dockBtnFor does that)
+  tvBtn?.addEventListener('click',()=>{
+    setTimeout(()=>{ started ? goTo(current) : startTv(); startAutoChannel(); }, 80);
+  });
+  // stop polling the API while the window is closed/minimized
+  const tvWin = document.getElementById('win-tv');
+  if(tvWin){
+    new MutationObserver(()=>{
+      const visible = tvWin.classList.contains('visible') && !tvWin.classList.contains('minimized');
+      if(!visible && tvTimer){ clearInterval(tvTimer); tvTimer=null; }
+    }).observe(tvWin, { attributes:true, attributeFilter:['class'] });
+  }
 })();
 
 // ===== SLOT MACHINE =====
