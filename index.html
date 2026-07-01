@@ -156,6 +156,10 @@
         <span style="font-size:1.5rem;">🖼️</span>
         <span>wallpaper</span>
       </button>
+      <button class="folder-app-btn" data-win="files">
+        <span style="font-size:1.5rem;">🗂️</span>
+        <span>files</span>
+      </button>
     </div>
   </div>
 
@@ -794,6 +798,72 @@ Underground 90s Japanese Hip Hop Archive Unreleased Tokyo Sessions Full Mix</a><
           <input id="terminal-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
             style="flex:1;background:transparent;border:none;outline:none;color:#f3ead9;font-family:'Space Mono',monospace;font-size:.75rem;caret-color:#f3b27a;"
             placeholder="type 'help'...">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ALL FILES (repo code viewer) ===== -->
+  <div class="win" id="win-files" data-title="all files" style="width:920px;max-width:calc(100vw - 24px);">
+    <div class="win-bar">
+      <div class="win-bar-left">
+        <div class="win-dots">
+          <button class="win-dot close" aria-label="close"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 1.5L6.5 6.5M6.5 1.5L1.5 6.5"/></svg></button>
+          <button class="win-dot min" aria-label="minimize"></button>
+        </div>
+        <span class="win-title">🗂️ all files — cozy-corner</span>
+      </div>
+    </div>
+    <div class="files-tabs">
+      <button class="files-tab active" data-tab="code" type="button">📄 code</button>
+      <button class="files-tab" data-tab="assets" type="button">🖼️ assets</button>
+    </div>
+    <div class="files-panel" data-panel="code">
+      <div class="files-app">
+        <!-- LEFT: file tree -->
+        <div class="files-tree" id="filesTree">
+          <p class="files-tree-label">cozy-corner/</p>
+          <div id="filesTreeList"></div>
+          <button class="files-tree-folder" type="button" id="filesGoAssetsBtn" title="browse images, audio & video in the assets tab">
+            <span class="files-tree-icon">📁</span><span>assets/</span>
+          </button>
+        </div>
+        <!-- RIGHT: code viewer -->
+        <div class="files-code">
+          <div class="files-code-header">
+            <span class="files-code-name" id="filesCodeName">select a file</span>
+            <span class="files-code-meta" id="filesCodeMeta"></span>
+            <div class="files-code-actions">
+              <button class="files-code-btn" id="filesCopyBtn" type="button">copy</button>
+              <a class="files-code-btn" id="filesRawLink" href="#" target="_blank" rel="noopener">github ↗</a>
+            </div>
+          </div>
+          <div class="files-code-body" id="filesCodeBody">
+            <p class="files-code-placeholder">🐾 pick a file on the left to peek at the code</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="files-panel" data-panel="assets" hidden>
+      <div class="files-app assets-app">
+        <!-- LEFT: folder list -->
+        <div class="files-tree" id="assetsFolderList">
+          <p class="files-tree-label">assets/</p>
+        </div>
+        <!-- RIGHT: filterable asset browser -->
+        <div class="files-code assets-main">
+          <div class="assets-toolbar">
+            <div class="assets-filter-chips" id="assetsFilterChips">
+              <button class="chip active" data-kind="all" type="button">all</button>
+              <button class="chip" data-kind="image" type="button">🖼️ images</button>
+              <button class="chip" data-kind="audio" type="button">🎵 audio</button>
+              <button class="chip" data-kind="video" type="button">🎬 video</button>
+            </div>
+            <span class="assets-summary" id="assetsSummary"></span>
+          </div>
+          <div class="assets-body" id="assetsBody">
+            <p class="files-code-placeholder">🐾 loading assets…</p>
+          </div>
         </div>
       </div>
     </div>

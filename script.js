@@ -192,7 +192,7 @@ window.initPortfolio = function(){
 // ===== WINDOW MANAGEMENT =====
 const allWins=document.querySelectorAll('.win');
 let zTop=150;
-const defaultPositions={'win-about':{x:80,y:80},'win-links':{x:110,y:110},'win-work':{x:140,y:80},'win-faq':{x:170,y:110},'win-contact':{x:200,y:80},'win-logs':{x:220,y:100},'win-game':{x:250,y:90},'win-palette':{x:160,y:100},'win-tv':{x:140,y:100},'win-slots':{x:200,y:110},'win-terminal':{x:40,y:60},'win-wallpaper':{x:180,y:80}};
+const defaultPositions={'win-about':{x:80,y:80},'win-links':{x:110,y:110},'win-work':{x:140,y:80},'win-faq':{x:170,y:110},'win-contact':{x:200,y:80},'win-logs':{x:220,y:100},'win-game':{x:250,y:90},'win-palette':{x:160,y:100},'win-tv':{x:140,y:100},'win-slots':{x:200,y:110},'win-terminal':{x:40,y:60},'win-wallpaper':{x:180,y:80},'win-files':{x:50,y:50}};
 function isMobile(){ return window.innerWidth<=720 || (window.innerHeight<=500 && window.innerWidth<=1024); }
 function clampPosition(win,x,y){ const vw=window.innerWidth,vh=window.innerHeight,w=win.offsetWidth,h=win.offsetHeight; return{x:Math.max(0,Math.min(x,vw-w)),y:Math.max(0,Math.min(y,vh-40))}; }
 function focusWin(win){ zTop++; win.style.zIndex=zTop; win.classList.add('focused'); allWins.forEach(w=>{if(w!==win)w.classList.remove('focused');}); }
@@ -381,7 +381,7 @@ document.querySelectorAll('.dock button').forEach(btn=>{
   const folder  = document.getElementById('moreAppsFolder');
   if(!moreBtn || !folder) return;
 
-  const FOLDER_WINS = ['palette','tv','slots','terminal','wallpaper'];
+  const FOLDER_WINS = ['palette','tv','slots','terminal','wallpaper','files'];
 
   // --- ACCESSIBILITY: this is a popup menu of app buttons triggered by
   // moreBtn, but had no role/label on the popup and no aria state on the
@@ -484,6 +484,322 @@ document.querySelectorAll('.dock button').forEach(btn=>{
 
   updateFolderDot();
 })();
+
+// ===== ALL FILES (repo code viewer) =====
+(function(){
+  const winFiles=document.getElementById('win-files');
+  if(!winFiles) return;
+
+  const REPO='yukjidam/cozy-corner';
+  const RAW_BASE=`https://raw.githubusercontent.com/${REPO}/main/`;
+  const BLOB_BASE=`https://github.com/${REPO}/blob/main/`;
+
+  const FILES=[
+    {name:'index.html',              path:'index.html',              lang:'html',  icon:'🌐'},
+    {name:'style.css',               path:'style.css',               lang:'css',   icon:'🎨'},
+    {name:'script.js',               path:'script.js',               lang:'js',    icon:'📜'},
+    {name:'data.js',                 path:'data.js',                 lang:'js',    icon:'🗃️'},
+    {name:'palette.js',              path:'palette.js',              lang:'js',    icon:'🖌️'},
+    {name:'haiku-widget.js',         path:'haiku-widget.js',         lang:'js',    icon:'🍃'},
+    {name:'quote-widget.js',         path:'quote-widget.js',         lang:'js',    icon:'💭'},
+    {name:'guestbook-apps-script.gs',path:'guestbook-apps-script.gs',lang:'js',    icon:'📋'},
+    {name:'README.md',               path:'README.md',               lang:'md',    icon:'📖'},
+    {name:'.gitignore',              path:'.gitignore',              lang:'plain', icon:'🚫'},
+  ];
+
+  // --- tiny single-pass, dependency-free syntax highlighter. Named capture
+  // groups tell us which token class matched; everything else is plain text.
+  const LANG_RE={
+    js: /(?<comment>\/\/.*|\/\*[\s\S]*?\*\/)|(?<string>`(?:\\[\s\S]|[^`\\])*`|'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*")|(?<number>\b\d+\.?\d*(?:[eE][+-]?\d+)?\b)|(?<keyword>\b(?:const|let|var|function|return|if|else|for|while|do|switch|case|break|continue|class|extends|new|this|typeof|instanceof|in|of|try|catch|finally|throw|async|await|yield|import|export|default|from|as|null|undefined|true|false|static|get|set|super|void|delete)\b)/g,
+    css: /(?<comment>\/\*[\s\S]*?\*\/)|(?<string>'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*")|(?<number>#[0-9a-fA-F]{3,8}\b|\b\d+\.?\d*(?:px|em|rem|vw|vh|%|s|ms|deg)?\b)|(?<at>@[a-zA-Z-]+)|(?<selector>[.#][a-zA-Z_-][\w-]*)|(?<prop>\b[a-zA-Z-]+(?=\s*:))/g,
+    html:/(?<comment><!--[\s\S]*?-->)|(?<string>"[^"<]*"|'[^'<]*')|(?<tag><\/?[a-zA-Z][\w-]*)|(?<attr>\b[a-zA-Z-]+(?=\s*=))/g,
+    md:  /(?<heading>^#{1,6}\s.*$)|(?<bold>\*\*[^*]+\*\*)|(?<code>`[^`]+`)|(?<link>\[[^\]]*\]\([^)]*\))/gm,
+    plain:/(?<comment>^#.*$)/gm,
+  };
+
+  function tokenize(code,lang){
+    const re=LANG_RE[lang]||LANG_RE.plain;
+    re.lastIndex=0;
+    const tokens=[]; let last=0,m;
+    while((m=re.exec(code))){
+      if(m.index>last) tokens.push({text:code.slice(last,m.index),cls:null});
+      const cls=Object.keys(m.groups).find(k=>m.groups[k]!==undefined);
+      tokens.push({text:m[0],cls});
+      last=re.lastIndex;
+      if(m[0].length===0) re.lastIndex++;
+    }
+    if(last<code.length) tokens.push({text:code.slice(last),cls:null});
+    return tokens;
+  }
+
+  function escapeHtml(s){
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function renderCode(code,lang){
+    const tokens=tokenize(code,lang);
+    const lines=[[]];
+    tokens.forEach(t=>{
+      const parts=t.text.split('\n');
+      parts.forEach((part,i)=>{
+        if(i>0) lines.push([]);
+        if(part.length) lines[lines.length-1].push({text:part,cls:t.cls});
+      });
+    });
+    let html='';
+    for(let i=0;i<lines.length;i++){
+      const lineHtml=lines[i].map(p=>p.cls?`<span class="tok-${p.cls}">${escapeHtml(p.text)}</span>`:escapeHtml(p.text)).join('');
+      html+=`<div class="code-line"><span class="ln">${i+1}</span><span class="lc">${lineHtml||' '}</span></div>`;
+    }
+    return html;
+  }
+
+  // --- tree ---
+  const treeList=document.getElementById('filesTreeList');
+  const nameEl=document.getElementById('filesCodeName');
+  const metaEl=document.getElementById('filesCodeMeta');
+  const bodyEl=document.getElementById('filesCodeBody');
+  const copyBtn=document.getElementById('filesCopyBtn');
+  const rawLink=document.getElementById('filesRawLink');
+
+  treeList.innerHTML=FILES.map(f=>
+    `<button class="files-tree-item" data-path="${f.path}"><span class="files-tree-icon">${f.icon}</span><span class="files-tree-name">${f.name}</span></button>`
+  ).join('');
+
+  const cache={};
+  let activePath=null;
+
+  async function openFile(f){
+    activePath=f.path;
+    treeList.querySelectorAll('.files-tree-item').forEach(btn=>{
+      btn.classList.toggle('active',btn.dataset.path===f.path);
+    });
+    nameEl.textContent=f.name;
+    metaEl.textContent='fetching…';
+    rawLink.href=BLOB_BASE+f.path;
+    bodyEl.innerHTML=`<p class="files-code-placeholder">🐾 fetching ${f.name}…</p>`;
+
+    try{
+      let text=cache[f.path];
+      if(text===undefined){
+        const res=await fetch(RAW_BASE+f.path);
+        if(!res.ok) throw new Error('fetch failed');
+        text=await res.text();
+        cache[f.path]=text;
+      }
+      if(activePath!==f.path) return; // a newer click already took over
+      const lineCount=text.split('\n').length;
+      const kb=(new Blob([text]).size/1024).toFixed(1);
+      metaEl.textContent=`${lineCount} lines · ${kb} kb`;
+      bodyEl.innerHTML=renderCode(text,f.lang);
+    }catch(err){
+      if(activePath!==f.path) return;
+      metaEl.textContent='couldn\'t load';
+      bodyEl.innerHTML=`<p class="files-code-placeholder">couldn't fetch this file right now — <a href="${BLOB_BASE+f.path}" target="_blank" rel="noopener" style="color:var(--accent, #f3b27a);">view it on GitHub ↗</a> instead.</p>`;
+    }
+  }
+
+  treeList.addEventListener('click',e=>{
+    const btn=e.target.closest('.files-tree-item');
+    if(!btn) return;
+    const f=FILES.find(x=>x.path===btn.dataset.path);
+    if(f) openFile(f);
+  });
+
+  copyBtn.addEventListener('click',async ()=>{
+    const text=cache[activePath];
+    if(!text) return;
+    try{
+      await navigator.clipboard.writeText(text);
+      copyBtn.textContent='copied!'; copyBtn.classList.add('copied');
+      setTimeout(()=>{ copyBtn.textContent='copy'; copyBtn.classList.remove('copied'); },1400);
+    }catch(err){ /* clipboard unavailable — silently ignore */ }
+  });
+
+  // open index.html by default the first time this window is shown
+  let loadedOnce=false;
+  const filesDockBtn=document.querySelector('.folder-app-btn[data-win="files"]');
+  filesDockBtn?.addEventListener('click',()=>{
+    if(!loadedOnce){ loadedOnce=true; openFile(FILES[0]); }
+  });
+
+  // ===== tabs: code <-> assets =====
+  const tabs=winFiles.querySelectorAll('.files-tab');
+  const panels=winFiles.querySelectorAll('.files-panel');
+  function switchTab(name){
+    tabs.forEach(t=>t.classList.toggle('active',t.dataset.tab===name));
+    panels.forEach(p=>{ p.hidden = p.dataset.panel!==name; });
+    if(name==='assets') loadAssets();
+  }
+  tabs.forEach(t=>t.addEventListener('click',()=>switchTab(t.dataset.tab)));
+  document.getElementById('filesGoAssetsBtn')?.addEventListener('click',()=>switchTab('assets'));
+
+  // ===== assets browser =====
+  const TREE_API=`https://api.github.com/repos/${REPO}/git/trees/main?recursive=1`;
+  const IMAGE_EXT=['jpg','jpeg','png','gif','webp','svg'];
+  const AUDIO_EXT=['mp3','wav','ogg','m4a'];
+  const VIDEO_EXT=['mp4','webm','mov'];
+  const FOLDER_ICONS={
+    'avatar':'🧑','bgm':'🎧','cats':'🐱','chill lofi':'☕','hiphop lofi':'🎤',
+    'jazz lofi':'🎷','live wallpaper':'🎞️','personal':'💌','projects':'🧩',
+    'study lofi':'📚','thumbnail':'🖼️',
+  };
+
+  function kindOf(path){
+    const ext=(path.split('.').pop()||'').toLowerCase();
+    if(IMAGE_EXT.includes(ext)) return 'image';
+    if(AUDIO_EXT.includes(ext)) return 'audio';
+    if(VIDEO_EXT.includes(ext)) return 'video';
+    return 'other';
+  }
+  function fmtSize(bytes){
+    if(bytes>1024*1024) return (bytes/1024/1024).toFixed(1)+' mb';
+    return Math.max(1,Math.round(bytes/1024))+' kb';
+  }
+
+  let assetItems=null; // null=not loaded, []=loaded
+  let assetsError=false;
+  let filterKind='all';
+  let filterFolder='all';
+
+  const folderListEl=document.getElementById('assetsFolderList');
+  const chipsEl=document.getElementById('assetsFilterChips');
+  const summaryEl=document.getElementById('assetsSummary');
+  const bodyEl2=document.getElementById('assetsBody');
+
+  async function loadAssets(){
+    if(assetItems!==null || assetsError) return renderAssets();
+    bodyEl2.innerHTML='<p class="files-code-placeholder">🐾 loading assets from GitHub…</p>';
+    try{
+      const cacheKey='cc_assets_tree_v1';
+      const cached=safeLocalStorageGet(cacheKey);
+      let data;
+      if(cached && (Date.now()-cached.t)<60*60*1000){
+        data=cached.data;
+      }else{
+        const res=await fetch(TREE_API);
+        if(res.status===403||res.status===429) throw new Error('rate-limited');
+        if(!res.ok) throw new Error('tree fetch failed');
+        data=await res.json();
+        safeLocalStorageSet(cacheKey,{t:Date.now(),data});
+      }
+      assetItems=(data.tree||[])
+        .filter(t=>t.type==='blob' && t.path.startsWith('assets/'))
+        .map(t=>{
+          const rel=t.path.slice('assets/'.length);
+          const parts=rel.split('/');
+          const folder=parts.length>1?parts[0]:'(root)';
+          const name=parts[parts.length-1];
+          return {path:t.path, name, folder, size:t.size||0, kind:kindOf(name)};
+        });
+      buildFolderList();
+      renderAssets();
+    }catch(err){
+      assetsError=true;
+      const msg=err.message==='rate-limited'
+        ? `GitHub's public API is rate-limited right now — try again in a bit, or `
+        : `couldn't load the assets list right now — `;
+      bodyEl2.innerHTML=`<p class="files-code-placeholder">${msg}<a href="https://github.com/${REPO}/tree/main/assets" target="_blank" rel="noopener" style="color:#f3b27a;">browse assets on GitHub ↗</a> instead.</p>`;
+    }
+  }
+
+  function safeLocalStorageGet(key){
+    try{ const raw=localStorage.getItem(key); return raw?JSON.parse(raw):null; }
+    catch(err){ return null; }
+  }
+  function safeLocalStorageSet(key,val){
+    try{ localStorage.setItem(key,JSON.stringify(val)); }catch(err){ /* storage unavailable/full — skip caching */ }
+  }
+
+  function buildFolderList(){
+    const counts={};
+    assetItems.forEach(a=>{ counts[a.folder]=(counts[a.folder]||0)+1; });
+    const folders=Object.keys(counts).sort();
+    let html=`<p class="files-tree-label">assets/</p>
+      <button class="files-tree-item active" data-folder="all"><span class="files-tree-icon">📁</span><span class="files-tree-name">all folders</span><span class="count">${assetItems.length}</span></button>`;
+    folders.forEach(f=>{
+      html+=`<button class="files-tree-item" data-folder="${f}"><span class="files-tree-icon">${FOLDER_ICONS[f]||'📂'}</span><span class="files-tree-name">${f}</span><span class="count">${counts[f]}</span></button>`;
+    });
+    folderListEl.innerHTML=html;
+    folderListEl.addEventListener('click',e=>{
+      const btn=e.target.closest('.files-tree-item');
+      if(!btn) return;
+      filterFolder=btn.dataset.folder;
+      folderListEl.querySelectorAll('.files-tree-item').forEach(b=>b.classList.toggle('active',b===btn));
+      renderAssets();
+    });
+  }
+
+  chipsEl.addEventListener('click',e=>{
+    const btn=e.target.closest('.chip');
+    if(!btn) return;
+    filterKind=btn.dataset.kind;
+    chipsEl.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active',c===btn));
+    renderAssets();
+  });
+
+  function assetCardImage(a){
+    const url=RAW_BASE+a.path.split('/').map(encodeURIComponent).join('/');
+    return `<a class="asset-card" href="${url}" target="_blank" rel="noopener" title="${escapeHtml(a.name)}">
+      <img class="asset-thumb" src="${url}" alt="${escapeHtml(a.name)}" loading="lazy">
+      <div class="asset-meta"><div class="asset-name">${escapeHtml(a.name)}</div><div class="asset-size">${fmtSize(a.size)}</div></div>
+    </a>`;
+  }
+  function assetRowMedia(a,icon){
+    const url=RAW_BASE+a.path.split('/').map(encodeURIComponent).join('/');
+    const tag=a.kind==='video'?'video':'audio';
+    return `<div class="asset-row" data-path="${a.path}">
+      <div class="asset-row-head">
+        <span class="asset-row-icon">${icon}</span>
+        <span class="asset-row-name">${escapeHtml(a.name)}</span>
+        <span class="asset-row-size">${fmtSize(a.size)}</span>
+        <button class="asset-row-play" type="button" data-url="${url}" data-tag="${tag}">▶ preview</button>
+      </div>
+    </div>`;
+  }
+
+  function renderAssets(){
+    if(!assetItems) return;
+    const items=assetItems.filter(a=>
+      (filterFolder==='all'||a.folder===filterFolder) &&
+      (filterKind==='all'||a.kind===filterKind)
+    );
+    const totalKb=items.reduce((s,a)=>s+a.size,0);
+    summaryEl.textContent=`${items.length} file${items.length===1?'':'s'} · ${fmtSize(totalKb)}`;
+
+    if(!items.length){
+      bodyEl2.innerHTML='<p class="files-code-placeholder">no files match that filter 🐾</p>';
+      return;
+    }
+
+    const images=items.filter(a=>a.kind==='image');
+    const audio=items.filter(a=>a.kind==='audio');
+    const video=items.filter(a=>a.kind==='video');
+    const other=items.filter(a=>a.kind==='other');
+
+    let html='';
+    if(images.length) html+=`<div class="assets-section"><p class="assets-section-title">images · ${images.length}</p><div class="assets-grid">${images.map(assetCardImage).join('')}</div></div>`;
+    if(video.length) html+=`<div class="assets-section"><p class="assets-section-title">video · ${video.length}</p><div class="asset-list">${video.map(a=>assetRowMedia(a,'🎬')).join('')}</div></div>`;
+    if(audio.length) html+=`<div class="assets-section"><p class="assets-section-title">audio · ${audio.length}</p><div class="asset-list">${audio.map(a=>assetRowMedia(a,'🎵')).join('')}</div></div>`;
+    if(other.length) html+=`<div class="assets-section"><p class="assets-section-title">other · ${other.length}</p><div class="asset-list">${other.map(a=>assetRowMedia(a,'📄')).join('')}</div></div>`;
+    bodyEl2.innerHTML=html;
+  }
+
+  bodyEl2.addEventListener('click',e=>{
+    const btn=e.target.closest('.asset-row-play');
+    if(!btn) return;
+    const row=btn.closest('.asset-row');
+    if(row.querySelector('.asset-row-media')) return; // already open
+    const tag=btn.dataset.tag, url=btn.dataset.url;
+    const mediaEl=document.createElement('div');
+    mediaEl.className='asset-row-media';
+    mediaEl.innerHTML=`<${tag} controls preload="none" src="${url}"></${tag}>`;
+    row.appendChild(mediaEl);
+    btn.textContent='playing below ▾';
+    btn.disabled=true;
+  });
+})();
+
 document.querySelectorAll('.win .win-dot.close').forEach(dot=>dot.addEventListener('click',e=>{e.stopPropagation();closeWin(dot.closest('.win'));}));
 document.querySelectorAll('.win .win-dot.min').forEach(dot=>dot.addEventListener('click',e=>{e.stopPropagation();minimizeWin(dot.closest('.win'));}));
 allWins.forEach(win=>{
