@@ -738,25 +738,26 @@ document.querySelectorAll('.dock button').forEach(btn=>{
     renderAssets();
   });
 
-  function assetCardImage(a){
-    const url=RAW_BASE+a.path.split('/').map(encodeURIComponent).join('/');
-    return `<a class="asset-card" href="${url}" target="_blank" rel="noopener" title="${escapeHtml(a.name)}">
-      <img class="asset-thumb" src="${url}" alt="${escapeHtml(a.name)}" loading="lazy">
+  function localUrl(path){ return path; } // assets are served from the site itself, same as the rest of the codebase
+
+  function assetCardImage(a,i){
+    return `<button class="asset-card" type="button" data-path="${a.path}" data-idx="${i}" title="${escapeHtml(a.name)}">
+      <img class="asset-thumb" src="${localUrl(a.path)}" alt="${escapeHtml(a.name)}" loading="lazy">
       <div class="asset-meta"><div class="asset-name">${escapeHtml(a.name)}</div><div class="asset-size">${fmtSize(a.size)}</div></div>
-    </a>`;
+    </button>`;
   }
-  function assetRowMedia(a,icon){
-    const url=RAW_BASE+a.path.split('/').map(encodeURIComponent).join('/');
-    const tag=a.kind==='video'?'video':'audio';
-    return `<div class="asset-row" data-path="${a.path}">
+  function assetRow(a,icon,i){
+    return `<div class="asset-row" data-path="${a.path}" data-idx="${i}">
       <div class="asset-row-head">
         <span class="asset-row-icon">${icon}</span>
         <span class="asset-row-name">${escapeHtml(a.name)}</span>
         <span class="asset-row-size">${fmtSize(a.size)}</span>
-        <button class="asset-row-play" type="button" data-url="${url}" data-tag="${tag}">▶ preview</button>
+        <button class="asset-row-play" type="button" data-path="${a.path}">▶ play</button>
       </div>
     </div>`;
   }
+
+  let currentImageList=[], currentVideoList=[];
 
   function renderAssets(){
     if(!assetItems) return;
@@ -769,6 +770,7 @@ document.querySelectorAll('.dock button').forEach(btn=>{
 
     if(!items.length){
       bodyEl2.innerHTML='<p class="files-code-placeholder">no files match that filter 🐾</p>';
+      currentImageList=[]; currentVideoList=[];
       return;
     }
 
@@ -776,27 +778,178 @@ document.querySelectorAll('.dock button').forEach(btn=>{
     const audio=items.filter(a=>a.kind==='audio');
     const video=items.filter(a=>a.kind==='video');
     const other=items.filter(a=>a.kind==='other');
+    currentImageList=images; currentVideoList=video;
 
     let html='';
-    if(images.length) html+=`<div class="assets-section"><p class="assets-section-title">images · ${images.length}</p><div class="assets-grid">${images.map(assetCardImage).join('')}</div></div>`;
-    if(video.length) html+=`<div class="assets-section"><p class="assets-section-title">video · ${video.length}</p><div class="asset-list">${video.map(a=>assetRowMedia(a,'🎬')).join('')}</div></div>`;
-    if(audio.length) html+=`<div class="assets-section"><p class="assets-section-title">audio · ${audio.length}</p><div class="asset-list">${audio.map(a=>assetRowMedia(a,'🎵')).join('')}</div></div>`;
-    if(other.length) html+=`<div class="assets-section"><p class="assets-section-title">other · ${other.length}</p><div class="asset-list">${other.map(a=>assetRowMedia(a,'📄')).join('')}</div></div>`;
+    if(images.length) html+=`<div class="assets-section"><p class="assets-section-title">images · ${images.length}</p><div class="assets-grid">${images.map((a,i)=>assetCardImage(a,i)).join('')}</div></div>`;
+    if(video.length) html+=`<div class="assets-section"><p class="assets-section-title">video · ${video.length}</p><div class="asset-list">${video.map((a,i)=>assetRow(a,'🎬',i)).join('')}</div></div>`;
+    if(audio.length) html+=`<div class="assets-section"><p class="assets-section-title">audio · ${audio.length}</p><div class="asset-list">${audio.map((a,i)=>assetRow(a,'🎵',i)).join('')}</div></div>`;
+    if(other.length) html+=`<div class="assets-section"><p class="assets-section-title">other · ${other.length}</p><div class="asset-list">${other.map((a,i)=>assetRow(a,'📄',i)).join('')}</div></div>`;
     bodyEl2.innerHTML=html;
   }
 
+  // ===== audio "play" -> hand off to the real music player app =====
+  const FOLDER_TO_GENRE={'chill lofi':'chill','study lofi':'study','jazz lofi':'jazz','hiphop lofi':'hiphop','personal':'picks'};
+
+  function playAssetInStation(a){
+    const genreKey=FOLDER_TO_GENRE[a.folder];
+    if(genreKey && typeof GENRES!=='undefined' && GENRES[genreKey]){
+      const idx=GENRES[genreKey].tracks.findIndex(t=>t.src===a.path);
+      if(idx>-1){
+        switchGenre(genreKey);
+        loadTrack(genreKey,idx,true);
+        showStation(); expandStation();
+        return;
+      }
+    }
+    // not part of a playlist tab (e.g. bgm/cats sound effects) — load it directly
+    playingGenre=null; playingIndex=-1;
+    const src=playerAudio.querySelector('source');
+    src.src=a.path; playerAudio._loadingTrack=true; playerAudio.load();
+    const title=a.name.replace(/\.[a-z0-9]+$/i,'');
+    playerGenreLabel.textContent='🗂️ '+a.folder;
+    playerTrackEl.textContent=title; playerArtistEl.textContent='cozy-corner assets';
+    miniTrackEl.textContent=title; miniArtistEl.textContent='cozy-corner assets';
+    if(typeof setNowPlayingText==='function') setNowPlayingText(title,'cozy-corner assets',true);
+    const playerThumbEl=document.querySelector('.player-thumb'),miniThumbEl=document.querySelector('.mini-thumb');
+    playerThumbEl.innerHTML='<span>🎵</span>'; miniThumbEl.innerHTML='<span>🎵</span>';
+    showStation(); expandStation();
+    playerAudio.play().catch(()=>{});
+  }
+
+  // ===== shared overlay: image lightbox + custom themed video player =====
+  const overlayEl=document.getElementById('assetOverlay');
+  const overlayBody=document.getElementById('assetOverlayBody');
+  const overlayName=document.getElementById('assetOverlayName');
+  const overlayRaw=document.getElementById('assetOverlayRaw');
+  const overlayPrev=document.getElementById('assetOverlayPrev');
+  const overlayNext=document.getElementById('assetOverlayNext');
+  const overlayClose=document.getElementById('assetOverlayClose');
+  const overlayBackdrop=document.getElementById('assetOverlayBackdrop');
+
+  let overlayMode=null, overlayIndex=-1;
+
+  function closeOverlay(){
+    overlayEl.hidden=true;
+    overlayBody.innerHTML='';
+    overlayMode=null; overlayIndex=-1;
+  }
+  function updateOverlayNav(){
+    const list=overlayMode==='image'?currentImageList:currentVideoList;
+    const multi=list.length>1;
+    overlayPrev.hidden=!multi; overlayNext.hidden=!multi;
+  }
+  function openImageOverlay(idx){
+    const a=currentImageList[idx];
+    if(!a) return;
+    overlayMode='image'; overlayIndex=idx;
+    overlayName.textContent=a.name;
+    overlayRaw.href=BLOB_BASE+a.path;
+    overlayBody.innerHTML=`<img src="${localUrl(a.path)}" alt="${escapeHtml(a.name)}">`;
+    overlayEl.hidden=false;
+    updateOverlayNav();
+  }
+  function openVideoOverlay(idx){
+    const a=currentVideoList[idx];
+    if(!a) return;
+    overlayMode='video'; overlayIndex=idx;
+    overlayName.textContent=a.name;
+    overlayRaw.href=BLOB_BASE+a.path;
+    overlayBody.innerHTML=`
+      <div class="avp" id="avpRoot">
+        <video class="avp-video" id="avpVideo" src="${localUrl(a.path)}" playsinline preload="metadata"></video>
+        <div class="avp-controls">
+          <div class="avp-scrub-row">
+            <span class="avp-time" id="avpCur">0:00</span>
+            <input type="range" class="avp-scrub" id="avpScrub" min="0" max="100" value="0" step="0.1">
+            <span class="avp-time" id="avpDur">0:00</span>
+          </div>
+          <div class="avp-row2">
+            <button class="avp-playbtn" id="avpPlayBtn" type="button" aria-label="play">
+              <svg class="avp-icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              <svg class="avp-icon-pause" viewBox="0 0 24 24" style="display:none"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+            </button>
+            <button class="avp-btn" id="avpMuteBtn" type="button" aria-label="mute"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9v6h4l5 5V4L8 9H4z"/></svg></button>
+            <input type="range" class="avp-vol" id="avpVol" min="0" max="1" value="0.8" step="0.01">
+            <span class="avp-spacer"></span>
+            <button class="avp-btn" id="avpFullBtn" type="button" aria-label="fullscreen"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9V4h5v2H6v3H4zm10-5h5v5h-2V6h-3V4zM4 15v5h5v-2H6v-3H4zm16 0v5h-5v-2h3v-3h2z"/></svg></button>
+          </div>
+        </div>
+      </div>`;
+    overlayEl.hidden=false;
+    updateOverlayNav();
+    wireVideoPlayer(a);
+  }
+  function wireVideoPlayer(a){
+    const root=document.getElementById('avpRoot');
+    const video=document.getElementById('avpVideo');
+    const playBtn=document.getElementById('avpPlayBtn');
+    const muteBtn=document.getElementById('avpMuteBtn');
+    const scrub=document.getElementById('avpScrub');
+    const vol=document.getElementById('avpVol');
+    const curEl=document.getElementById('avpCur');
+    const durEl=document.getElementById('avpDur');
+    const fullBtn=document.getElementById('avpFullBtn');
+    video.volume=parseFloat(vol.value);
+
+    function toggle(){ video.paused ? video.play().catch(()=>{}) : video.pause(); }
+    playBtn.addEventListener('click',toggle);
+    video.addEventListener('click',toggle);
+    video.addEventListener('play',()=>root.classList.add('is-playing'));
+    video.addEventListener('pause',()=>root.classList.remove('is-playing'));
+    video.addEventListener('loadedmetadata',()=>{
+      scrub.max=video.duration||0;
+      durEl.textContent=formatTime(video.duration||0);
+    });
+    video.addEventListener('timeupdate',()=>{
+      if(!scrub.matches(':active')) scrub.value=video.currentTime;
+      curEl.textContent=formatTime(video.currentTime);
+      const pct=video.duration?(video.currentTime/video.duration)*100:0;
+      scrub.style.setProperty('--pct',pct+'%');
+    });
+    scrub.addEventListener('input',()=>{ video.currentTime=parseFloat(scrub.value); });
+    vol.addEventListener('input',()=>{ video.volume=parseFloat(vol.value); video.muted=false; });
+    muteBtn.addEventListener('click',()=>{ video.muted=!video.muted; });
+    fullBtn.addEventListener('click',()=>{
+      if(video.requestFullscreen) video.requestFullscreen().catch(()=>{});
+      else if(video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+    });
+    video.play().catch(()=>{});
+  }
+  function overlayNav(dir){
+    if(overlayMode==='image'){
+      const list=currentImageList; if(!list.length) return;
+      openImageOverlay((overlayIndex+dir+list.length)%list.length);
+    }else if(overlayMode==='video'){
+      const list=currentVideoList; if(!list.length) return;
+      openVideoOverlay((overlayIndex+dir+list.length)%list.length);
+    }
+  }
+  overlayPrev.addEventListener('click',()=>overlayNav(-1));
+  overlayNext.addEventListener('click',()=>overlayNav(1));
+  overlayClose.addEventListener('click',closeOverlay);
+  overlayBackdrop.addEventListener('click',closeOverlay);
+  document.addEventListener('keydown',e=>{
+    if(overlayEl.hidden) return;
+    if(e.key==='Escape'){ e.stopImmediatePropagation(); closeOverlay(); }
+    else if(e.key==='ArrowLeft'){ e.stopImmediatePropagation(); overlayNav(-1); }
+    else if(e.key==='ArrowRight'){ e.stopImmediatePropagation(); overlayNav(1); }
+  },true);
+
   bodyEl2.addEventListener('click',e=>{
-    const btn=e.target.closest('.asset-row-play');
-    if(!btn) return;
-    const row=btn.closest('.asset-row');
-    if(row.querySelector('.asset-row-media')) return; // already open
-    const tag=btn.dataset.tag, url=btn.dataset.url;
-    const mediaEl=document.createElement('div');
-    mediaEl.className='asset-row-media';
-    mediaEl.innerHTML=`<${tag} controls preload="none" src="${url}"></${tag}>`;
-    row.appendChild(mediaEl);
-    btn.textContent='playing below ▾';
-    btn.disabled=true;
+    const card=e.target.closest('.asset-card');
+    if(card){ openImageOverlay(parseInt(card.dataset.idx,10)); return; }
+    const playBtn=e.target.closest('.asset-row-play');
+    if(playBtn){
+      const path=playBtn.dataset.path;
+      const a=assetItems.find(x=>x.path===path);
+      if(!a) return;
+      if(a.kind==='audio') playAssetInStation(a);
+      else if(a.kind==='video'){
+        const idx=currentVideoList.findIndex(x=>x.path===path);
+        openVideoOverlay(idx>-1?idx:0);
+      }
+    }
   });
 })();
 
