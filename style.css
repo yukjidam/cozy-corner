@@ -360,6 +360,7 @@
     position:fixed;
     width: 440px;
     max-width: calc(100vw - 32px);
+    min-width: 220px;
     background:var(--win-body);
     border:1px solid var(--win-bar-border);
     border-radius:10px;
@@ -367,8 +368,119 @@
     z-index:100;
     display:none;
     overflow:hidden;
+    /* Each window is its own responsive container: content inside reacts
+       to the WINDOW's current width (as the person drags the resize
+       handle), not the browser viewport. This is what lets things like
+       the terminal's side panel or the files tree reflow/collapse as a
+       window is resized, instead of just clipping or shrinking in place. */
+    container-type: inline-size;
+    container-name: win;
   }
+
+  /* ===== RESIZE HANDLES =====
+     Eight invisible grab zones per window — one on each edge (drag to
+     resize in that single direction) and one on each corner (drag to
+     resize both dimensions at once). Dragging is handled in the "RESIZE
+     WINDOWS" block in script.js. The corner grip glyphs are drawn with
+     layered gradients so they recolor on hover using the same tokens as
+     the rest of the UI; edges just get a soft accent-colored bar. */
+  .win-resize-handle{
+    position:absolute;
+    z-index:5;
+    touch-action:none;
+  }
+  /* edges — thin strips inset from the corners so they don't overlap them */
+  .win-resize-handle.dir-e,
+  .win-resize-handle.dir-w{ top:18px; bottom:18px; width:9px; cursor:ew-resize; }
+  .win-resize-handle.dir-e{ right:-4px; }
+  .win-resize-handle.dir-w{ left:-4px; }
+  .win-resize-handle.dir-n,
+  .win-resize-handle.dir-s{ left:18px; right:18px; height:9px; cursor:ns-resize; }
+  .win-resize-handle.dir-n{ top:-4px; }
+  .win-resize-handle.dir-s{ bottom:-4px; }
+  /* edge hover/active feedback: a soft centered accent bar */
+  .win-resize-handle.dir-e::before, .win-resize-handle.dir-w::before{
+    content:''; position:absolute; top:0; bottom:0; left:50%; width:3px;
+    margin-left:-1.5px; border-radius:999px; background:var(--accent);
+    opacity:0; transition:opacity .15s ease;
+  }
+  .win-resize-handle.dir-n::before, .win-resize-handle.dir-s::before{
+    content:''; position:absolute; left:0; right:0; top:50%; height:3px;
+    margin-top:-1.5px; border-radius:999px; background:var(--accent);
+    opacity:0; transition:opacity .15s ease;
+  }
+  .win-resize-handle.dir-e:hover::before, .win-resize-handle.dir-w:hover::before,
+  .win-resize-handle.dir-n:hover::before, .win-resize-handle.dir-s:hover::before,
+  .win-resize-handle.handle-active::before{ opacity:.6; }
+
+  /* corners */
+  .win-resize-handle.dir-ne, .win-resize-handle.dir-nw,
+  .win-resize-handle.dir-se, .win-resize-handle.dir-sw{ width:20px; height:20px; }
+  .win-resize-handle.dir-se{ right:0; bottom:0; cursor:nwse-resize; }
+  .win-resize-handle.dir-nw{ left:0; top:0; cursor:nwse-resize; }
+  .win-resize-handle.dir-ne{ right:0; top:0; cursor:nesw-resize; }
+  .win-resize-handle.dir-sw{ left:0; bottom:0; cursor:nesw-resize; }
+
+  .win-resize-handle.dir-se::after, .win-resize-handle.dir-nw::after,
+  .win-resize-handle.dir-ne::after, .win-resize-handle.dir-sw::after{
+    content:'';
+    position:absolute;
+    width:9px; height:9px;
+    opacity:.75;
+    transition: opacity .15s ease;
+  }
+  .win-resize-handle.dir-se::after{
+    right:4px; bottom:4px;
+    background:
+      linear-gradient(135deg, transparent 0 50%, var(--panel-edge) 50% 58%, transparent 58% 100%),
+      linear-gradient(135deg, transparent 0 66%, var(--panel-edge) 66% 74%, transparent 74% 100%);
+  }
+  .win-resize-handle.dir-nw::after{
+    left:4px; top:4px;
+    background:
+      linear-gradient(-45deg, transparent 0 50%, var(--panel-edge) 50% 58%, transparent 58% 100%),
+      linear-gradient(-45deg, transparent 0 66%, var(--panel-edge) 66% 74%, transparent 74% 100%);
+  }
+  .win-resize-handle.dir-ne::after{
+    right:4px; top:4px;
+    background:
+      linear-gradient(45deg, transparent 0 50%, var(--panel-edge) 50% 58%, transparent 58% 100%),
+      linear-gradient(45deg, transparent 0 66%, var(--panel-edge) 66% 74%, transparent 74% 100%);
+  }
+  .win-resize-handle.dir-sw::after{
+    left:4px; bottom:4px;
+    background:
+      linear-gradient(-135deg, transparent 0 50%, var(--panel-edge) 50% 58%, transparent 58% 100%),
+      linear-gradient(-135deg, transparent 0 66%, var(--panel-edge) 66% 74%, transparent 74% 100%);
+  }
+  .win-resize-handle.dir-se:hover::after, .win-resize-handle.dir-nw:hover::after,
+  .win-resize-handle.dir-ne:hover::after, .win-resize-handle.dir-sw:hover::after,
+  .win-resize-handle.handle-active::after{
+    opacity:1;
+  }
+  .win-resize-handle.dir-se:hover::after, .win-resize-handle.dir-se.handle-active::after{
+    background:
+      linear-gradient(135deg, transparent 0 50%, var(--accent) 50% 58%, transparent 58% 100%),
+      linear-gradient(135deg, transparent 0 66%, var(--accent) 66% 74%, transparent 74% 100%);
+  }
+  .win-resize-handle.dir-nw:hover::after, .win-resize-handle.dir-nw.handle-active::after{
+    background:
+      linear-gradient(-45deg, transparent 0 50%, var(--accent) 50% 58%, transparent 58% 100%),
+      linear-gradient(-45deg, transparent 0 66%, var(--accent) 66% 74%, transparent 74% 100%);
+  }
+  .win-resize-handle.dir-ne:hover::after, .win-resize-handle.dir-ne.handle-active::after{
+    background:
+      linear-gradient(45deg, transparent 0 50%, var(--accent) 50% 58%, transparent 58% 100%),
+      linear-gradient(45deg, transparent 0 66%, var(--accent) 66% 74%, transparent 74% 100%);
+  }
+  .win-resize-handle.dir-sw:hover::after, .win-resize-handle.dir-sw.handle-active::after{
+    background:
+      linear-gradient(-135deg, transparent 0 50%, var(--accent) 50% 58%, transparent 58% 100%),
+      linear-gradient(-135deg, transparent 0 66%, var(--accent) 66% 74%, transparent 74% 100%);
+  }
+  .win.resizing{ user-select:none; }
   /* winOpen only plays the very first time a window appears; once it has
+
      been opened at least once we rely on the minimize/restore transitions
      instead, so reopening from minimized doesn't replay the entrance pop */
   .win.visible:not(.opened-once){ animation: winOpen .22s cubic-bezier(.34,1.4,.64,1) both; }
@@ -459,6 +571,100 @@
   .win-body p{ line-height:1.6; color:var(--text); margin:0 0 10px; }
   .win-body hr{ border:none; border-top:1px dashed var(--panel-edge); margin:18px 0; }
 
+  .about-id-row{ display:flex; align-items:center; gap:16px; margin-top:14px; }
+  .about-avatar{
+    flex:none; width:100px; height:100px; border-radius:50%; overflow:hidden;
+    border:2px solid var(--panel-edge); box-shadow:0 4px 14px var(--shadow);
+  }
+  /* Orientation change: at narrow "about" window widths, the photo and
+     name/quote no longer fit comfortably side-by-side — stack them and
+     center instead of squeezing both into a cramped row. */
+  @container win (max-width: 320px){
+    .about-id-row{ flex-direction:column; text-align:center; gap:10px; }
+  }
+
+  /* Default: everything in one column — identity block, then education
+     and "currently", stacked top to bottom exactly like before. */
+  .about-layout{ display:flex; flex-direction:column; }
+  .about-side{ }
+  .about-main{ }
+
+  /* Once the window is wide enough to actually afford it, split into a
+     profile sidebar (photo, name, quote, interests) + a content column
+     (education, currently) instead of just stretching the same single
+     column wider. This is the "about" equivalent of the work window's
+     card grid — a real layout change, not the content scaling up. */
+  @container win (min-width: 480px){
+    .about-layout{ flex-direction:row; align-items:flex-start; gap:26px; }
+    .about-side{
+      flex:0 0 190px;
+      padding-right:22px;
+      border-right:1px dashed var(--panel-edge);
+    }
+    .about-main{ flex:1; min-width:0; padding-top:14px; }
+    .about-side .about-id-row{ flex-direction:column; text-align:center; gap:10px; margin-top:0; }
+    .about-side .about-avatar{ margin:0 auto; }
+    .about-side hr{ margin:16px 0; }
+  }
+
+  /* terminal's content area isn't a .win-body (custom two-pane flex
+     layout instead) — give it a real class so the resize handler can
+     target its height directly, same as it does for .win-body elsewhere */
+  .terminal-body{
+    display:flex; background:#0d0b14;
+    height:480px; max-height:calc(100vh - 120px);
+    overflow:hidden;
+  }
+  /* ASCII art side panel — sized/laid out in fixed, discrete steps as the
+     terminal WINDOW is resized, not a smooth continuous scale (that reads
+     as "zooming"). Each step below is a real layout change: the panel
+     gets narrower, then the whole pane flips from side-by-side to
+     stacked (row → column), then disappears — the same kind of thing a
+     media query would do for viewport width, but keyed to this window. */
+  #terminal-art-panel{
+    flex:none;
+    width:420px;
+    overflow:hidden;
+    border-right:1px solid #1e1730;
+    display:flex; align-items:center; justify-content:center;
+    padding:10px 20px;
+  }
+  #terminal-art{
+    font-family:'Space Mono',monospace;
+    font-size:0.38rem;
+    line-height:1;
+    letter-spacing:0;
+    color:#e8e3f0;
+    margin:0 auto; padding:0;
+    white-space:pre;
+    text-align:center;
+    user-select:none;
+    text-shadow: 0 0 4px rgba(232,227,240,0.12);
+  }
+  /* Step 1 — still side-by-side, but the art column steps down to a
+     smaller fixed size so the terminal pane gets more of the window. */
+  @container win (max-width: 820px){
+    #terminal-art-panel{ width:260px; padding:10px 12px; }
+    #terminal-art{ font-size:0.24rem; }
+  }
+  /* Step 2 — orientation change: the two panes flip from side-by-side
+     (row) to stacked (column). The art becomes a short strip across the
+     top instead of a tall column down the side. */
+  @container win (max-width: 640px){
+    .terminal-body{ flex-direction:column; }
+    #terminal-art-panel{
+      width:100%; height:96px; flex:none;
+      border-right:none; border-bottom:1px solid #1e1730;
+      padding:8px 12px;
+    }
+    #terminal-art{ font-size:0.15rem; }
+  }
+  /* Step 3 — no room left to show art without crowding the actual
+     terminal; drop it and let the interactive pane use the full window. */
+  @container win (max-width: 520px){
+    #terminal-art-panel{ display:none; }
+  }
+
   /* ===== ALL FILES (repo code viewer) ===== */
   .files-app{
     display:flex; background:#0d0b14; height:520px; max-height:calc(100vh - 120px); overflow:hidden;
@@ -505,6 +711,30 @@
   }
   .files-code-body::-webkit-scrollbar{ width:8px; height:8px; }
   .files-code-body::-webkit-scrollbar-thumb{ background:#3a2e55; border-radius:999px; }
+  /* Orientation change: below this WINDOW width there's no room for a
+     vertical file-tree sidebar next to a code pane, so the tree flips
+     from a tall column on the left to a horizontal scrollable strip on
+     top, same treatment the mobile bottom-sheet layout already used —
+     now driven by the files window's own size, not the viewport's. */
+  @container win (max-width: 560px){
+    .files-app{ flex-direction:column; }
+    .files-tree{
+      width:100%; height:auto; flex:none;
+      display:flex; align-items:center; gap:6px;
+      overflow-x:auto; overflow-y:hidden;
+      border-right:none; border-bottom:1px solid #1e1730;
+      padding:10px 12px;
+    }
+    .files-tree-label{ display:none; }
+    .files-tree-item{ flex:none; width:auto; margin-bottom:0; white-space:nowrap; }
+    .files-tree-folder{
+      flex:none; margin-top:0; border-top:none; border-left:1px dashed #241d33;
+      white-space:nowrap;
+    }
+    .files-code{ flex:1; min-height:200px; }
+    .assets-grid{ grid-template-columns:repeat(auto-fill,minmax(92px,1fr)); }
+    .assets-summary{ margin-left:0; width:100%; }
+  }
   .files-code-placeholder{
     padding:24px; margin:0; font-family:'Space Mono',monospace; font-size:.75rem; color:#5c5378;
   }
@@ -731,9 +961,17 @@
   .link-row svg{ width:18px; height:18px; flex:none; color:var(--accent); }
   .link-row span{ font-weight:700; }
 
+  /* Default: a single scrollable column, same as before — this is what
+     you see at the window's normal/narrow width. */
+  .project-grid{
+    display:grid;
+    grid-template-columns: 1fr;
+    gap:14px;
+    margin-top:10px;
+  }
   .project-card{
     background:var(--panel); border:1px solid var(--panel-edge); border-radius:14px;
-    padding:16px; margin-bottom:14px;
+    padding:16px;
   }
   .project-cover{
     height:100px; border-radius:8px; margin-bottom:10px;
@@ -742,6 +980,26 @@
   }
   .project-card h3{ font-size:1rem; margin-bottom:5px; }
   .project-card p{ font-size:.9rem; }
+  /* Fixed-height, cropped thumbnail so cards line up evenly once there
+     are 2-3 of them side by side — this is what keeps the images from
+     just ballooning in size ("zooming") as the window gets wider. */
+  .project-img{
+    width:100%; height:150px; object-fit:cover;
+    border-radius:8px; display:block; margin-bottom:12px;
+    background:var(--panel-edge);
+  }
+
+  /* As the WORK window gets wider, reorganize the project list from one
+     scrollable column into a responsive grid — 2 columns once there's
+     room for them, 3 once there's even more. This is real reflow (an
+     actual layout change), not the cards/images just scaling up. */
+  @container win (min-width: 560px){
+    .project-grid{ grid-template-columns: repeat(2, 1fr); }
+  }
+  @container win (min-width: 880px){
+    .project-grid{ grid-template-columns: repeat(3, 1fr); }
+    .project-img{ height:130px; }
+  }
 
   .faq-item{ border-bottom:1px solid var(--panel-edge); }
   .faq-q{
@@ -1233,6 +1491,39 @@
   .eq-bar:nth-child(2){ animation-delay:.15s; }
   .eq-bar:nth-child(3){ animation-delay:.3s; }
   @keyframes eq-bounce{ from{ height:3px; } to{ height:13px; } }
+
+  /* ===== 24/7 RADIO: LIVE mode ===== */
+  .radio-live-row{
+    width:100%; display:flex; align-items:center; justify-content:center; gap:10px;
+    padding:2px 0 8px;
+  }
+  .radio-live-pill{
+    display:flex; align-items:center; gap:6px; flex:none;
+    font-family:'Space Mono', monospace; font-size:.68rem; font-weight:700; letter-spacing:.08em;
+    color:var(--accent); background:rgba(248,113,113,.12);
+    border:1px solid rgba(248,113,113,.35); border-radius:999px; padding:3px 10px;
+  }
+  .live-dot{ width:6px; height:6px; border-radius:50%; background:#f87171; flex:none; }
+  #playerStation.radio-mode .live-dot{ animation: live-pulse 1.2s ease-in-out infinite; }
+  @keyframes live-pulse{
+    0%,100%{ opacity:1; box-shadow:0 0 0 0 rgba(248,113,113,.5); }
+    50%{ opacity:.55; box-shadow:0 0 0 4px rgba(248,113,113,0); }
+  }
+  /* hide skip/shuffle/repeat + progress while a live stream is loaded — you can only pause it */
+  #playerStation.radio-mode #playerShuffleBtn,
+  #playerStation.radio-mode #playerPrevBtn,
+  #playerStation.radio-mode #playerNextBtn,
+  #playerStation.radio-mode #playerRepeatBtn,
+  #playerStation.radio-mode #miniPrevBtn,
+  #playerStation.radio-mode #miniNextBtn,
+  #playerStation.radio-mode .mini-progress{
+    display:none;
+  }
+  /* with shuffle/repeat hidden, the lone play button needs to be re-centered
+     (it normally sits in a space-between row alongside those two) */
+  #playerStation.radio-mode .player-transport{ justify-content:center; }
+  #playerStation.radio-mode .player-playbtn{ width:48px; height:48px; }
+  #playerStation.radio-mode .player-playbtn svg{ width:19px; height:19px; }
 
   /* ===== MINI BAR ===== */
   .mini-bar{
@@ -1798,6 +2089,7 @@
       margin:8px auto 0;
     }
     .win-bar{ cursor:default; border-radius:0; height:34px; }
+    .win-resize-handle{ display:none; }
     .win-body{
       max-height:calc(88dvh - 50px);
       padding:16px 18px;
@@ -2068,6 +2360,27 @@
           calc(env(safe-area-inset-bottom, 0px) + var(--dock-h) + 18px)
         ) !important;
       }
+    }
+    .tama-action-grid{
+      display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:8px;
+    }
+    /* Orientation change: at narrow game-window widths, 4 buttons across
+       gets too cramped to tap comfortably — switch to a 2x2 grid instead
+       of letting the 4 columns just keep shrinking. */
+    @container win (max-width: 340px){
+      .tama-action-grid{ grid-template-columns:repeat(2,1fr); }
+    }
+    .tama-status-row{
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom:8px; gap:8px;
+    }
+    .tama-status-left{ display:flex; align-items:center; gap:8px; min-width:0; }
+    .tama-status-right{ display:flex; gap:10px; align-items:center; flex:none; }
+    /* Orientation change: name/badges and the age·score·tier readout no
+       longer fit on one line at narrow widths — stack them instead of
+       letting them crowd together or spill past the window edge. */
+    @container win (max-width: 320px){
+      .tama-status-row{ flex-direction:column; align-items:flex-start; gap:4px; }
     }
     .tama-action-btn{
       display:flex;flex-direction:column;align-items:center;gap:3px;

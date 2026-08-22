@@ -192,10 +192,28 @@ window.initPortfolio = function(){
 // ===== WINDOW MANAGEMENT =====
 const allWins=document.querySelectorAll('.win');
 let zTop=150;
-const defaultPositions={'win-about':{x:80,y:80},'win-links':{x:110,y:110},'win-work':{x:140,y:80},'win-faq':{x:170,y:110},'win-contact':{x:200,y:80},'win-logs':{x:220,y:100},'win-game':{x:250,y:90},'win-palette':{x:160,y:100},'win-tv':{x:140,y:100},'win-slots':{x:200,y:110},'win-terminal':{x:40,y:60},'win-wallpaper':{x:180,y:80},'win-files':{x:50,y:50}};
 function isMobile(){ return window.innerWidth<=720 || (window.innerHeight<=500 && window.innerWidth<=1024); }
 function clampPosition(win,x,y){ const vw=window.innerWidth,vh=window.innerHeight,w=win.offsetWidth,h=win.offsetHeight; return{x:Math.max(0,Math.min(x,vw-w)),y:Math.max(0,Math.min(y,vh-40))}; }
 function focusWin(win){ zTop++; win.style.zIndex=zTop; win.classList.add('focused'); allWins.forEach(w=>{if(w!==win)w.classList.remove('focused');}); }
+
+// Windows no longer open at a fixed per-window spot — instead they land
+// at a random point clustered around the middle of the desktop, so
+// reopening the same app twice doesn't put it in the exact same place,
+// but it also never drifts out to a screen edge or corner. The "spread"
+// is capped both as a fraction of the viewport AND a hard pixel limit,
+// so on very large screens the scatter still reads as "near the middle"
+// rather than "anywhere."
+function randomCenterPosition(win){
+  const vw=window.innerWidth, vh=window.innerHeight;
+  const w=win.offsetWidth||440, h=win.offsetHeight||300;
+  const centerX=(vw-w)/2, centerY=(vh-h)/2;
+  const spreadX=Math.min(170, vw*0.16);
+  const spreadY=Math.min(130, vh*0.14);
+  return {
+    x: centerX + (Math.random()*2-1)*spreadX,
+    y: centerY + (Math.random()*2-1)*spreadY,
+  };
+}
 
 // --- ACCESSIBILITY: give every floating app window real dialog semantics.
 // These were plain styled <div>s with no role, no label, and no way to
@@ -260,10 +278,9 @@ function openWin(id){
   }
   lastFocusBeforeOpen[id]=document.activeElement;
   if(!isMobile()){
-    const pos=defaultPositions[id]||{x:120,y:120};
-    const jitter={x:Math.random()*20-10,y:Math.random()*20-10};
     win.style.display='block';
-    const clamped=clampPosition(win,pos.x+jitter.x,pos.y+jitter.y);
+    const pos=randomCenterPosition(win);
+    const clamped=clampPosition(win,pos.x,pos.y);
     win.style.left=clamped.x+'px'; win.style.top=clamped.y+'px';
     win.style.display='';
   }
@@ -1010,6 +1027,131 @@ document.querySelectorAll('.win .win-bar').forEach(bar=>{
   window.addEventListener('touchend',endDrag);
 });
 
+// ===== RESIZE WINDOWS =====
+// Per-window minimum sizes — small utility windows (palette, slots) don't
+// need much room, but content-dense ones (terminal, files, the game) need
+// enough space for their fixed internal layouts to not clip.
+const winMinSize = {
+  'win-terminal': { w: 480, h: 320 },
+  'win-files':    { w: 480, h: 340 },
+  'win-game':     { w: 300, h: 420 },
+  'win-logs':     { w: 320, h: 260 },
+};
+const winMinSizeDefault = { w: 220, h: 180 };
+
+// Per-window MAX sizes — "about" and "work" are the two windows whose
+// content is organized around a specific max reading/grid width rather
+// than something that benefits from unlimited stretching, so they're
+// capped at a comfortable width. Every other window is free to grow to
+// the viewport edge (minus a small margin), same as before.
+const winMaxSize = {
+  'win-about': { w: 560 },
+  'win-work':  { w: 920 },
+};
+
+// Returns the element(s) inside a window whose height should track a
+// resize. Most windows are a simple .win-bar + .win-body; a few custom
+// apps (terminal, the files browser) have their own content wrapper.
+function resizeContentEls(win){
+  if (win.id === 'win-files') return Array.from(win.querySelectorAll('.files-app'));
+  const body = win.querySelector(':scope > .win-body, :scope > .terminal-body');
+  return body ? [body] : [];
+}
+function filesTabsHeight(win){
+  if (win.id !== 'win-files') return 0;
+  const tabs = win.querySelector('.files-tabs');
+  return tabs ? tabs.offsetHeight : 0;
+}
+
+// Eight resize handles per window — the four edges (resize one
+// dimension) plus the four corners (resize both at once). Edge/corner
+// handles that move the window's top or left side also have to shift
+// win.style.left/top by the same amount the size changed, so the
+// *opposite* edge stays anchored in place instead of the whole window
+// sliding as it resizes.
+const RESIZE_DIRS = ['n','s','e','w','ne','nw','se','sw'];
+
+allWins.forEach(win=>{
+  const min = winMinSize[win.id] || winMinSizeDefault;
+  const max = winMaxSize[win.id] || null;
+
+  RESIZE_DIRS.forEach(dir=>{
+    const handle=document.createElement('div');
+    handle.className='win-resize-handle dir-'+dir;
+    handle.setAttribute('aria-hidden','true');
+    win.appendChild(handle);
+
+    let resizing=false, startX, startY, startW, startH, startLeft, startTop;
+
+    function startResize(cx,cy){
+      if(isMobile())return;
+      resizing=true; startX=cx; startY=cy;
+      const r=win.getBoundingClientRect();
+      startW=r.width; startH=r.height; startLeft=r.left; startTop=r.top;
+      win.classList.add('resizing');
+      handle.classList.add('handle-active');
+      focusWin(win);
+    }
+    function onResizeMove(cx,cy){
+      if(!resizing)return;
+      const dx=cx-startX, dy=cy-startY;
+      const vw=window.innerWidth, vh=window.innerHeight;
+
+      let newW=startW, newH=startH, newLeft=startLeft, newTop=startTop;
+
+      if(dir.includes('e')){
+        newW=Math.max(min.w, startW+dx);
+        if(max && max.w) newW=Math.min(newW, max.w);
+        newW=Math.min(newW, vw-startLeft-8);
+      }
+      if(dir.includes('w')){
+        const maxW=startLeft+startW-8; // keeps the left edge from crossing off-screen
+        let w=Math.max(min.w, startW-dx);
+        if(max && max.w) w=Math.min(w, max.w);
+        w=Math.min(w, maxW);
+        newW=w;
+        newLeft=startLeft+(startW-w);
+      }
+      if(dir.includes('s')){
+        newH=Math.max(min.h, startH+dy);
+        if(max && max.h) newH=Math.min(newH, max.h);
+        newH=Math.min(newH, vh-startTop-8);
+      }
+      if(dir.includes('n')){
+        const maxH=startTop+startH-8; // keeps the top edge from crossing off-screen
+        let h=Math.max(min.h, startH-dy);
+        if(max && max.h) h=Math.min(h, max.h);
+        h=Math.min(h, maxH);
+        newH=h;
+        newTop=startTop+(startH-h);
+      }
+
+      win.style.width=newW+'px';
+      if(dir.includes('w')) win.style.left=newLeft+'px';
+      if(dir.includes('n')) win.style.top=newTop+'px';
+
+      const barH=(win.querySelector('.win-bar')||{}).offsetHeight||0;
+      const contentH=Math.max(60, newH-barH-filesTabsHeight(win));
+      resizeContentEls(win).forEach(el=>{
+        el.style.height=contentH+'px';
+        el.style.maxHeight=contentH+'px';
+      });
+    }
+    function endResize(){
+      if(!resizing)return;
+      resizing=false;
+      win.classList.remove('resizing');
+      handle.classList.remove('handle-active');
+    }
+    handle.addEventListener('mousedown',e=>{ startResize(e.clientX,e.clientY); e.preventDefault(); e.stopPropagation(); });
+    window.addEventListener('mousemove',e=>onResizeMove(e.clientX,e.clientY));
+    window.addEventListener('mouseup',endResize);
+    handle.addEventListener('touchstart',e=>{ const t=e.touches[0]; startResize(t.clientX,t.clientY); e.stopPropagation(); },{passive:true});
+    window.addEventListener('touchmove',e=>{ if(!resizing)return; const t=e.touches[0]; onResizeMove(t.clientX,t.clientY); },{passive:true});
+    window.addEventListener('touchend',endResize);
+  });
+});
+
 // ===== THEME TOGGLE =====
 document.getElementById('themeToggle').addEventListener('click',()=>{ const r=document.documentElement; r.setAttribute('data-theme',r.getAttribute('data-theme')==='night'?'day':'night'); });
 
@@ -1570,6 +1712,9 @@ const miniArtistEl=document.getElementById('miniArtist');
 const playerDockBtn=document.querySelector('.dock button[data-win="player"]');
 const trackListEl=document.getElementById('trackList');
 const genreTabsEl=document.getElementById('genreTabs');
+const playerScrubWrapEl=document.getElementById('playerScrubWrap');
+const radioLiveRowEl=document.getElementById('radioLiveRow');
+let radioAudio=null, isRadioMode=false, radioReady=false, radioMetaInterval=null;
 
 const GENRES={
   chill:{label:'🌙 chill lofi',cover:'assets/chill_lofi.png',tracks:[
@@ -1637,6 +1782,133 @@ const GENRES={
   ]}
 };
 
+// ===== 24/7 RADIO (live internet radio, not a local file) =====
+// One free, no-API-key stream from SomaFM — Groove Salad (chilled ambient/downtempo).
+// NOTE: SomaFM's stream lives behind rotating mirror servers, so we don't
+// hardcode a stream host (those go stale — learned that one the hard way).
+// Instead we resolve the current live mirror(s) from SomaFM's own playlist
+// file at play-time, and fall back through the list if one doesn't answer.
+const RADIO_STATION={
+  id:'groovesalad', icon:'🌙', name:'Groove Salad',
+  desc:'chilled ambient & downtempo grooves',
+  pls:'https://api.somafm.com/groovesalad256.pls'
+};
+
+// Parses a SomaFM .pls playlist into an ordered list of mirror stream URLs.
+function parsePls(text){
+  return [...text.matchAll(/File\d+\s*=\s*(\S+)/gi)].map(m=>m[1].trim());
+}
+
+function ensureRadioAudio(){
+  if(radioAudio)return;
+  radioAudio=new Audio();
+  radioAudio.preload='none';
+  radioAudio.volume=parseFloat(playerVol.value);
+  radioAudio.addEventListener('playing',()=>{
+    radioReady=true;
+    playerStation.classList.add('is-playing');
+    refreshRadioMeta(); // pull the real now-playing track the moment we're actually connected
+  });
+  radioAudio.addEventListener('pause',()=>{
+    playerStation.classList.remove('is-playing');
+  });
+}
+
+// Tries each mirror URL in turn; moves to the next on error, gives up (with
+// an on-screen message) once the list is exhausted.
+function tryRadioUrls(urls,i){
+  if(!isRadioMode)return; // user left the radio tab meanwhile
+  if(i>=urls.length){
+    setRadioStatus("couldn't connect — tap play to retry");
+    return;
+  }
+  const onErr=()=>{ radioAudio.removeEventListener('error',onErr); tryRadioUrls(urls,i+1); };
+  radioAudio.addEventListener('error',onErr,{once:true});
+  radioAudio.src=urls[i];
+  radioAudio.play().catch(()=>{ /* handled by the 'error' listener above */ });
+}
+
+function setRadioStatus(text){
+  playerArtistEl.textContent=text;
+  miniArtistEl.textContent=text;
+}
+
+async function toggleRadioPlay(){
+  ensureRadioAudio();
+
+  if(radioReady){
+    if(radioAudio.paused)radioAudio.play().catch(()=>{});
+    else radioAudio.pause();
+    return;
+  }
+
+  // not connected yet (first play, or a previous attempt failed) — resolve & connect
+  playerAudio.pause(); // don't let it overlap the mp3 player/bgm
+  if(window.BGMPlayer){ window.BGMPlayer.setEnabled(false); window.BGMPlayer.pause(); }
+
+  radioAudio.removeAttribute('src'); radioAudio.load();
+  setRadioStatus('connecting…');
+
+  try{
+    const res=await fetch(RADIO_STATION.pls);
+    const text=await res.text();
+    const urls=parsePls(text);
+    if(!isRadioMode)return; // switched away while we were fetching
+    if(!urls.length){ setRadioStatus("couldn't connect — tap play to retry"); return; }
+    tryRadioUrls(urls,0);
+  }catch(e){
+    if(isRadioMode)setRadioStatus("couldn't connect — tap play to retry");
+  }
+}
+
+// Polls SomaFM's public now-playing API so the "artist — track" line stays live.
+async function refreshRadioMeta(){
+  if(!isRadioMode)return;
+  try{
+    const res=await fetch('https://somafm.com/channels.json');
+    if(!res.ok)return;
+    const data=await res.json();
+    const ch=(data.channels||[]).find(c=>c.id===RADIO_STATION.id);
+    if(ch && ch.lastPlaying && isRadioMode){
+      const text='♪ '+ch.lastPlaying;
+      setRadioStatus(text);
+      if(dynamicIsland)updateDynamicIsland({title:RADIO_STATION.name, artist:text});
+    }
+  }catch(e){ /* offline or blocked — leave whatever text is already showing */ }
+}
+
+function enterRadioMode(){
+  if(isRadioMode)return;
+  isRadioMode=true;
+  playerAudio.pause();
+  playerStation.classList.add('radio-mode');
+  playerScrubWrapEl.style.display='none';
+  radioLiveRowEl.style.display='flex';
+
+  playerGenreLabel.textContent='📻 24/7 radio';
+  playerTrackEl.textContent=RADIO_STATION.name;
+  playerArtistEl.textContent=RADIO_STATION.desc;
+  miniTrackEl.textContent=RADIO_STATION.name;
+  miniArtistEl.textContent=RADIO_STATION.desc;
+  document.querySelector('.player-thumb').innerHTML=`<span>${RADIO_STATION.icon}</span>`;
+  document.querySelector('.mini-thumb').innerHTML=`<span>${RADIO_STATION.icon}</span>`;
+  if(dynamicIsland)updateDynamicIsland({title:RADIO_STATION.name, artist:RADIO_STATION.desc});
+
+  refreshRadioMeta();
+  if(!radioMetaInterval)radioMetaInterval=setInterval(refreshRadioMeta,15000); // real-time-ish now-playing updates
+}
+
+function exitRadioMode(){
+  if(!isRadioMode)return;
+  isRadioMode=false;
+  radioReady=false;
+  if(radioAudio)radioAudio.pause();
+  playerStation.classList.remove('radio-mode','is-playing');
+  playerScrubWrapEl.style.display='';
+  radioLiveRowEl.style.display='none';
+  if(radioMetaInterval){ clearInterval(radioMetaInterval); radioMetaInterval=null; }
+}
+
 let currentGenre='chill',currentIndex=-1;
 // what's actually loaded/playing — independent of whichever genre tab
 // the user happens to be browsing right now
@@ -1657,7 +1929,12 @@ if(playerDockBtn){
 }
 
 miniBar.addEventListener('click',()=>{ playerStation.classList.contains('expanded')?collapseStation():expandStation(); });
-document.getElementById('playerClose').addEventListener('click',e=>{ e.stopPropagation(); playerAudio.pause(); hideStation(); });
+document.getElementById('playerClose').addEventListener('click',e=>{
+  e.stopPropagation(); playerAudio.pause(); hideStation();
+  if(radioAudio)radioAudio.pause();
+  radioReady=false;
+  if(radioMetaInterval){ clearInterval(radioMetaInterval); radioMetaInterval=null; }
+});
 document.getElementById('playerMin').addEventListener('click',e=>{ e.stopPropagation(); collapseStation(); });
 
 document.addEventListener('click',function(e){
@@ -1679,10 +1956,22 @@ function renderTrackList(genre){
 }
 
 function setActiveTab(genre){ genreTabsEl.querySelectorAll('.genre-tab').forEach(tab=>tab.classList.toggle('active',tab.dataset.genre===genre)); }
-function switchGenre(genre){ currentGenre=genre; setActiveTab(genre); renderTrackList(genre); }
+function switchGenre(genre){
+  currentGenre=genre;
+  setActiveTab(genre);
+  if(genre==='radio'){
+    trackListEl.style.display='none';
+    enterRadioMode();
+  }else{
+    // just browsing a folder — if the radio is playing, let it keep playing
+    trackListEl.style.display='';
+    renderTrackList(genre);
+  }
+}
 genreTabsEl.querySelectorAll('.genre-tab').forEach(tab=>tab.addEventListener('click',()=>switchGenre(tab.dataset.genre)));
 
 function loadTrack(genre,index,autoplay){
+  exitRadioMode(); // picking an actual song is what should stop the live stream
   const t=GENRES[genre].tracks[index];
   playingGenre=genre; playingIndex=index;
   currentGenre=genre; currentIndex=index; // also bring the viewed tab along when a track is explicitly loaded
@@ -1778,6 +2067,7 @@ function getRandomIndex(exclude){
 }
 
 function prevTrack(){
+  if(isRadioMode)return; // live stream — no skipping
   const genre=playingGenre||currentGenre;
   const list=GENRES[genre].tracks;
   if(playingIndex<0){ loadTrack(genre,list.length-1,true); return; }
@@ -1791,6 +2081,7 @@ function prevTrack(){
 }
 
 function nextTrack(){
+  if(isRadioMode)return; // live stream — no skipping
   const genre=playingGenre||currentGenre;
   const list=GENRES[genre].tracks;
   if(playingIndex<0){ loadTrack(genre,0,true); return; }
@@ -1805,6 +2096,8 @@ function nextTrack(){
 function formatTime(sec){ if(!isFinite(sec)||sec<0)sec=0; return Math.floor(sec/60)+':'+Math.floor(sec%60).toString().padStart(2,'0'); }
 playerAudio.volume=parseFloat(playerVol.value);
 function togglePlay(){
+  if(isRadioMode){ toggleRadioPlay(); return; }
+  if(radioAudio)radioAudio.pause();
   initAudioContext(playerAudio);
   if(audioCtx && audioCtx.state==='suspended') audioCtx.resume();
   if(playingIndex<0){loadTrack(currentGenre,0,true);return;}
@@ -1870,7 +2163,10 @@ playerAudio.addEventListener('timeupdate',()=>{
   miniProgressFill.style.width=(playerAudio.duration?(playerAudio.currentTime/playerAudio.duration)*100:0)+'%';
 });
 playerScrub.addEventListener('input',()=>{ playerAudio.currentTime=parseFloat(playerScrub.value); });
-playerVol.addEventListener('input',()=>{ playerAudio.volume=parseFloat(playerVol.value); });
+playerVol.addEventListener('input',()=>{
+  playerAudio.volume=parseFloat(playerVol.value);
+  if(radioAudio)radioAudio.volume=parseFloat(playerVol.value);
+});
 
 renderTrackList('chill');
 
