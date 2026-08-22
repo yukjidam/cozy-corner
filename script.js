@@ -1714,7 +1714,13 @@ const trackListEl=document.getElementById('trackList');
 const genreTabsEl=document.getElementById('genreTabs');
 const playerScrubWrapEl=document.getElementById('playerScrubWrap');
 const radioLiveRowEl=document.getElementById('radioLiveRow');
+const radioHistoryEl=document.getElementById('radioHistory');
+const radioHistoryListEl=document.getElementById('radioHistoryList');
 let radioAudio=null, isRadioMode=false, radioReady=false, radioMetaInterval=null;
+// running log of what the live stream has played this session — the API
+// only ever gives us the single current track, so we build history
+// ourselves by noticing when that value changes between polls.
+let radioHistoryData=[], radioCurrentText=null;
 
 const GENRES={
   chill:{label:'🌙 chill lofi',cover:'assets/chill_lofi.png',tracks:[
@@ -1791,7 +1797,8 @@ const GENRES={
 const RADIO_STATION={
   id:'groovesalad', icon:'🌙', name:'Groove Salad',
   desc:'chilled ambient & downtempo grooves',
-  pls:'https://api.somafm.com/groovesalad256.pls'
+  pls:'https://api.somafm.com/groovesalad256.pls',
+  thumb:'assets/thumbnail/live-radio.gif'
 };
 
 // Parses a SomaFM .pls playlist into an ordered list of mirror stream URLs.
@@ -1812,6 +1819,41 @@ function ensureRadioAudio(){
   radioAudio.addEventListener('pause',()=>{
     playerStation.classList.remove('is-playing');
   });
+}
+
+// Splits SomaFM's "Artist - Track" now-playing string into parts for display.
+// Falls back to showing the whole string as the title if it doesn't match.
+function parseRadioMeta(text){
+  const idx=text.indexOf(' - ');
+  if(idx===-1)return{title:text,artist:''};
+  return{artist:text.slice(0,idx),title:text.slice(idx+3)};
+}
+
+function formatAgo(ms){
+  const min=Math.floor(ms/60000);
+  if(min<1)return'just now';
+  if(min<60)return min+'m ago';
+  const hr=Math.floor(min/60);
+  return hr+'h ago';
+}
+
+function renderRadioHistory(){
+  if(!radioHistoryEl)return;
+  if(!radioHistoryData.length){
+    radioHistoryListEl.innerHTML='<p class="radio-history-empty" id="radioHistoryEmpty">tune in and we\'ll start keeping a log of what\'s played here ~</p>';
+    return;
+  }
+  radioHistoryListEl.innerHTML=radioHistoryData.map(entry=>{
+    const{title,artist}=parseRadioMeta(entry.text);
+    return`<div class="radio-history-row">
+      <span class="radio-history-note">♪</span>
+      <div class="radio-history-info">
+        <p class="radio-history-title">${title}</p>
+        ${artist?`<p class="radio-history-artist">${artist}</p>`:''}
+      </div>
+      <span class="radio-history-ago">${formatAgo(Date.now()-entry.at)}</span>
+    </div>`;
+  }).join('');
 }
 
 // Tries each mirror URL in turn; moves to the next on error, gives up (with
@@ -1872,7 +1914,18 @@ async function refreshRadioMeta(){
     if(ch && ch.lastPlaying && isRadioMode){
       const text='♪ '+ch.lastPlaying;
       setRadioStatus(text);
-      if(dynamicIsland)updateDynamicIsland({title:RADIO_STATION.name, artist:text});
+      if(dynamicIsland)updateDynamicIsland({title:RADIO_STATION.name, artist:text, thumb:RADIO_STATION.thumb});
+      // a change means the PREVIOUS current track just finished playing —
+      // that's what goes into the history log, not the new one (which is
+      // still live right now, and already shown up in the "now playing" card).
+      if(ch.lastPlaying!==radioCurrentText){
+        if(radioCurrentText!==null){
+          radioHistoryData.unshift({text:radioCurrentText, at:Date.now()});
+          if(radioHistoryData.length>8)radioHistoryData.length=8;
+        }
+        radioCurrentText=ch.lastPlaying;
+        renderRadioHistory();
+      }
     }
   }catch(e){ /* offline or blocked — leave whatever text is already showing */ }
 }
@@ -1885,14 +1938,19 @@ function enterRadioMode(){
   playerScrubWrapEl.style.display='none';
   radioLiveRowEl.style.display='flex';
 
+  // fresh log each time the station is (re)tuned in — a prior session's
+  // history isn't relevant to what's playing now
+  radioHistoryData=[]; radioCurrentText=null;
+  renderRadioHistory();
+
   playerGenreLabel.textContent='📻 24/7 radio';
   playerTrackEl.textContent=RADIO_STATION.name;
   playerArtistEl.textContent=RADIO_STATION.desc;
   miniTrackEl.textContent=RADIO_STATION.name;
   miniArtistEl.textContent=RADIO_STATION.desc;
-  document.querySelector('.player-thumb').innerHTML=`<span>${RADIO_STATION.icon}</span>`;
-  document.querySelector('.mini-thumb').innerHTML=`<span>${RADIO_STATION.icon}</span>`;
-  if(dynamicIsland)updateDynamicIsland({title:RADIO_STATION.name, artist:RADIO_STATION.desc});
+  document.querySelector('.player-thumb').innerHTML=`<img src="${RADIO_STATION.thumb}" alt="${RADIO_STATION.name}" style="width:100%;height:100%;object-fit:cover;">`;
+  document.querySelector('.mini-thumb').innerHTML=`<img src="${RADIO_STATION.thumb}" alt="${RADIO_STATION.name}" style="width:100%;height:100%;object-fit:cover;">`;
+  if(dynamicIsland)updateDynamicIsland({title:RADIO_STATION.name, artist:RADIO_STATION.desc, thumb:RADIO_STATION.thumb});
 
   refreshRadioMeta();
   if(!radioMetaInterval)radioMetaInterval=setInterval(refreshRadioMeta,15000); // real-time-ish now-playing updates
@@ -1915,7 +1973,12 @@ let currentGenre='chill',currentIndex=-1;
 let playingGenre=null, playingIndex=-1;
 
 function showStation(){ playerStation.classList.add('mini'); if(playerDockBtn)playerDockBtn.classList.add('win-open'); }
-function hideStation(){ playerStation.classList.remove('mini','expanded'); if(playerDockBtn)playerDockBtn.classList.remove('win-open'); }
+function hideStation(){
+  playerStation.classList.remove('mini','expanded','windowed');
+  playerStation.style.left=''; playerStation.style.top=''; playerStation.style.right=''; playerStation.style.bottom='';
+  playerStation.style.width=''; playerStation.style.height=''; playerStation.style.zIndex='';
+  if(playerDockBtn)playerDockBtn.classList.remove('win-open');
+}
 function expandStation(){ playerStation.classList.add('mini','expanded'); if(playerDockBtn)playerDockBtn.classList.add('win-open'); }
 function collapseStation(){ playerStation.classList.remove('expanded'); }
 
@@ -1923,6 +1986,7 @@ if(playerDockBtn){
   playerDockBtn.addEventListener('click',()=>{
     playerDockBtn.classList.remove('dock-bounce'); void playerDockBtn.offsetWidth; playerDockBtn.classList.add('dock-bounce');
     playerDockBtn.addEventListener('animationend',()=>playerDockBtn.classList.remove('dock-bounce'),{once:true});
+    if(playerStation.classList.contains('windowed')){ if(window.PlayerStationWindow)window.PlayerStationWindow.focus(); return; }
     const isMini=playerStation.classList.contains('mini'),isExpanded=playerStation.classList.contains('expanded');
     if(!isMini)showStation(); else if(isExpanded)collapseStation(); else expandStation();
   });
@@ -1935,12 +1999,210 @@ document.getElementById('playerClose').addEventListener('click',e=>{
   radioReady=false;
   if(radioMetaInterval){ clearInterval(radioMetaInterval); radioMetaInterval=null; }
 });
-document.getElementById('playerMin').addEventListener('click',e=>{ e.stopPropagation(); collapseStation(); });
+document.getElementById('playerMin').addEventListener('click',e=>{
+  e.stopPropagation();
+  if(playerStation.classList.contains('windowed') && window.PlayerStationWindow) window.PlayerStationWindow.redock();
+  else collapseStation();
+});
 
 document.addEventListener('click',function(e){
-  if(!playerStation.classList.contains('expanded'))return;
+  if(!playerStation.classList.contains('expanded') || playerStation.classList.contains('windowed'))return;
   if(!playerStation.contains(e.target))collapseStation();
 },true);
+
+// ===== PLAYER STATION: drag the titlebar to undock it into a real,
+// draggable/resizable floating window — same family as the .win system,
+// just applied to the corner-pinned player instead of a dock-launched app.
+(function(){
+  const stationEl=playerStation;
+  const fullEl=stationEl.querySelector('.player-full');
+  const titlebar=document.getElementById('playerTitlebar');
+  const bodyEl=document.getElementById('playerFullBody');
+  const redockBtn=document.getElementById('playerRedock');
+  if(!titlebar || !bodyEl) return;
+
+  const DRAG_THRESHOLD=6;
+  const REDOCK_ZONE=90; // px from the bottom-right corner that snaps back to the dock on drop
+  const WIN_MIN={ w:380, h:360 };
+  const WIN_MAX={ w:980, h:860 };
+  // the size the player opens at the instant it's undocked. Wide enough to
+  // clear the @container(min-width:640px) breakpoint immediately, so it
+  // always reflows into the two-column grid instead of just scaling up
+  // the same narrow docked card.
+  const WIN_OPEN={ w:760, h:600 };
+
+  // NOTE: whether we're windowed is read straight off stationEl's classList
+  // (isWindowed()) rather than cached in its own variable. A separate
+  // 'docked'/'windowed' variable here previously went stale whenever the
+  // class was changed from outside this closure — e.g. the titlebar's ✕
+  // button calls the page-level hideStation(), which strips 'windowed'
+  // directly. The cached variable never found out, so the *next* undock
+  // drag saw a stale "already windowed" flag, skipped re-running
+  // enterWindowed() (and its grid setup), and just dragged the plain
+  // docked markup around — the "stretched docked version" bug. Reading
+  // the class directly means there's only one source of truth, ever.
+  function isWindowed(){ return stationEl.classList.contains('windowed'); }
+  let dragState=null;
+
+  function bringToFront(){ zTop++; stationEl.style.zIndex=zTop; }
+
+  function enterWindowed(){
+    // anchor to the OUTER station box, not .player-full — .player-full is
+    // mid-transition (opacity/max-height) right after an expand click, so
+    // its rect can be mid-animation and gives a skewed, "shambled" origin.
+    // The outer #playerStation box is fixed-size and never animates.
+    const anchor=stationEl.getBoundingClientRect();
+    stationEl.classList.add('windowed');
+    stationEl.classList.remove('mini');
+    stationEl.style.right='auto'; stationEl.style.bottom='auto';
+
+    const vw=window.innerWidth, vh=window.innerHeight;
+    const openW=Math.min(WIN_OPEN.w, vw-24);
+    const openH=Math.min(WIN_OPEN.h, vh-24);
+
+    // grow up-and-left from the docked corner so it feels like it's
+    // expanding out of where it was, but never lands off-screen
+    let left=anchor.right-openW, top=anchor.bottom-openH;
+    left=Math.max(12, Math.min(left, vw-openW-12));
+    top =Math.max(12, Math.min(top,  vh-openH-12));
+
+    stationEl.style.left=left+'px';
+    stationEl.style.top=top+'px';
+    stationEl.style.width=openW+'px';
+    // pin the height on the OUTER box only. .player-full and
+    // .player-full-body are flex:1/min-height:0 in windowed mode (see
+    // style.css), so they fill this exactly — no need to hand-compute
+    // and re-set an inner pixel height every time.
+    stationEl.style.height=openH+'px';
+
+    bringToFront();
+    if(playerDockBtn)playerDockBtn.classList.add('win-open');
+  }
+
+  function redock(){
+    stationEl.classList.remove('windowed','expanded');
+    stationEl.classList.add('mini');
+    stationEl.style.left=''; stationEl.style.top=''; stationEl.style.right=''; stationEl.style.bottom='';
+    stationEl.style.width=''; stationEl.style.height=''; stationEl.style.zIndex='';
+    if(playerDockBtn)playerDockBtn.classList.add('win-open');
+  }
+
+  function clampStation(x,y){
+    const vw=window.innerWidth,vh=window.innerHeight;
+    const w=stationEl.offsetWidth;
+    // once it's a real window, keep the whole titlebar on-screen rather
+    // than letting a ~600px-tall window slide almost entirely off the
+    // bottom edge (the old vh-40 cap was tuned for the tiny docked bar)
+    const bottomCap=isWindowed() ? vh-(titlebar.offsetHeight||38)-8 : vh-40;
+    return{ x:Math.max(0,Math.min(x,vw-Math.min(w,vw))), y:Math.max(0,Math.min(y,bottomCap)) };
+  }
+
+  function onTitlebarDown(e){
+    if(isMobile())return;
+    if(e.target.closest('.win-dot, .player-redock-btn'))return;
+    const point=e.touches?e.touches[0]:e;
+    const rect=stationEl.getBoundingClientRect();
+    dragState={
+      startX:point.clientX, startY:point.clientY,
+      originLeft:rect.left, originTop:rect.top,
+      armed:isWindowed(),
+      dragging:false,
+    };
+    if(isWindowed())bringToFront();
+    if(!e.touches)e.preventDefault();
+  }
+  function onTitlebarMove(e){
+    if(!dragState)return;
+    const point=e.touches?e.touches[0]:e;
+    const dx=point.clientX-dragState.startX, dy=point.clientY-dragState.startY;
+    if(!dragState.armed){
+      if(Math.hypot(dx,dy)<DRAG_THRESHOLD)return;
+      dragState.armed=true;
+      enterWindowed();
+      const rect=stationEl.getBoundingClientRect();
+      dragState.originLeft=rect.left-dx; dragState.originTop=rect.top-dy;
+    }
+    dragState.dragging=true;
+    const clamped=clampStation(dragState.originLeft+dx, dragState.originTop+dy);
+    stationEl.style.left=clamped.x+'px'; stationEl.style.top=clamped.y+'px';
+  }
+  function onTitlebarUp(){
+    if(!dragState)return;
+    const wasDragging=dragState.dragging;
+    dragState=null;
+    if(!wasDragging)return;
+    const vw=window.innerWidth,vh=window.innerHeight;
+    const rect=stationEl.getBoundingClientRect();
+    const nearCorner=(vw-rect.right)<REDOCK_ZONE && (vh-rect.bottom)<REDOCK_ZONE;
+    if(nearCorner)redock();
+  }
+
+  titlebar.addEventListener('mousedown',onTitlebarDown);
+  window.addEventListener('mousemove',onTitlebarMove);
+  window.addEventListener('mouseup',onTitlebarUp);
+  titlebar.addEventListener('touchstart',onTitlebarDown,{passive:true});
+  window.addEventListener('touchmove',onTitlebarMove,{passive:true});
+  window.addEventListener('touchend',onTitlebarUp);
+
+  stationEl.addEventListener('mousedown',()=>{ if(isWindowed())bringToFront(); });
+  if(redockBtn)redockBtn.addEventListener('click',e=>{ e.stopPropagation(); redock(); });
+
+  // Resize handles, same visual language as the .win system.
+  // Previously limited to the two side (width-only) handles because the
+  // two-column layout inside the player is driven by container WIDTH —
+  // shrinking height risked the track list overlapping the now-playing
+  // card. The now-playing/track-list panes are flexed with min-height:0
+  // and their own overflow-y:auto (see .player-full-body / .track-list /
+  // .radio-history in style.css), so they clip and scroll cleanly instead
+  // of overflowing — full 8-direction resize is safe to enable.
+  const RESIZE_DIRS=['e','w','n','s','ne','nw','se','sw'];
+  RESIZE_DIRS.forEach(dir=>{
+    const handle=document.createElement('div');
+    handle.className='win-resize-handle dir-'+dir;
+    handle.setAttribute('aria-hidden','true');
+    stationEl.appendChild(handle);
+
+    let resizing=false,startX,startY,startW,startH,startLeft,startTop;
+    function startResize(cx,cy){
+      if(isMobile()||!isWindowed())return;
+      resizing=true; startX=cx; startY=cy;
+      const r=stationEl.getBoundingClientRect();
+      startW=r.width; startH=r.height; startLeft=r.left; startTop=r.top;
+      stationEl.classList.add('resizing'); handle.classList.add('handle-active');
+      bringToFront();
+    }
+    function onResizeMove(cx,cy){
+      if(!resizing)return;
+      const dx=cx-startX, dy=cy-startY;
+      const vw=window.innerWidth, vh=window.innerHeight;
+      let newW=startW,newH=startH,newLeft=startLeft,newTop=startTop;
+      if(dir.includes('e')){ newW=Math.max(WIN_MIN.w,Math.min(WIN_MAX.w,startW+dx)); newW=Math.min(newW,vw-startLeft-8); }
+      if(dir.includes('w')){ const maxW=startLeft+startW-8; let w=Math.max(WIN_MIN.w,Math.min(WIN_MAX.w,startW-dx)); w=Math.min(w,maxW); newW=w; newLeft=startLeft+(startW-w); }
+      if(dir.includes('s')){ newH=Math.max(WIN_MIN.h,Math.min(WIN_MAX.h,startH+dy)); newH=Math.min(newH,vh-startTop-8); }
+      if(dir.includes('n')){ const maxH=startTop+startH-8; let h=Math.max(WIN_MIN.h,Math.min(WIN_MAX.h,startH-dy)); h=Math.min(h,maxH); newH=h; newTop=startTop+(startH-h); }
+      stationEl.style.width=newW+'px';
+      stationEl.style.height=newH+'px';
+      if(dir.includes('w'))stationEl.style.left=newLeft+'px';
+      if(dir.includes('n'))stationEl.style.top=newTop+'px';
+    }
+    function endResize(){ if(!resizing)return; resizing=false; stationEl.classList.remove('resizing'); handle.classList.remove('handle-active'); }
+    handle.addEventListener('mousedown',e=>{ startResize(e.clientX,e.clientY); e.preventDefault(); e.stopPropagation(); });
+    window.addEventListener('mousemove',e=>onResizeMove(e.clientX,e.clientY));
+    window.addEventListener('mouseup',endResize);
+    handle.addEventListener('touchstart',e=>{ const t=e.touches[0]; startResize(t.clientX,t.clientY); e.stopPropagation(); },{passive:true});
+    window.addEventListener('touchmove',e=>{ if(!resizing)return; const t=e.touches[0]; onResizeMove(t.clientX,t.clientY); },{passive:true});
+    window.addEventListener('touchend',endResize);
+  });
+
+  window.addEventListener('resize',()=>{
+    if(!isWindowed())return;
+    if(isMobile()){ redock(); return; }
+    const clamped=clampStation(parseFloat(stationEl.style.left)||0, parseFloat(stationEl.style.top)||0);
+    stationEl.style.left=clamped.x+'px'; stationEl.style.top=clamped.y+'px';
+  });
+
+  window.PlayerStationWindow={ redock, focus:bringToFront, get mode(){ return isWindowed()?'windowed':'docked'; } };
+})();
 
 function renderTrackList(genre){
   const list=GENRES[genre].tracks;
@@ -1961,10 +2223,12 @@ function switchGenre(genre){
   setActiveTab(genre);
   if(genre==='radio'){
     trackListEl.style.display='none';
+    radioHistoryEl.style.display='flex';
     enterRadioMode();
   }else{
     // just browsing a folder — if the radio is playing, let it keep playing
     trackListEl.style.display='';
+    radioHistoryEl.style.display='none';
     renderTrackList(genre);
   }
 }

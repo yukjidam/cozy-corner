@@ -972,6 +972,12 @@
   .project-card{
     background:var(--panel); border:1px solid var(--panel-edge); border-radius:14px;
     padding:16px;
+    display:flex; flex-direction:column;
+  }
+  .project-card p{ flex:1; }
+  .project-links{
+    margin-top:12px; padding-top:2px;
+    display:flex; align-items:center; flex-wrap:wrap; gap:6px;
   }
   .project-cover{
     height:100px; border-radius:8px; margin-bottom:10px;
@@ -1276,6 +1282,42 @@
     opacity:1;
     pointer-events:auto;
   }
+
+  /* ----- windowed mode: dragged free of the corner dock into a real,
+     draggable/resizable floating window, same family as .win ----- */
+  #playerStation{
+    container-type: inline-size;
+    container-name: player;
+  }
+  #playerStation.windowed{
+    transform:none !important;
+    opacity:1;
+    pointer-events:auto;
+    transition:none;
+    right:auto; bottom:auto;
+    min-width:380px;
+    max-width:calc(100vw - 24px);
+  }
+  #playerStation.windowed .mini-bar{ display:none; }
+  #playerStation.windowed .player-full{
+    display:flex; flex-direction:column;
+    /* fill the fixed-height #playerStation box the JS now sets on undock/
+       resize, instead of relying on a hand-computed pixel height on the
+       body below — see .player-full-body note underneath. */
+    flex:1 1 auto; min-height:0;
+    border-radius:12px;
+    box-shadow:0 12px 40px var(--shadow), 0 2px 8px var(--shadow);
+    max-height:none;
+    transition:none;
+  }
+  #playerStation.windowed .player-titlebar{ border-radius:12px 12px 0 0; }
+  /* flex:1 + min-height:0 makes this fill whatever's left under the
+     titlebar exactly, so overflow-y:auto (set on the base .player-full-body
+     rule above) always has a real, reliable box to clip/scroll against —
+     no more relying on JS to compute and re-set an exact pixel height
+     on this element every time the window opens or resizes. */
+  #playerStation.windowed .player-full-body{ max-height:none; flex:1 1 auto; min-height:0; }
+  #playerStation.resizing{ user-select:none; }
   .player-full{
     background:var(--win-body);
     border:1px solid var(--win-bar-border);
@@ -1290,6 +1332,17 @@
     max-height:740px;
     opacity:1;
   }
+  /* undocking from an already-expanded mini-bar leaves both .expanded and
+     .windowed on the element at once. That rule above and the .windowed
+     max-height:none rule earlier in the file have identical specificity,
+     so source order alone decided the winner (740px) — harmless today
+     only because WIN_OPEN.h/WIN_MAX.h happen to fit under 740px, but a
+     latent clipping bug the moment those change. This compound selector
+     out-specifies both, so "windowed" always wins when it's present. */
+  #playerStation.windowed.expanded .player-full{
+    max-height:none;
+    opacity:1;
+  }
 
   .player-titlebar{
     background:var(--win-bar);
@@ -1297,9 +1350,21 @@
     padding:0 14px; height:38px;
     display:flex; align-items:center; justify-content:space-between;
     user-select:none;
+    cursor:grab;
   }
+  .player-titlebar:active{ cursor:grabbing; }
   .player-titlebar-left{ display:flex; align-items:center; gap:10px; }
   .player-titlebar .win-dots{ display:flex; gap:6px; }
+
+  .player-redock-btn{
+    display:none; align-items:center; justify-content:center;
+    width:22px; height:22px; flex:none; border-radius:6px;
+    background:none; border:none; color:var(--text-muted); cursor:pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+  .player-redock-btn:hover{ background:var(--panel-edge); color:var(--text); }
+  .player-redock-btn svg{ width:12px; height:12px; }
+  #playerStation.windowed .player-redock-btn{ display:flex; }
   .player-title{
     font-family:'Space Mono', monospace;
     font-size:.72rem; color:var(--text-muted); letter-spacing:.06em;
@@ -1321,10 +1386,19 @@
   .player-full-body p{ line-height:1.6; color:var(--text); margin:0 0 10px; }
   .player-full-body hr{ border:none; border-top:1px dashed var(--panel-edge); margin:14px 0; }
 
-  .player-card{
-    display:flex; align-items:center; gap:14px;
+  /* ----- player-now-panel: album card, transport, and volume used to each
+     be their own bordered/backgrounded box stacked with gaps between them,
+     which read as three disconnected panels. They're wrapped in a single
+     .player-now-panel shell that owns the background/border, with soft
+     dashed dividers between the three sections instead — one cohesive
+     card. (Named distinctly from the unrelated header .now-playing pill.) ----- */
+  .player-now-panel{
+    display:flex; flex-direction:column;
     background:var(--panel); border:1px solid var(--panel-edge); border-radius:12px;
     padding:14px;
+  }
+  .player-card{
+    display:flex; align-items:center; gap:14px;
   }
   .player-disc-wrap{ flex:none; width:88px; height:88px; position:relative; }
   .player-thumb{
@@ -1342,9 +1416,9 @@
   .player-artist{ color:var(--text-muted); font-size:.8rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin:0; line-height:1.3; }
 
   .player-controls{
-    display:flex; flex-direction:column; align-items:stretch; gap:10px; margin-top:14px;
-    background:var(--panel); border:1px solid var(--panel-edge); border-radius:12px;
-    padding:12px 16px 10px;
+    display:flex; flex-direction:column; align-items:stretch; gap:10px;
+    margin-top:14px; padding-top:14px;
+    border-top:1px dashed var(--panel-edge);
   }
   .player-transport{
     display:flex; align-items:center; justify-content:space-between;
@@ -1383,35 +1457,64 @@
     font-size:.52rem; font-weight:800; line-height:11px; text-align:center;
   }
 
-  .player-scrub-wrap{ width:100%; display:flex; align-items:center; gap:8px; }
-  .player-time{ font-family:'Space Mono', monospace; font-size:.68rem; color:var(--text-muted); width:34px; flex:none; text-align:center; }
+  /* ----- time labels + sliders: these were fixed px everywhere, so they
+     stayed exactly as small on the wide 860px+ windowed tier as they were
+     on the narrow docked card — clamp() driven by container query width
+     (cqw, relative to #playerStation's own inline-size container set up
+     above) lets them scale fluidly with however much room the player
+     actually has, instead of needing another hand-tuned breakpoint. ----- */
+  .player-scrub-wrap{ width:100%; display:flex; align-items:center; gap:8px; min-width:0; }
+  .player-time{
+    font-family:'Space Mono', monospace; color:var(--text-muted); flex:none; text-align:center;
+    font-size: clamp(.64rem, 2.3cqw, .82rem);
+    width: clamp(30px, 9cqw, 44px);
+  }
+  /* flex items default to min-width:auto, not 0 — for a native <input
+     type="range"> that "auto" resolves to the control's intrinsic
+     width, so flex:1 alone couldn't actually shrink it past that
+     point. Once the now-playing card's own column got narrower than
+     time-label + intrinsic-slider + time-label (e.g. the fixed 220px
+     left column at the 560px windowed tier), the slider refused to
+     give up any more space and the trailing .player-time got pushed
+     out past the card's right edge/border instead. min-width:0 lets
+     it shrink all the way down like any other flexed box. */
   .player-scrub{
-    -webkit-appearance:none; appearance:none; flex:1; height:5px; border-radius:999px;
+    -webkit-appearance:none; appearance:none; flex:1; min-width:0; border-radius:999px;
     background:var(--panel-edge); outline:none; cursor:pointer;
+    height: clamp(4px, 1.1cqw, 6px);
   }
   .player-scrub::-webkit-slider-thumb{
-    -webkit-appearance:none; width:12px; height:12px; border-radius:50%;
+    -webkit-appearance:none; border-radius:50%;
     background:var(--accent); cursor:pointer; border:none;
+    width: clamp(11px, 2.8cqw, 15px); height: clamp(11px, 2.8cqw, 15px);
   }
   .player-scrub::-moz-range-thumb{
-    width:12px; height:12px; border-radius:50%; background:var(--accent); cursor:pointer; border:none;
+    border-radius:50%; background:var(--accent); cursor:pointer; border:none;
+    width: clamp(11px, 2.8cqw, 15px); height: clamp(11px, 2.8cqw, 15px);
   }
   .player-vol-row{
-    display:flex; align-items:center; gap:8px; margin-top:10px;
-    background:var(--panel); border:1px solid var(--panel-edge); border-radius:12px;
-    padding:10px 14px;
+    display:flex; align-items:center; gap:8px; min-width:0;
+    margin-top:10px; padding-top:10px;
+    border-top:1px dashed var(--panel-edge);
   }
-  .player-vol-row svg{ width:15px; height:15px; flex:none; color:var(--text-muted); }
+  .player-vol-row svg{
+    flex:none; color:var(--text-muted);
+    width: clamp(14px, 3cqw, 18px); height: clamp(14px, 3cqw, 18px);
+  }
+  /* same intrinsic-min-width fix as .player-scrub above */
   .player-vol{
-    -webkit-appearance:none; appearance:none; flex:1; height:4px; border-radius:999px;
+    -webkit-appearance:none; appearance:none; flex:1; min-width:0; border-radius:999px;
     background:var(--panel-edge); outline:none; cursor:pointer;
+    height: clamp(3px, .9cqw, 5px);
   }
   .player-vol::-webkit-slider-thumb{
-    -webkit-appearance:none; width:10px; height:10px; border-radius:50%;
+    -webkit-appearance:none; border-radius:50%;
     background:var(--text-muted); cursor:pointer; border:none;
+    width: clamp(9px, 2.3cqw, 12px); height: clamp(9px, 2.3cqw, 12px);
   }
   .player-vol::-moz-range-thumb{
-    width:10px; height:10px; border-radius:50%; background:var(--text-muted); cursor:pointer; border:none;
+    border-radius:50%; background:var(--text-muted); cursor:pointer; border:none;
+    width: clamp(9px, 2.3cqw, 12px); height: clamp(9px, 2.3cqw, 12px);
   }
 
   /* ===== GENRE FOLDERS ===== */
@@ -1491,6 +1594,43 @@
   .eq-bar:nth-child(2){ animation-delay:.15s; }
   .eq-bar:nth-child(3){ animation-delay:.3s; }
   @keyframes eq-bounce{ from{ height:3px; } to{ height:13px; } }
+
+  /* ===== RADIO HISTORY (shown instead of .track-list while the 24/7
+     radio tab is active — otherwise that whole column just sat empty,
+     since a live stream has no browsable file list of its own) ===== */
+  .radio-history{
+    margin-top:8px;
+    display:flex; flex-direction:column;
+    max-height:240px; overflow-y:auto;
+    scrollbar-width:thin; scrollbar-color: var(--panel-edge) transparent;
+  }
+  .radio-history::-webkit-scrollbar{ width:4px; }
+  .radio-history::-webkit-scrollbar-thumb{ background:var(--panel-edge); border-radius:999px; }
+  .radio-history-empty{
+    font-size:.8rem; color:var(--text-muted); line-height:1.6; margin:0;
+    padding:4px 2px;
+  }
+  .radio-history-row{
+    display:flex; align-items:center; gap:10px;
+    padding:8px 10px; border-radius:10px;
+  }
+  .radio-history-row + .radio-history-row{ border-top:1px dashed var(--panel-edge); }
+  .radio-history-note{
+    flex:none; width:18px; text-align:center;
+    color:var(--text-muted); font-size:.8rem;
+  }
+  .radio-history-info{ flex:1; min-width:0; }
+  .radio-history-title{
+    font-size:.85rem; font-weight:700; color:var(--text);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .radio-history-artist{
+    font-size:.72rem; color:var(--text-muted);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .radio-history-ago{
+    font-family:'Space Mono', monospace; font-size:.62rem; color:var(--text-muted); flex:none;
+  }
 
   /* ===== 24/7 RADIO: LIVE mode ===== */
   .radio-live-row{
@@ -1600,6 +1740,121 @@
     background:var(--panel-edge); border-radius:999px; overflow:hidden;
     pointer-events:none;
   }
+  /* ----- windowed responsive layout: like Spotify's desktop/web player,
+     the floating window reflows through multiple tiers as it's resized —
+     not just one on/off switch. Below 560px (or docked) it's the compact
+     single-column card. From 560px it becomes a real two-pane player.
+     Past 860px the panes get room to breathe: bigger art, roomier type. ----- */
+  @container player (min-width:560px){
+    #playerStation.windowed .player-full-body{
+      display:grid;
+      grid-template-columns: 220px minmax(0,1fr);
+      /* 6 explicit rows now: header (h3/intro/hr) gets rows 1-3 of its own
+         instead of being left row-less, which is what was letting the grid
+         auto-placement algorithm banish it to an implicit row *after*
+         everything else — see the note below. */
+      grid-template-rows: auto auto auto auto auto minmax(0,1fr);
+      /* column-gap was 0, so the now-playing card's right edge butted
+         straight up against the folders divider line with no breathing
+         room at all. This opens a real gutter between them; folders-panel
+         keeps its own padding-left for the space *after* the divider. */
+      column-gap:20px;
+      row-gap:2px;
+      align-content:start;
+      padding:18px 20px 20px;
+      /* every grid item below also needs min-width:0 — grid items default
+         to min-width:auto (sized to their content's max-content), and the
+         folder-tabs row is wide enough on its own to blow past the column
+         and get clipped by the window edge without this. */
+      min-width:0;
+    }
+    #playerStation.windowed .player-full-body > *{ min-width:0; }
+    /* IMPORTANT: these three must have an explicit grid-row, not just
+       grid-column. Grid places explicitly-positioned items (the card,
+       controls, volume row, folders label, genre shelf below all declare
+       both column *and* row) before it auto-places anything else. Items
+       that only specify grid-column get auto-placed into the next row
+       that's *entirely* free across both columns — and since rows 4-6
+       are already fully claimed by those explicit items, a row-less h3/
+       p/hr gets pushed into new implicit rows appended after row 6,
+       rendering below (and outside the clipped bounds of) the whole
+       two-column layout instead of up top where it belongs.
+    */
+    #playerStation.windowed .player-full-body > h3{ grid-column:1 / -1; grid-row:1; }
+    #playerStation.windowed .player-full-body > p:first-of-type{ grid-column:1 / -1; grid-row:2; }
+    #playerStation.windowed .player-full-body > hr:first-of-type{ grid-column:1 / -1; grid-row:3; margin-bottom:14px; }
+    #playerStation.windowed .player-full-body > hr:last-of-type{ display:none; }
+
+    /* the whole now-playing card takes the left column's full row span
+       (4 through the end, mirroring how .folders-panel spans column 2) as
+       ONE grid item, so its background/border reads as a single panel
+       instead of three separately-placed boxes with gaps between them. */
+    #playerStation.windowed .player-now-panel{
+      grid-column:1; grid-row:4 / -1;
+      align-self:start;
+      padding:20px 16px 18px;
+    }
+    #playerStation.windowed .player-card{
+      flex-direction:column; text-align:center;
+    }
+    #playerStation.windowed .player-disc-wrap{ width:96px; height:96px; }
+    #playerStation.windowed .player-thumb{ width:96px; height:96px; }
+    #playerStation.windowed .player-thumb span{ font-size:2rem; }
+    #playerStation.windowed .player-meta{ align-items:center; }
+    #playerStation.windowed .player-track,
+    #playerStation.windowed .player-artist{ white-space:normal; text-align:center; }
+
+    #playerStation.windowed .player-controls{ margin-top:16px; padding-top:16px; }
+    #playerStation.windowed .player-vol-row{ margin-top:12px; padding-top:12px; }
+
+    /* right column: one grid item spanning the same row range as the
+       now-playing column (4 through the end), laid out with its OWN
+       internal flexbox instead of being split into two separately
+       row-placed grid items. That split was the cause of the big dead
+       gap under "FOLDERS" — the label's row height was being forced to
+       match the tall album-art row next to it (row 4), so the tabs
+       below it couldn't start until *that* row ended. As one flex
+       column, "folders" and the tabs sit right next to each other
+       regardless of what the left column is doing. */
+    #playerStation.windowed .folders-panel{
+      grid-column:2; grid-row:4 / -1;
+      display:flex; flex-direction:column; min-height:0; min-width:0;
+      padding-left:18px; border-left:1px solid var(--panel-edge);
+    }
+    #playerStation.windowed .folders-panel > p.label{ flex:none; margin-bottom:8px; }
+    #playerStation.windowed .genre-shelf{
+      flex:1; display:flex; flex-direction:column; min-height:0; min-width:0;
+    }
+    #playerStation.windowed .genre-tabs{ flex:none; min-width:0; }
+    /* the base .track-list rule caps this at max-height:240px for the
+       compact docked popover, where the whole card (not just the list)
+       needs to stay short. In windowed mode the list lives inside its own
+       flexed, already-clipped column, so that cap just left flex:1 unable
+       to actually grow the list to fill the space — the box stayed
+       240px tall and the rest of the column sat empty beneath it. */
+    #playerStation.windowed .track-list{ flex:1; min-height:0; min-width:0; max-height:none; overflow-y:auto; }
+    #playerStation.windowed .radio-history{ flex:1; min-height:0; min-width:0; max-height:none; overflow-y:auto; }
+  }
+
+  /* spacious tier: once there's real desktop-app room, let the left pane
+     breathe instead of just keeping the compact 560px sizing */
+  @container player (min-width:860px){
+    #playerStation.windowed .player-full-body{
+      grid-template-columns: 280px minmax(0,1fr);
+      column-gap:26px;
+      padding:22px 26px 24px;
+    }
+    #playerStation.windowed .player-full-body > hr:first-of-type{ margin-bottom:18px; }
+    #playerStation.windowed .player-now-panel{ padding:26px 22px 22px; }
+    #playerStation.windowed .player-disc-wrap{ width:140px; height:140px; }
+    #playerStation.windowed .player-thumb{ width:140px; height:140px; }
+    #playerStation.windowed .player-thumb span{ font-size:2.7rem; }
+    #playerStation.windowed .player-controls{ margin-top:18px; padding-top:18px; }
+    #playerStation.windowed .player-vol-row{ margin-top:14px; padding-top:14px; }
+    #playerStation.windowed .folders-panel{ padding-left:24px; }
+  }
+
+
   .mini-progress-fill{
     height:100%; width:0%; background:var(--accent);
     border-radius:999px; transition:width .5s linear;
