@@ -421,63 +421,9 @@
   .win-resize-handle.dir-ne{ right:0; top:0; cursor:nesw-resize; }
   .win-resize-handle.dir-sw{ left:0; bottom:0; cursor:nesw-resize; }
 
-  .win-resize-handle.dir-se::after, .win-resize-handle.dir-nw::after,
-  .win-resize-handle.dir-ne::after, .win-resize-handle.dir-sw::after{
-    content:'';
-    position:absolute;
-    width:9px; height:9px;
-    opacity:.75;
-    transition: opacity .15s ease;
-  }
-  .win-resize-handle.dir-se::after{
-    right:4px; bottom:4px;
-    background:
-      linear-gradient(135deg, transparent 0 50%, var(--panel-edge) 50% 58%, transparent 58% 100%),
-      linear-gradient(135deg, transparent 0 66%, var(--panel-edge) 66% 74%, transparent 74% 100%);
-  }
-  .win-resize-handle.dir-nw::after{
-    left:4px; top:4px;
-    background:
-      linear-gradient(-45deg, transparent 0 50%, var(--panel-edge) 50% 58%, transparent 58% 100%),
-      linear-gradient(-45deg, transparent 0 66%, var(--panel-edge) 66% 74%, transparent 74% 100%);
-  }
-  .win-resize-handle.dir-ne::after{
-    right:4px; top:4px;
-    background:
-      linear-gradient(45deg, transparent 0 50%, var(--panel-edge) 50% 58%, transparent 58% 100%),
-      linear-gradient(45deg, transparent 0 66%, var(--panel-edge) 66% 74%, transparent 74% 100%);
-  }
-  .win-resize-handle.dir-sw::after{
-    left:4px; bottom:4px;
-    background:
-      linear-gradient(-135deg, transparent 0 50%, var(--panel-edge) 50% 58%, transparent 58% 100%),
-      linear-gradient(-135deg, transparent 0 66%, var(--panel-edge) 66% 74%, transparent 74% 100%);
-  }
-  .win-resize-handle.dir-se:hover::after, .win-resize-handle.dir-nw:hover::after,
-  .win-resize-handle.dir-ne:hover::after, .win-resize-handle.dir-sw:hover::after,
-  .win-resize-handle.handle-active::after{
-    opacity:1;
-  }
-  .win-resize-handle.dir-se:hover::after, .win-resize-handle.dir-se.handle-active::after{
-    background:
-      linear-gradient(135deg, transparent 0 50%, var(--accent) 50% 58%, transparent 58% 100%),
-      linear-gradient(135deg, transparent 0 66%, var(--accent) 66% 74%, transparent 74% 100%);
-  }
-  .win-resize-handle.dir-nw:hover::after, .win-resize-handle.dir-nw.handle-active::after{
-    background:
-      linear-gradient(-45deg, transparent 0 50%, var(--accent) 50% 58%, transparent 58% 100%),
-      linear-gradient(-45deg, transparent 0 66%, var(--accent) 66% 74%, transparent 74% 100%);
-  }
-  .win-resize-handle.dir-ne:hover::after, .win-resize-handle.dir-ne.handle-active::after{
-    background:
-      linear-gradient(45deg, transparent 0 50%, var(--accent) 50% 58%, transparent 58% 100%),
-      linear-gradient(45deg, transparent 0 66%, var(--accent) 66% 74%, transparent 74% 100%);
-  }
-  .win-resize-handle.dir-sw:hover::after, .win-resize-handle.dir-sw.handle-active::after{
-    background:
-      linear-gradient(-135deg, transparent 0 50%, var(--accent) 50% 58%, transparent 58% 100%),
-      linear-gradient(-135deg, transparent 0 66%, var(--accent) 66% 74%, transparent 74% 100%);
-  }
+  /* corner grip glyphs removed — the .win-resize-handle hit-areas above
+     still let the user grab the corners/edges to resize, they just no
+     longer show a visual indicator. */
   .win.resizing{ user-select:none; }
   /* winOpen only plays the very first time a window appears; once it has
 
