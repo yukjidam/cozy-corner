@@ -5831,6 +5831,10 @@ if(helpBtn && helpOverlay && helpClose){
   <span style="color:#a0e6b8;">pet cat</span>      — pet the cat
   <span style="color:#a0e6b8;">neofetch</span>     — system info
   <span style="color:#a0e6b8;">htop</span>         — live page vitals graph 📊
+  <span style="color:#a0e6b8;">netstat</span>      — active cozy connections 🌐
+  <span style="color:#a0e6b8;">ifconfig</span>     — network interfaces
+  <span style="color:#a0e6b8;">ssh &lt;host&gt;</span>   — connect somewhere cozy
+  <span style="color:#a0e6b8;">ping &lt;host&gt;</span>  — check if it's home
   <span style="color:#a0e6b8;">history</span>      — your command history
   <span style="color:#a0e6b8;">hint</span>         — get a clue about hidden commands 🔍
   <span style="color:#a0e6b8;">clear</span>        — clear terminal`,
@@ -5948,6 +5952,59 @@ i live somewhere between late-night coding sessions and lo-fi playlists.`,
 <span style="color:#a0e6b8;">--- cozycorner.dev ping statistics ---</span>
 <span style="color:#a0e6b8;">1 packets transmitted, 1 received, 0% packet loss 🐾</span>`,
 
+    // ── networking / IT toybox ──
+    // these read real connections/ports, but it's all themed around what
+    // this page actually does (lofi stream, guestbook, terminal, etc) —
+    // no real system access happens in a browser tab, obviously 🐾
+    netstat: () => `<span style="color:#f3b27a;">Active cozy connections</span>
+<span style="color:#ad9fc9;">Proto  Local Address        Foreign Address           State</span>
+<span style="color:#a0e6b8;">tcp    127.0.0.1:4173       somafm.com:https          ESTABLISHED</span>  <span style="color:#ad9fc9;"># 📻 groove salad</span>
+<span style="color:#a0e6b8;">tcp    127.0.0.1:4173       raw.githubusercontent:443 ESTABLISHED</span>  <span style="color:#ad9fc9;"># 🗂️ file browser</span>
+<span style="color:#a0e6b8;">tcp    127.0.0.1:4173       script.google.com:https   ESTABLISHED</span>  <span style="color:#ad9fc9;"># 💌 guestbook</span>
+<span style="color:#f9e87a;">tcp    127.0.0.1:4173       nekos.best:https          TIME_WAIT</span>    <span style="color:#ad9fc9;"># 📺 tv channel switch</span>
+<span style="color:#e6a0b8;">udp    127.0.0.1:4173       your-heart:cozy           LISTENING</span>`,
+    'netstat -a': () => RESPONSES.netstat(),
+    'netstat -an': () => RESPONSES.netstat(),
+
+    ifconfig: () => `<span style="color:#f3b27a;">cozy0:</span> <span style="color:#ad9fc9;">flags=4163&lt;UP,BROADCAST,RUNNING,COZY&gt;  mtu 1500</span>
+        <span style="color:#a0e6b8;">inet 192.168.1.42  netmask 255.255.255.0  broadcast 192.168.1.255</span>
+        <span style="color:#a0e6b8;">inet6 fe80::c0zy:cafe:0:1  prefixlen 64  scopeid 0x20&lt;link&gt;</span>
+        <span style="color:#ad9fc9;">ether 4a:2f:9c:1d:44:aa  txqueuelen 1000  (Ethernet, but make it lofi)</span>
+        <span style="color:#ad9fc9;">RX packets 8834 vibes  TX packets 3021 vibes  errors 0  dropped 0</span>
+
+<span style="color:#f3b27a;">lo:</span> <span style="color:#ad9fc9;">flags=73&lt;UP,LOOPBACK,RUNNING&gt;  mtu 65536</span>
+     <span style="color:#a0e6b8;">inet 127.0.0.1  netmask 255.0.0.0</span>`,
+    ipconfig: () => `<span style="color:#f3b27a;">Cozy Ethernet adapter:</span>
+   <span style="color:#ad9fc9;">IPv4 Address. . . . . . . . . . : </span><span style="color:#a0e6b8;">192.168.1.42</span>
+   <span style="color:#ad9fc9;">Subnet Mask . . . . . . . . . . : </span><span style="color:#a0e6b8;">255.255.255.0</span>
+   <span style="color:#ad9fc9;">Default Gateway . . . . . . . . : </span><span style="color:#a0e6b8;">192.168.1.1 (probably also drinking coffee)</span>`,
+
+    arp: () => `<span style="color:#f3b27a;">Address              HWtype  HWaddress           Iface</span>
+<span style="color:#a0e6b8;">192.168.1.1          ether   aa:bb:cc:00:11:22   cozy0</span>  <span style="color:#ad9fc9;"># router, probably asleep</span>
+<span style="color:#a0e6b8;">192.168.1.7          ether   de:ad:be:ef:ca:75   cozy0</span>  <span style="color:#ad9fc9;"># the cat's smart bowl</span>`,
+    'arp -a': () => RESPONSES.arp(),
+
+    ps: () => `<span style="color:#f3b27a;">  PID TTY      TIME     CMD</span>
+<span style="color:#a0e6b8;">    1 pts/0    00:00:01 lofi-player</span>
+<span style="color:#a0e6b8;">   42 pts/0    00:00:00 tamagotchi</span>
+<span style="color:#a0e6b8;">  108 pts/0    00:13:37 cursor-blink</span>
+<span style="color:#a0e6b8;">  404 pts/0    00:00:00 procrastination.exe</span>  <span style="color:#ad9fc9;"># unkillable</span>`,
+    'ps aux': () => `<span style="color:#f3b27a;">USER   PID  %CPU %MEM  COMMAND</span>
+<span style="color:#a0e6b8;">cozy     1   2.3  1.1   lofi-player</span>
+<span style="color:#a0e6b8;">cozy    42   0.4  0.6   tamagotchi</span>
+<span style="color:#a0e6b8;">cozy   108   0.1  0.2   cursor-blink</span>
+<span style="color:#a0e6b8;">cozy   404  99.9 12.0   procrastination.exe</span>`,
+    'kill -9 404': () => `<span style="color:#ad9fc9;">nice try — procrastination.exe respawns instantly 😼</span>`,
+
+    traceroute: () => `<span style="color:#ad9fc9;">usage: traceroute &lt;host&gt; — try </span><span style="color:#a0e6b8;">traceroute cozycorner.dev</span>`,
+    nslookup: () => `<span style="color:#ad9fc9;">usage: nslookup &lt;host&gt; — try </span><span style="color:#a0e6b8;">nslookup cozycorner.dev</span>`,
+    whois: () => `<span style="color:#ad9fc9;">usage: whois &lt;host&gt; — try </span><span style="color:#a0e6b8;">whois cozycorner.dev</span>`,
+    dig: () => `<span style="color:#ad9fc9;">usage: dig &lt;host&gt; — try </span><span style="color:#a0e6b8;">dig cozycorner.dev</span>`,
+    curl: () => `<span style="color:#ad9fc9;">usage: curl &lt;url&gt; — try </span><span style="color:#a0e6b8;">curl cozycorner.dev</span>`,
+    wget: () => `<span style="color:#ad9fc9;">usage: wget &lt;url&gt; — try </span><span style="color:#a0e6b8;">wget cozycorner.dev</span>`,
+    ssh: () => `<span style="color:#ad9fc9;">usage: ssh user@host — try </span><span style="color:#a0e6b8;">ssh cozy@cozycorner.dev</span>`,
+    telnet: () => `<span style="color:#ad9fc9;">usage: telnet &lt;host&gt; — try </span><span style="color:#a0e6b8;">telnet cozycorner.dev</span>`,
+
     history: () => {
       if(!history.length) return `<span style="color:#ad9fc9;">no history yet. type something!</span>`;
       return history.slice().reverse().map((h,i) => `<span style="color:#ad9fc9;">${i+1}</span>  ${escapeHtml(h)}`).join('\n');
@@ -5959,6 +6016,8 @@ i live somewhere between late-night coding sessions and lo-fi playlists.`,
 
     hint: () => `<span style="color:#f3b27a;">🔍 the full list of secret commands is hiding in the source code...</span>
 <span style="color:#ad9fc9;">check the source code. happy hunting 🐱</span>`,
+
+    man: () => `<span style="color:#ad9fc9;">usage: man &lt;command&gt; — but honestly? just try the command. it'll be nicer to you than a real man page.</span>`,
 
     htop: () => startMonitor(),
     top: () => startMonitor(),
@@ -6027,6 +6086,87 @@ i live somewhere between late-night coding sessions and lo-fi playlists.`,
   writeLine(`<span style="color:#ad9fc9;">type <span style="color:#a0e6b8;">help</span> to see available commands. type <span style="color:#a0e6b8;">hint</span> if you like secrets 👀</span>`);
   writeLine('');
 
+  // ── networking commands that take a free-form argument (host/url/pid) ──
+  // matched by first word so "ssh cozy@cozycorner.dev", "ping 8.8.8.8",
+  // "curl https://cozycorner.dev" etc. all work instead of only exact
+  // hardcoded strings like the rest of RESPONSES.
+  const NET_PREFIX_HANDLERS = {
+    ssh: (arg) => {
+      const target = arg || 'cozy@cozycorner.dev';
+      return `<span style="color:#ad9fc9;">connecting to ${escapeHtml(target)}...</span>
+<span style="color:#a0e6b8;">The authenticity of host '${escapeHtml(target)}' can't be established.</span>
+<span style="color:#ad9fc9;">Cozy key fingerprint is SHA256:c0zy+p4w+pr1nt5+only 🐾</span>
+<span style="color:#a0e6b8;">Are you sure you want to continue connecting? yes, obviously.</span>
+<span style="color:#f3b27a;">Welcome to cozy corner. Last login: just now, from the couch.</span>`;
+    },
+    ping: (arg) => {
+      const target = arg || 'cozycorner.dev';
+      return `<span style="color:#ad9fc9;">PING ${escapeHtml(target)} (127.0.0.1): 56 data bytes</span>
+<span style="color:#a0e6b8;">64 bytes from ${escapeHtml(target)}: time=0.0${Math.floor(Math.random()*9)+1}ms</span>
+<span style="color:#a0e6b8;">--- ${escapeHtml(target)} ping statistics ---</span>
+<span style="color:#a0e6b8;">1 packets transmitted, 1 received, 0% packet loss 🐾</span>`;
+    },
+    traceroute: (arg) => {
+      const target = arg || 'cozycorner.dev';
+      return `<span style="color:#ad9fc9;">traceroute to ${escapeHtml(target)}, 4 hops max</span>
+<span style="color:#a0e6b8;"> 1  your-couch (192.168.1.42)   0.4ms</span>
+<span style="color:#a0e6b8;"> 2  the-router (192.168.1.1)    1.1ms</span>
+<span style="color:#a0e6b8;"> 3  the-vibes (10.0.cozy.1)     3.7ms</span>
+<span style="color:#a0e6b8;"> 4  ${escapeHtml(target)} (127.0.0.1)      4.2ms 🐾</span>`;
+    },
+    nslookup: (arg) => {
+      const target = arg || 'cozycorner.dev';
+      return `<span style="color:#ad9fc9;">Server:  couch.local</span>
+<span style="color:#ad9fc9;">Address: 192.168.1.1</span>
+
+<span style="color:#a0e6b8;">Non-authoritative answer:</span>
+<span style="color:#a0e6b8;">Name:    ${escapeHtml(target)}</span>
+<span style="color:#a0e6b8;">Address: 127.0.0.1 (it was always local, wasn't it)</span>`;
+    },
+    dig: (arg) => {
+      const target = arg || 'cozycorner.dev';
+      return `<span style="color:#ad9fc9;">; &lt;&lt;&gt;&gt; cozy-dig 1.0 &lt;&lt;&gt;&gt; ${escapeHtml(target)}</span>
+<span style="color:#a0e6b8;">;; ANSWER SECTION:</span>
+<span style="color:#a0e6b8;">${escapeHtml(target)}.  300  IN  A  127.0.0.1</span>
+<span style="color:#ad9fc9;">;; Query time: 4 msec — pretty good for a cat-powered DNS 🐱</span>`;
+    },
+    whois: (arg) => {
+      const target = arg || 'cozycorner.dev';
+      return `<span style="color:#f3b27a;">Domain Name: ${escapeHtml(target).toUpperCase()}</span>
+<span style="color:#ad9fc9;">Registrar: Cozy Corner Registry</span>
+<span style="color:#ad9fc9;">Creation Date: whenever the last commit was</span>
+<span style="color:#ad9fc9;">Registrant Organization: a developer + a lot of lofi</span>
+<span style="color:#a0e6b8;">Status: cozy, active, purring 🐾</span>`;
+    },
+    curl: (arg) => {
+      const target = arg || 'cozycorner.dev';
+      return `<span style="color:#ad9fc9;">*  Trying 127.0.0.1...</span>
+<span style="color:#ad9fc9;">* Connected to ${escapeHtml(target)}</span>
+<span style="color:#a0e6b8;">&lt; HTTP/1.1 200 OK</span>
+<span style="color:#a0e6b8;">&lt; Content-Type: text/cozy</span>
+
+<span style="color:#f3b27a;">"hi. you're already here. this is the response body. 🐱"</span>`;
+    },
+    wget: (arg) => {
+      const target = arg || 'cozycorner.dev';
+      return `<span style="color:#ad9fc9;">--  Saving to: '${escapeHtml(target).replace(/[^\w.\-]/g,'_')}.html'</span>
+<span style="color:#a0e6b8;">100%[==============================&gt;] 12.04K  --.-KB/s   in 0.001s</span>
+<span style="color:#a0e6b8;">'${escapeHtml(target).replace(/[^\w.\-]/g,'_')}.html' saved [it was already open in this tab btw] 🐾</span>`;
+    },
+    telnet: (arg) => {
+      const target = arg || 'cozycorner.dev';
+      return `<span style="color:#ad9fc9;">Trying ${escapeHtml(target)}...</span>
+<span style="color:#a0e6b8;">Connected to ${escapeHtml(target)}.</span>
+<span style="color:#ad9fc9;">Escape character is '^]'.</span>
+<span style="color:#f3b27a;">*purr* welcome. there's not much to type here except vibes.</span>`;
+    },
+    kill: (arg) => {
+      if(/^-9\s+404$/.test(arg) || arg==='404') return `<span style="color:#ad9fc9;">nice try — procrastination.exe respawns instantly 😼</span>`;
+      return `<span style="color:#ad9fc9;">kill: (${escapeHtml(arg||'?')}) - No such cozy process, or it's just the cat and it won't listen.</span>`;
+    },
+    man: (arg) => `<span style="color:#ad9fc9;">No manual entry for ${escapeHtml(arg||'that')}. try running it instead — this terminal explains itself 🐾</span>`,
+  };
+
   function runCommand(raw) {
     const cmd = raw.trim().toLowerCase();
     writeLine(PROMPT + escapeHtml(raw));
@@ -6036,6 +6176,17 @@ i live somewhere between late-night coding sessions and lo-fi playlists.`,
     if(handler){
       const result = handler();
       if(result !== null && result !== undefined) { writeLine(result); }
+      writeLine('');
+      return;
+    }
+
+    // fall back to prefix-based networking commands with free-form args
+    const spaceIdx = cmd.indexOf(' ');
+    const word = spaceIdx === -1 ? cmd : cmd.slice(0, spaceIdx);
+    const arg  = spaceIdx === -1 ? ''  : cmd.slice(spaceIdx + 1).trim();
+    const netHandler = NET_PREFIX_HANDLERS[word];
+    if(netHandler && arg){
+      writeLine(netHandler(arg));
     } else {
       writeLine(`<span style="color:#ff6b6b;">command not found: ${escapeHtml(cmd)}</span> — try <span style="color:#a0e6b8;">help</span>`);
     }
