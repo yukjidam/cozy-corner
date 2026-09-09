@@ -279,6 +279,8 @@ function openWin(id){
   lastFocusBeforeOpen[id]=document.activeElement;
   if(!isMobile()){
     win.style.display='block';
+    const def=winDefaultSize[id];
+    if(def) setWinSize(win, def.w, def.h);
     const pos=randomCenterPosition(win);
     const clamped=clampPosition(win,pos.x,pos.y);
     win.style.left=clamped.x+'px'; win.style.top=clamped.y+'px';
@@ -1049,6 +1051,20 @@ const winMaxSize = {
   'win-work':  { w: 920 },
 };
 
+// Per-window DEFAULT open sizes — "about" and "work" have enough content
+// (bio + education column / the full projects grid) that the normal
+// 440px-wide default leaves them cramped and scrolly the moment they're
+// opened. These two open pre-sized to roughly their comfortable reading
+// width/height instead, while every other window keeps the plain CSS
+// default (440px, auto height) and this whole mechanism is a no-op for
+// them. Applied fresh on every open (see openWin below), same as
+// position — so a mid-session resize doesn't "stick" as a new default,
+// it just resizes that instance until closed.
+const winDefaultSize = {
+  'win-about': { w: 560, h: 660 },
+  'win-work':  { w: 920, h: 660 },
+};
+
 // Returns the element(s) inside a window whose height should track a
 // resize. Most windows are a simple .win-bar + .win-body; a few custom
 // apps (terminal, the files browser) have their own content wrapper.
@@ -1061,6 +1077,26 @@ function filesTabsHeight(win){
   if (win.id !== 'win-files') return 0;
   const tabs = win.querySelector('.files-tabs');
   return tabs ? tabs.offsetHeight : 0;
+}
+
+// Applies an explicit width/height to a window AND propagates the height
+// down to its scrollable inner content (the .win-body, or the files
+// browser's wrapper) — mirroring exactly what dragging a resize handle
+// does (see the RESIZE_DIRS handler below), just triggered programmatically
+// instead of by a drag. Clamped to the viewport so it never opens partly
+// off-screen on a small/short display.
+function setWinSize(win, w, h){
+  const vw=window.innerWidth, vh=window.innerHeight;
+  const clampedW=Math.min(w, vw-24);
+  const clampedH=Math.min(h, vh-24);
+  win.style.width=clampedW+'px';
+  win.style.height=clampedH+'px';
+  const barH=(win.querySelector('.win-bar')||{}).offsetHeight||0;
+  const contentH=Math.max(60, clampedH-barH-filesTabsHeight(win));
+  resizeContentEls(win).forEach(el=>{
+    el.style.height=contentH+'px';
+    el.style.maxHeight=contentH+'px';
+  });
 }
 
 // Eight resize handles per window — the four edges (resize one
