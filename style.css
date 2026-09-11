@@ -923,13 +923,24 @@
   .project-card p{ flex:1; }
   .project-links{
     margin-top:12px; padding-top:2px;
-    display:flex; align-items:center; flex-wrap:wrap; gap:6px;
+    display:flex; align-items:center; flex-wrap:wrap; gap:8px;
   }
-  .case-study-btn{
-    background:none; border:none; padding:0; margin:0; font-family:inherit;
-    color:var(--accent); font-weight:700; font-size:.82rem; cursor:pointer;
+  /* Shared pill style for every project-card action — GitHub / live demo /
+     itch.io links and the case-study button all read as one consistent
+     row instead of a mix of plain text links and a differently-styled
+     button. */
+  .project-action{
+    display:inline-flex; align-items:center;
+    padding:6px 14px; border-radius:999px;
+    border:1px solid var(--panel-edge); background:none;
+    color:var(--text); font-family:inherit; font-weight:700;
+    font-size:.78rem; line-height:1.2; cursor:pointer;
+    text-decoration:none;
+    transition:border-color .15s ease, color .15s ease;
   }
-  .case-study-btn:hover{ text-decoration:underline; }
+  .project-action:hover{
+    border-color:var(--accent); color:var(--accent); text-decoration:none;
+  }
 
   .resume-link{
     display:inline-flex; align-items:center; gap:6px;
