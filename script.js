@@ -1240,6 +1240,19 @@ allWins.forEach(win=>{
       win.style.width=newW+'px';
       if(dir.includes('w')) win.style.left=newLeft+'px';
       if(dir.includes('n')) win.style.top=newTop+'px';
+      // Only pin an explicit height when a vertical edge is actually being
+      // dragged. Most windows never get an inline height (they're plain
+      // "auto", sized to fit their content) — that's fine and left alone
+      // for e/w-only drags. But once a window HAS been given an explicit
+      // pixel height (either from a n/s drag, or from a JS-set default
+      // size like about/work get on open — see setWinSize), that outer
+      // box stops auto-tracking its content. If this line didn't run,
+      // the inner .win-body below would still resize to newH, but the
+      // outer .win frame would stay frozen at its old height — clipping
+      // the now-larger content, or on a top-edge drag, making the whole
+      // window appear to slide instead of resize (since win.style.top
+      // moves while the frozen height keeps the bottom edge tied to it).
+      if(dir.includes('n') || dir.includes('s')) win.style.height=newH+'px';
 
       const barH=(win.querySelector('.win-bar')||{}).offsetHeight||0;
       const contentH=Math.max(60, newH-barH-filesTabsHeight(win));
