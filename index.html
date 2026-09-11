@@ -139,6 +139,17 @@
        from the dock + more-apps folder buttons by script.js. ===== -->
   <div id="desktopIcons" class="desktop-icons" aria-label="apps" inert></div>
 
+  <div id="taskbarWrap" class="taskbar-wrap" data-edge="bottom" inert>
+    <div id="taskbarHotzone" class="taskbar-hotzone" aria-hidden="true"></div>
+    <div id="taskbar" class="taskbar" role="toolbar" aria-label="open windows">
+      <button id="taskbarHandle" class="taskbar-handle" type="button" aria-label="move taskbar — drag to a screen edge, or click to cycle" title="drag to move, click to cycle side"><span class="taskbar-handle-dots"></span></button>
+      <div class="taskbar-sep"></div>
+      <div id="taskbarApps" class="taskbar-apps"></div>
+      <div class="taskbar-sep"></div>
+      <div id="taskbarClock" class="taskbar-clock" aria-hidden="true"></div>
+    </div>
+  </div>
+
   <!-- ===== MORE APPS FOLDER POPUP ===== -->
   <div id="moreAppsFolder" style="
     display:none; position:fixed; z-index:500;

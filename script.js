@@ -623,6 +623,13 @@ document.getElementById('csBackBtn')?.addEventListener('click', closeCaseStudy);
     const garlandEl = document.querySelector('.garland');
     if(garlandEl) garlandEl.inert = on;
     iconWrap.inert = !on;
+    const taskbarWrap = document.getElementById('taskbarWrap');
+    if(taskbarWrap){
+      taskbarWrap.inert = !on;
+      // don't leave it stranded mid-reveal the next time icons mode
+      // turns back on
+      if(!on) document.getElementById('taskbar')?.classList.remove('revealed');
+    }
     if(on){
       // the "more apps" folder popup doesn't make sense to leave open
       // over a desktop full of the same icons
@@ -632,6 +639,204 @@ document.getElementById('csBackBtn')?.addEventListener('click', closeCaseStudy);
   }
 
   toggle.addEventListener('click', ()=> setMode(!document.body.classList.contains('desktop-icons-mode')));
+})();
+
+// ===== TASKBAR / "APP BAY" (traditional desktop mode) =====
+// A real auto-hiding, edge-dockable taskbar. It stays tucked just off
+// whichever screen edge it's docked to, and only slides into view when
+// the pointer rests on that edge, on the bar itself, or when keyboard
+// focus lands inside it — same idea as an OS taskbar set to
+// auto-hide. The grip handle can be dragged to any of the four edges
+// (drop it near one and it snaps there); a plain click on the handle
+// (no real drag) cycles edges instead, so it stays reachable without a
+// mouse. The chosen edge is remembered across visits.
+(function(){
+  const wrap = document.getElementById('taskbarWrap');
+  const bar = document.getElementById('taskbar');
+  const hotzone = document.getElementById('taskbarHotzone');
+  const appsWrap = document.getElementById('taskbarApps');
+  const handle = document.getElementById('taskbarHandle');
+  const clockEl = document.getElementById('taskbarClock');
+  const winList = Array.from(document.querySelectorAll('.win'));
+  if(!wrap || !bar || !hotzone || !appsWrap || !handle || !winList.length) return;
+
+  // ---------- edge (position on screen) ----------
+  const EDGES = ['bottom','right','top','left'];
+  let edge = 'bottom';
+  try{ const saved = localStorage.getItem('taskbarEdge'); if(EDGES.includes(saved)) edge = saved; }catch(err){}
+  function setEdge(e){
+    edge = e;
+    wrap.setAttribute('data-edge', e);
+    try{ localStorage.setItem('taskbarEdge', e); }catch(err){}
+    if(typeof tick==='function') tick(); // reformat the clock immediately for the new orientation
+  }
+  setEdge(edge);
+
+  // ---------- reveal / auto-hide ----------
+  let hideTimer = null;
+  function reveal(){
+    clearTimeout(hideTimer);
+    bar.classList.add('revealed');
+  }
+  function scheduleHide(delay=650){
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(()=> bar.classList.remove('revealed'), delay);
+  }
+  function pulse(delay=1700){ reveal(); scheduleHide(delay); }
+
+  hotzone.addEventListener('mouseenter', reveal);
+  hotzone.addEventListener('mouseleave', ()=> scheduleHide());
+  bar.addEventListener('mouseenter', reveal);
+  bar.addEventListener('mouseleave', ()=> scheduleHide());
+  bar.addEventListener('focusin', reveal);
+  bar.addEventListener('focusout', ()=> scheduleHide(300));
+  // touch devices have no hover — a tap on the sliver reveals the bar
+  // for a couple seconds instead
+  hotzone.addEventListener('touchstart', ()=> pulse(2200), {passive:true});
+
+  // ---------- drag-to-edge (grip handle) ----------
+  const preview = document.createElement('div');
+  preview.className = 'taskbar-edge-preview';
+  document.body.appendChild(preview);
+  function positionPreview(targetEdge){
+    const t = 12;
+    if(targetEdge==='bottom')     preview.style.cssText = `left:0;right:0;bottom:0;height:${t}px;top:auto;width:auto;`;
+    else if(targetEdge==='top')   preview.style.cssText = `left:0;right:0;top:0;height:${t}px;bottom:auto;width:auto;`;
+    else if(targetEdge==='left')  preview.style.cssText = `top:0;bottom:0;left:0;width:${t}px;right:auto;height:auto;`;
+    else                          preview.style.cssText = `top:0;bottom:0;right:0;width:${t}px;left:auto;height:auto;`;
+  }
+  function nearestEdge(x,y){
+    const vw=window.innerWidth, vh=window.innerHeight;
+    const d={ top:y, bottom:vh-y, left:x, right:vw-x };
+    return Object.keys(d).reduce((a,b)=> d[a]<d[b] ? a : b);
+  }
+
+  let dragState = null;
+  handle.addEventListener('pointerdown', e=>{
+    dragState = { startX:e.clientX, startY:e.clientY, moved:false, target:null };
+    handle.setPointerCapture(e.pointerId);
+    bar.classList.add('dragging');
+    reveal();
+  });
+  handle.addEventListener('pointermove', e=>{
+    if(!dragState) return;
+    const dx=e.clientX-dragState.startX, dy=e.clientY-dragState.startY;
+    if(Math.hypot(dx,dy) > 10) dragState.moved = true;
+    if(dragState.moved){
+      const target = nearestEdge(e.clientX, e.clientY);
+      dragState.target = target;
+      positionPreview(target);
+      preview.classList.add('show');
+    }
+  });
+  function endDrag(){
+    if(!dragState) return;
+    bar.classList.remove('dragging');
+    preview.classList.remove('show');
+    if(dragState.moved && dragState.target){
+      setEdge(dragState.target);
+    }else{
+      // a click, not a drag — cycle to the next edge so the feature
+      // stays reachable without needing to drag precisely
+      setEdge(EDGES[(EDGES.indexOf(edge)+1) % EDGES.length]);
+    }
+    scheduleHide();
+    dragState = null;
+  }
+  handle.addEventListener('pointerup', endDrag);
+  handle.addEventListener('pointercancel', endDrag);
+  handle.addEventListener('keydown', e=>{
+    if(e.key==='Enter' || e.key===' '){
+      e.preventDefault();
+      setEdge(EDGES[(EDGES.indexOf(edge)+1) % EDGES.length]);
+      reveal(); scheduleHide();
+    }
+  });
+
+  // ---------- clock ----------
+  // side-docked columns are narrow, so drop the AM/PM there (a 24h
+  // "HH:MM" is short enough to fit without widening the bar) while
+  // top/bottom keep the friendlier 12h format
+  function tick(){
+    const vertical = edge==='left' || edge==='right';
+    clockEl.textContent = vertical
+      ? new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', hour12:false })
+      : new Date().toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+  }
+  tick();
+  setInterval(tick, 15000);
+
+  // ---------- app buttons (mirrors currently-open windows) ----------
+  const buttons = new Map(); // win.id -> button element
+  const prevState = new Map(); // win.id -> { open, minimized }
+  const hint = document.createElement('span');
+  hint.className = 'taskbar-hint';
+  hint.textContent = 'no windows open';
+  appsWrap.appendChild(hint);
+
+  function glyphFor(win){
+    const src = dockBtnFor(win.id);
+    return src?.querySelector('.dock-icon, span:first-child')?.textContent?.trim() || '📄';
+  }
+  function labelFor(win){
+    return win.dataset.title || win.querySelector('.win-title')?.textContent?.trim() || win.id.replace('win-','');
+  }
+  function buildButton(win){
+    const label = labelFor(win);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'taskbar-btn';
+    btn.dataset.win = win.id;
+    btn.setAttribute('aria-label', label);
+    btn.innerHTML = `${glyphFor(win)}<span class="taskbar-btn-dot"></span><span class="taskbar-btn-tooltip">${label}</span>`;
+    // minimized → restore; already the focused window → minimize (a
+    // second click "puts it away", same as clicking its dock icon
+    // again); open but not focused → just bring it to front
+    btn.addEventListener('click', ()=>{
+      if(win.classList.contains('minimized')) restoreWin(win);
+      else if(win.classList.contains('focused')) minimizeWin(win);
+      else focusWin(win);
+    });
+    return btn;
+  }
+
+  function syncBar(){
+    let changed = false;
+    winList.forEach(win=>{
+      const open = win.classList.contains('visible');
+      const minimized = win.classList.contains('minimized');
+      const prev = prevState.get(win.id);
+      if(!prev || prev.open!==open || prev.minimized!==minimized) changed = true;
+      prevState.set(win.id, { open, minimized });
+
+      let btn = buttons.get(win.id);
+      if(open){
+        if(!btn){
+          btn = buildButton(win);
+          buttons.set(win.id, btn);
+          btn.classList.add('pop-in');
+          btn.addEventListener('animationend', ()=> btn.classList.remove('pop-in'), { once:true });
+        }
+        if(!btn.isConnected) appsWrap.appendChild(btn);
+        const active = win.classList.contains('focused') && !minimized;
+        btn.classList.toggle('minimized', minimized);
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      }else if(btn && btn.isConnected){
+        btn.remove();
+      }
+    });
+    hint.style.display = appsWrap.querySelector('.taskbar-btn') ? 'none' : '';
+    // let people actually see the taskbar the moment a window gets
+    // minimized (or opened/closed/restored) instead of it silently
+    // updating off-screen
+    if(changed) pulse();
+  }
+
+  const observer = new MutationObserver(syncBar);
+  winList.forEach(win=> observer.observe(win, { attributes:true, attributeFilter:['class'] }));
+
+  syncBar();
 })();
 
 // ===== ALL FILES (repo code viewer) =====
