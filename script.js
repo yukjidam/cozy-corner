@@ -670,7 +670,6 @@ document.getElementById('csBackBtn')?.addEventListener('click', closeCaseStudy);
     icon.type = 'button';
     icon.className = 'desktop-icon';
     icon.dataset.iconId = id;
-    icon.style.transitionDelay = (i*28)+'ms'; // staggers the pop-in/out
     icon.setAttribute('aria-label', label);
     icon.innerHTML = `<span class="desktop-icon-glyph">${glyph}</span><span class="desktop-icon-label">${label}</span>`;
     iconWrap.appendChild(icon);
@@ -729,6 +728,19 @@ document.getElementById('csBackBtn')?.addEventListener('click', closeCaseStudy);
     return { col, row }; // grid is completely full — extremely unlikely
   }
 
+  // staggers the pop-in/out by each icon's actual on-screen position —
+  // top-to-bottom within a column, then column by column — rather than
+  // its original dock order, so the wave always reads as "first icon on
+  // the desktop through to the last" even after you've dragged things
+  // around
+  function restaggerByPosition(){
+    const ordered = icons.slice().sort((a,b)=>{
+      const as = a.slot || { col:0, row:0 }, bs = b.slot || { col:0, row:0 };
+      return (as.col - bs.col) || (as.row - bs.row);
+    });
+    ordered.forEach((item, i)=>{ item.el.style.transitionDelay = (i*28)+'ms'; });
+  }
+
   // lays out every icon on the current grid: saved slot if it has one
   // (clamped back onto the grid if the viewport shrank since), else its
   // default slot — resolving any collisions along the way so nothing
@@ -754,6 +766,7 @@ document.getElementById('csBackBtn')?.addEventListener('click', closeCaseStudy);
       item.el.style.left = pos.x + 'px';
       item.el.style.top  = pos.y + 'px';
     });
+    restaggerByPosition();
   }
   layoutAll();
 
@@ -912,6 +925,9 @@ document.getElementById('csBackBtn')?.addEventListener('click', closeCaseStudy);
             // the click handler below skips launching the app
             it.suppressClick = true;
           });
+          // reordering icons changes what "first through last" means,
+          // so the pop-in/out wave stays synced to the new arrangement
+          restaggerByPosition();
         }
       }
       window.addEventListener('mousemove', onMove);
@@ -928,6 +944,14 @@ document.getElementById('csBackBtn')?.addEventListener('click', closeCaseStudy);
 
   // ---------- show/hide the whole icon layer ----------
   const MODE_KEY = 'desktopIconsModeOn';
+
+  // 'desktop-icons-mode' controls the icon layer itself; 'floaters-hidden'
+  // (see style.css) separately controls the dock/widgets/stickies/garland
+  // — kept as two classes, rather than one, so the two layers don't have
+  // to cross-fade through each other in lockstep. Turning icons ON hides
+  // the floaters immediately (same as before). Turning icons OFF lets the
+  // icons fade out first, and only then reveals the floaters.
+  let floaterRevealTimer = null;
 
   function setMode(on, opts){
     opts = opts || {};
@@ -949,14 +973,26 @@ document.getElementById('csBackBtn')?.addEventListener('click', closeCaseStudy);
       // turns back on
       if(!on) document.getElementById('taskbar')?.classList.remove('revealed');
     }
+
+    if(floaterRevealTimer){ clearTimeout(floaterRevealTimer); floaterRevealTimer = null; }
+
     if(on){
       // the "more apps" folder popup doesn't make sense to leave open
       // over a desktop full of the same icons
       document.getElementById('moreAppsFolder')?.classList.remove('visible');
       document.getElementById('moreAppsBtn')?.setAttribute('aria-expanded','false');
+      document.body.classList.add('floaters-hidden');
       layoutAll();
     }else{
       clearSelection();
+      // hold the floaters back until the icons' own exit animation —
+      // opacity/scale/translate (up to .34s) plus each icon's staggered
+      // transitionDelay (28ms apart) — has actually finished
+      const iconExitMs = Math.max(0, icons.length - 1) * 28 + 340;
+      floaterRevealTimer = setTimeout(()=>{
+        document.body.classList.remove('floaters-hidden');
+        floaterRevealTimer = null;
+      }, iconExitMs);
     }
     if(!opts.skipSave) CozySettings.set(MODE_KEY, on);
   }
