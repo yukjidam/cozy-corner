@@ -1129,15 +1129,17 @@ const winMaxSize = {
 // Per-window DEFAULT open sizes — "about" and "work" have enough content
 // (bio + education column / the full projects grid) that the normal
 // 440px-wide default leaves them cramped and scrolly the moment they're
-// opened. These two open pre-sized to roughly their comfortable reading
-// width/height instead, while every other window keeps the plain CSS
-// default (440px, auto height) and this whole mechanism is a no-op for
-// them. Applied fresh on every open (see openWin below), same as
-// position — so a mid-session resize doesn't "stick" as a new default,
-// it just resizes that instance until closed.
+// opened. The devlog window gets the same treatment since a wall of
+// entries reads the same way. These three open pre-sized to roughly
+// their comfortable reading width/height instead, while every other
+// window keeps the plain CSS default (440px, auto height) and this
+// whole mechanism is a no-op for them. Applied fresh on every open (see
+// openWin below), same as position — so a mid-session resize doesn't
+// "stick" as a new default, it just resizes that instance until closed.
 const winDefaultSize = {
-  'win-about': { w: 560, h: 660 },
-  'win-work':  { w: 920, h: 660 },
+  'win-about':  { w: 560, h: 660 },
+  'win-work':   { w: 920, h: 660 },
+  'win-devlog': { w: 560, h: 640 },
 };
 
 // Returns the element(s) inside a window whose height should track a
