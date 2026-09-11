@@ -160,6 +160,10 @@
         <span style="font-size:1.5rem;">🗂️</span>
         <span>files</span>
       </button>
+      <button class="folder-app-btn" data-win="devlog">
+        <span style="font-size:1.5rem;">📝</span>
+        <span>devlog</span>
+      </button>
     </div>
   </div>
 
@@ -413,6 +417,7 @@
     <div class="win-body">
       <h2>what i make</h2>
       <p style="margin-top:8px;"><strong>Open to work!</strong> you can reach out to me via email or social media (check links <i>*wink</i>).<br>i can do web and simple android app development. <br>Or you can just hire me please...</p>
+      <a class="mail-btn" href="assets/abuluyan_cedrick_resume.pdf" download="Abuluyan_Cedrick_Resume.pdf" style="margin-top:10px;">📄 download résumé (PDF)</a>
 
       <p class="label" style="margin-top:16px;">languages & tools</p>
       <div class="tag-row">
@@ -444,6 +449,8 @@
           <p>an anime library app powered by the Jikan API. track what you're watching, leave reviews, and talk about anime with other users through in-app topic threads.</p>
           <div class="project-links">
             <a href="https://github.com/yukjidam/Animu" target="_blank" style="font-size:.82rem;">view on github</a>
+            <span>·</span>
+            <button class="case-study-btn" type="button" data-case="animu">📄 case study →</button>
           </div>
         </div>
 
@@ -458,6 +465,8 @@
           <p>a digital letter customizer. style your letter however you like, then download it as a ready-to-open HTML file to share or keep.</p>
           <div class="project-links">
             <a href="https://github.com/yukjidam/Lettercraft" target="_blank" style="font-size:.82rem;">view on github</a>
+            <span>·</span>
+            <button class="case-study-btn" type="button" data-case="lettercraft">📄 case study →</button>
           </div>
         </div>
 
@@ -472,6 +481,8 @@
           <p>my capstone project. digitizes the paper-based club application process for STI Global City Senior High. includes a social media module for inter-club interaction, real-time chat, and full club management tools.</p>
           <div class="project-links">
             <a href="https://github.com/yukjidam/STI-Global-City-Senior-High-School-Club-Management-System" target="_blank" style="font-size:.82rem;">view on github</a>
+            <span>·</span>
+            <button class="case-study-btn" type="button" data-case="sti">📄 case study →</button>
           </div>
         </div>
 
@@ -488,6 +499,8 @@
             <a href="https://github.com/yukjidam/plantodex" target="_blank" style="font-size:.82rem;">view on github</a>
             <span>·</span>
             <a href="https://yukjidam.itch.io/plantodex" target="_blank" style="font-size:.82rem;">download on itch.io →</a>
+            <span>·</span>
+            <button class="case-study-btn" type="button" data-case="plantodex">📄 case study →</button>
           </div>
         </div>
         <div class="project-card">
@@ -503,6 +516,8 @@
             <a href="https://github.com/yukjidam/IM-Barruga" target="_blank" style="font-size:.82rem;">view on github</a>
             <span>·</span>
             <a href="https://yukjidam.github.io/IM-Barruga/" target="_blank" style="font-size:.82rem;">view live →</a>
+            <span>·</span>
+            <button class="case-study-btn" type="button" data-case="barruga">📄 case study →</button>
           </div>
         </div>
 
@@ -520,11 +535,65 @@
             <a href="https://github.com/yukjidam/japanese-themed-portfolio" target="_blank" style="font-size:.82rem;">view on github</a>
             <span>·</span>
             <a href="https://alex-clgn-41k4.vercel.app" target="_blank" style="font-size:.82rem;">view live →</a>
+            <span>·</span>
+            <button class="case-study-btn" type="button" data-case="alex">📄 case study →</button>
           </div>
         </div>
       </div>
 
       <p style="margin-top:4px;">see more on <a href="https://github.com/yukjidam" target="_blank">github →</a></p>
+    </div>
+  </div>
+
+  <!-- ===== CASE STUDY (shared window, content swapped in by JS per project) ===== -->
+  <div class="win" id="win-casestudy" data-title="case study">
+    <div class="win-bar"><div class="win-bar-left"><div class="win-dots"><button class="win-dot close" aria-label="close"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 1.5L6.5 6.5M6.5 1.5L1.5 6.5"/></svg></button><button class="win-dot min" aria-label="minimize"></button></div><span class="win-title">case study</span></div></div>
+    <div class="win-body">
+      <p class="label">case study</p>
+      <h2 id="csTitle">project name</h2>
+      <p id="csTagline" style="margin-top:4px;color:var(--text-muted);">one-line summary of the project</p>
+
+      <div class="cs-soon">
+        <span class="cs-soon-emoji">🚧</span>
+        <p class="cs-soon-title">write-up coming soon</p>
+        <p class="cs-soon-sub">i'm still putting this one together — the problem, the decisions, screenshots, what i'd do differently. check back soon 🐾</p>
+      </div>
+
+      <div class="cs-sections">
+        <div class="cs-section">
+          <p class="label">the problem</p>
+          <p class="cs-placeholder">coming soon...</p>
+        </div>
+        <div class="cs-section">
+          <p class="label">approach &amp; stack</p>
+          <p class="cs-placeholder">coming soon...</p>
+        </div>
+        <div class="cs-section">
+          <p class="label">screens</p>
+          <p class="cs-placeholder">coming soon...</p>
+        </div>
+        <div class="cs-section">
+          <p class="label">what i'd do differently</p>
+          <p class="cs-placeholder">coming soon...</p>
+        </div>
+      </div>
+
+      <p style="margin-top:16px;"><a id="csRepoLink" href="#" target="_blank">view the code on github →</a></p>
+    </div>
+  </div>
+
+  <!-- ===== DEVLOG (empty state for now) ===== -->
+  <div class="win" id="win-devlog" data-title="devlog">
+    <div class="win-bar"><div class="win-bar-left"><div class="win-dots"><button class="win-dot close" aria-label="close"><svg viewBox="0 0 8 8" fill="none"><path d="M1.5 1.5L6.5 6.5M6.5 1.5L1.5 6.5"/></svg></button><button class="win-dot min" aria-label="minimize"></button></div><span class="win-title">devlog</span></div></div>
+    <div class="win-body">
+      <h2>devlog</h2>
+      <p style="margin-top:6px;color:var(--text-muted);">notes on whatever i'm building, as i build it.</p>
+
+      <div class="cs-soon" style="margin-top:18px;">
+        <span class="cs-soon-emoji">✍️</span>
+        <p class="cs-soon-title">first post coming soon</p>
+        <p class="cs-soon-sub">this is where devlogs will live — progress, dead ends, decisions, the occasional rant about CSS. nothing posted yet, but the notebook's open 🐾</p>
+      </div>
     </div>
   </div>
 

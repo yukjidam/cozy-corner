@@ -394,6 +394,35 @@ document.querySelectorAll('.dock button').forEach(btn=>{
   });
 });
 
+// ===== CASE STUDY WINDOW =====
+// One shared window (#win-casestudy) whose title/tagline/repo link get
+// swapped in per project when a "case study →" button is clicked. Real
+// write-ups (problem/approach/screens/lessons) aren't written yet, so
+// the window currently always shows its "coming soon" state — the data
+// map below is what future write-up content would slot into.
+const CASE_STUDIES = {
+  animu:       { title:'Animu', tagline:'an anime library app powered by the Jikan API.', repo:'https://github.com/yukjidam/Animu' },
+  lettercraft: { title:'LetterCraft', tagline:'a digital letter customizer that exports to a ready-to-open HTML file.', repo:'https://github.com/yukjidam/Lettercraft' },
+  sti:         { title:'STI GC SHS Club Management System', tagline:"my capstone project — digitizing club management for my school.", repo:'https://github.com/yukjidam/STI-Global-City-Senior-High-School-Club-Management-System' },
+  plantodex:   { title:'PlantoDex 🌿', tagline:'a pokédex for plants, powered by Pl@ntNet and GBIF.', repo:'https://github.com/yukjidam/plantodex' },
+  barruga:     { title:'IM-Barruga', tagline:'a freelance portfolio build for a civil engineering student.', repo:'https://github.com/yukjidam/IM-Barruga' },
+  alex:        { title:'Alex Clgn', tagline:'a pink cyber/samurai themed portfolio template.', repo:'https://github.com/yukjidam/japanese-themed-portfolio' },
+};
+function openCaseStudy(projectId){
+  const cs = CASE_STUDIES[projectId];
+  if(!cs) return;
+  const titleEl=document.getElementById('csTitle');
+  const taglineEl=document.getElementById('csTagline');
+  const repoEl=document.getElementById('csRepoLink');
+  if(titleEl) titleEl.textContent = cs.title;
+  if(taglineEl) taglineEl.textContent = cs.tagline;
+  if(repoEl) repoEl.href = cs.repo;
+  openWin('win-casestudy');
+}
+document.querySelectorAll('.case-study-btn[data-case]').forEach(btn=>{
+  btn.addEventListener('click', ()=> openCaseStudy(btn.dataset.case));
+});
+
 // ===== MORE APPS FOLDER =====
 (function(){
   const moreBtn = document.getElementById('moreAppsBtn');
