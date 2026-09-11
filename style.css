@@ -1005,6 +1005,15 @@
     border-radius:8px; display:block; margin-bottom:12px;
     background:var(--panel-edge);
   }
+  /* Thumbnails are now buttons (they open the case study, not GitHub),
+     so undo default button chrome and make them behave like the plain
+     image wrapper they replaced. */
+  .project-thumb-btn{
+    display:block; width:100%; padding:0; margin:0; border:none;
+    background:none; cursor:pointer; text-align:left; font:inherit; color:inherit;
+  }
+  .project-thumb-btn .project-img{ transition:opacity .15s ease; }
+  .project-thumb-btn:hover .project-img{ opacity:.85; }
 
   /* As the WORK window gets wider, reorganize the project list from one
      scrollable column into a responsive grid — 2 columns once there's
