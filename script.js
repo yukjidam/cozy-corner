@@ -1,3 +1,42 @@
+// ===== COZY SETTINGS (per-visitor local persistence) =====
+// A tiny shared helper other features use to remember a visitor's
+// setup on *this* machine/browser between visits — icon layout,
+// wallpaper pick, theme, player state, etc. Everything lives in
+// localStorage under a single namespaced key, degrades silently if
+// storage is unavailable (private browsing, quota, etc.), and never
+// talks to a server.
+const CozySettings = (function(){
+  const STORAGE_KEY = 'cozyCorner:settings:v1';
+  let cache = null;
+  function loadAll(){
+    if(cache) return cache;
+    try{
+      cache = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    }catch(err){ cache = {}; }
+    return cache;
+  }
+  function saveAll(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(cache||{})); }
+    catch(err){ /* storage unavailable/full — settings just won't stick */ }
+  }
+  return {
+    get(key, fallback){
+      const all = loadAll();
+      return (key in all) ? all[key] : fallback;
+    },
+    set(key, value){
+      const all = loadAll();
+      all[key] = value;
+      saveAll();
+    },
+    remove(key){
+      const all = loadAll();
+      delete all[key];
+      saveAll();
+    }
+  };
+})();
+
 // ===== CUTE SOUND ENGINE =====
 const CuteSound = (function(){
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -581,37 +620,252 @@ document.getElementById('csBackBtn')?.addEventListener('click', closeCaseStudy);
 
 // ===== DESKTOP ICONS ("show apps as desktop icons" toggle) =====
 // Flattens every launchable app — the main dock AND the apps tucked
-// inside the "more apps" folder — into a row of icons that appear on
+// inside the "more apps" folder — into a free-floating icon layer on
 // the desktop instead, in place of the dock + sticky notes. Rather than
 // re-implementing what each app button does, every generated icon just
 // forwards a real .click() to its original (now-hidden) dock/folder
 // button, so opening/toggling a window still goes through the exact
 // same logic (sounds, bounce animation, player special-casing, etc).
+//
+// On top of that, this also gives the icon layer real "traditional
+// desktop" behavior:
+//   - click-drag on empty desktop space draws a rubber-band selection
+//     box (à la Windows/macOS) that highlights every icon it touches
+//   - icons can be individually clicked (shift-click to add to a
+//     selection) and dragged to any free position
+//   - dragging any icon in a multi-selection moves the whole group
+//     together
+//   - wherever you leave your icons — and whether the icon layer is
+//     even turned on — is remembered per-browser via CozySettings, so
+//     it's back the way you left it on your next visit.
 (function(){
   const toggle = document.getElementById('desktopIconsToggle');
   const iconWrap = document.getElementById('desktopIcons');
+  const desktopEl = document.getElementById('desktop');
   const dock = document.querySelector('.dock');
-  if(!toggle || !iconWrap || !dock) return;
+  if(!toggle || !iconWrap || !dock || !desktopEl) return;
+
+  const ICON_W = 70, ICON_H = 78;      // must match .desktop-icon sizing in CSS
+  const COL_GAP = 80, ROW_GAP = 82;    // default top-left grid spacing (old layout)
 
   const sourceButtons = [
     ...document.querySelectorAll('.dock button[data-win]'),
     ...document.querySelectorAll('.folder-app-btn[data-win]'),
   ];
 
+  // saved icon positions: { [iconId]: { xFrac, yFrac } }, each fraction
+  // 0..1 of the free space the icon has to move around in, so layouts
+  // hold up across different screen sizes
+  let savedPositions = CozySettings.get('desktopIconPositions', {}) || {};
+  function persistPositions(){ CozySettings.set('desktopIconPositions', savedPositions); }
+
+  const icons = [];
   sourceButtons.forEach((src, i)=>{
     const glyph = src.querySelector('.dock-icon, span:first-child')?.textContent?.trim() || '📄';
     const label = src.querySelector('.dock-label, span:last-child')?.textContent?.trim() || src.dataset.win;
+    const id = src.dataset.win || ('icon'+i);
     const icon = document.createElement('button');
     icon.type = 'button';
     icon.className = 'desktop-icon';
+    icon.dataset.iconId = id;
     icon.style.transitionDelay = (i*28)+'ms'; // staggers the pop-in/out
     icon.setAttribute('aria-label', label);
     icon.innerHTML = `<span class="desktop-icon-glyph">${glyph}</span><span class="desktop-icon-label">${label}</span>`;
-    icon.addEventListener('click', ()=> src.click());
     iconWrap.appendChild(icon);
+    icons.push({ el: icon, src, id, index: i });
   });
 
-  function setMode(on){
+  function containerBox(){
+    const r = iconWrap.getBoundingClientRect();
+    return { w: Math.max(1, r.width), h: Math.max(1, r.height) };
+  }
+
+  // where an icon sits by default (before it's ever been dragged) —
+  // same top-to-bottom-then-wrap column layout the old CSS grid used
+  function defaultPosition(index){
+    const rowsPerCol = Math.max(1, Math.floor((iconWrap.clientHeight || 600) / ROW_GAP));
+    const col = Math.floor(index / rowsPerCol), row = index % rowsPerCol;
+    return { x: 4 + col*COL_GAP, y: 4 + row*ROW_GAP };
+  }
+
+  function applyPosition(item){
+    const box = containerBox();
+    const maxX = Math.max(0, box.w - ICON_W), maxY = Math.max(0, box.h - ICON_H);
+    const saved = savedPositions[item.id];
+    let px, py;
+    if(saved){
+      px = saved.xFrac * maxX;
+      py = saved.yFrac * maxY;
+    }else{
+      const d = defaultPosition(item.index);
+      px = Math.min(d.x, maxX);
+      py = Math.min(d.y, maxY);
+    }
+    item.el.style.left = px + 'px';
+    item.el.style.top  = py + 'px';
+  }
+
+  function layoutAll(){ icons.forEach(applyPosition); }
+  layoutAll();
+
+  let suppressResizeLayout = false;
+  window.addEventListener('resize', ()=>{ if(!suppressResizeLayout) layoutAll(); });
+
+  function persistPosition(item){
+    const box = containerBox();
+    const maxX = Math.max(1, box.w - ICON_W), maxY = Math.max(1, box.h - ICON_H);
+    const left = parseFloat(item.el.style.left) || 0;
+    const top  = parseFloat(item.el.style.top) || 0;
+    savedPositions[item.id] = {
+      xFrac: Math.min(1, Math.max(0, left / maxX)),
+      yFrac: Math.min(1, Math.max(0, top / maxY)),
+    };
+    persistPositions();
+  }
+
+  // ---------- selection: rubber-band box + click / shift-click ----------
+  const selBox = document.createElement('div');
+  selBox.className = 'desktop-selection-box';
+  desktopEl.appendChild(selBox);
+
+  function clearSelection(){ icons.forEach(it=> it.el.classList.remove('selected')); }
+  function isSelected(item){ return item.el.classList.contains('selected'); }
+
+  function setSelectionBoxRect(x1,y1,x2,y2){
+    selBox.style.left   = Math.min(x1,x2) + 'px';
+    selBox.style.top    = Math.min(y1,y2) + 'px';
+    selBox.style.width  = Math.abs(x2-x1) + 'px';
+    selBox.style.height = Math.abs(y2-y1) + 'px';
+  }
+  function rectsIntersect(a,b){
+    return !(b.left>a.right || b.right<a.left || b.top>a.bottom || b.bottom<a.top);
+  }
+
+  let selecting = false, selStart = null, selDragged = false, justFinishedBoxSelect = false;
+
+  // NOTE: this listens on the whole desktop (not just the icon layer)
+  // so a drag can start anywhere on the "wallpaper" — the icon layer
+  // itself has pointer-events:none over its empty space precisely so
+  // clicks/drags fall through to here.
+  desktopEl.addEventListener('mousedown', (e)=>{
+    if(e.button !== 0) return;
+    if(!document.body.classList.contains('desktop-icons-mode')) return;
+    if(e.target.closest('.desktop-icon, .win, .top-controls, #taskbarWrap, #moreAppsFolder, a, button, input, textarea, select, canvas')) return;
+    selecting = true;
+    selDragged = false;
+    selStart = { x: e.clientX, y: e.clientY };
+    setSelectionBoxRect(selStart.x, selStart.y, selStart.x, selStart.y);
+    selBox.classList.add('active');
+    if(!e.shiftKey) clearSelection();
+  });
+
+  window.addEventListener('mousemove', (e)=>{
+    if(!selecting) return;
+    if(Math.hypot(e.clientX-selStart.x, e.clientY-selStart.y) > 3) selDragged = true;
+    setSelectionBoxRect(selStart.x, selStart.y, e.clientX, e.clientY);
+    const selRect = selBox.getBoundingClientRect();
+    icons.forEach(it=>{
+      it.el.classList.toggle('selected', rectsIntersect(selRect, it.el.getBoundingClientRect()));
+    });
+  });
+
+  window.addEventListener('mouseup', ()=>{
+    if(!selecting) return;
+    selecting = false;
+    selBox.classList.remove('active');
+    // a real rubber-band drag just finished on the desktop — the
+    // browser is about to fire a "click" on it too (same mousedown +
+    // mouseup target), which would otherwise immediately wipe the
+    // selection we just made
+    if(selDragged) justFinishedBoxSelect = true;
+  });
+
+  desktopEl.addEventListener('click', (e)=>{
+    if(justFinishedBoxSelect){ justFinishedBoxSelect = false; return; }
+    if(!document.body.classList.contains('desktop-icons-mode')) return;
+    if(e.target.closest('.desktop-icon, .win, .top-controls, #taskbarWrap, #moreAppsFolder')) return;
+    clearSelection();
+  });
+
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape' && document.body.classList.contains('desktop-icons-mode')) clearSelection();
+  });
+
+  // ---------- dragging (a single icon, or the whole selection together) ----------
+  const DRAG_THRESHOLD = 4; // px of pointer movement before a click becomes a drag
+
+  icons.forEach(item=>{
+    item.el.addEventListener('mousedown', (e)=>{
+      if(e.button !== 0) return;
+      if(!document.body.classList.contains('desktop-icons-mode')) return;
+      e.stopPropagation();
+
+      if(e.shiftKey){
+        item.el.classList.toggle('selected');
+      }else if(!isSelected(item)){
+        clearSelection();
+        item.el.classList.add('selected');
+      }
+      // (clicking an already-selected icon without shift keeps the
+      // current multi-selection intact, so the whole group can drag)
+
+      const dragGroup = isSelected(item) ? icons.filter(isSelected) : [item];
+      let dragMoved = false;
+      const box = containerBox();
+      const maxX = Math.max(0, box.w - ICON_W), maxY = Math.max(0, box.h - ICON_H);
+      const startPointer = { x: e.clientX, y: e.clientY };
+      const starts = dragGroup.map(it=>({
+        item: it,
+        left: parseFloat(it.el.style.left) || 0,
+        top:  parseFloat(it.el.style.top)  || 0,
+      }));
+
+      suppressResizeLayout = true;
+
+      function onMove(ev){
+        const dx = ev.clientX - startPointer.x, dy = ev.clientY - startPointer.y;
+        if(!dragMoved && Math.hypot(dx,dy) > DRAG_THRESHOLD){
+          dragMoved = true;
+          dragGroup.forEach(it=> it.el.classList.add('dragging'));
+        }
+        if(!dragMoved) return;
+        starts.forEach(s=>{
+          s.item.el.style.left = Math.min(maxX, Math.max(0, s.left+dx)) + 'px';
+          s.item.el.style.top  = Math.min(maxY, Math.max(0, s.top+dy))  + 'px';
+        });
+      }
+      function onUp(){
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+        suppressResizeLayout = false;
+        if(dragMoved){
+          dragGroup.forEach(it=>{
+            it.el.classList.remove('dragging');
+            persistPosition(it);
+            // a real drag just happened on this icon — the browser is
+            // about to fire a click right after mouseup; flag it so
+            // the click handler below skips launching the app
+            it.suppressClick = true;
+          });
+        }
+      }
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    });
+
+    // a plain click (no drag) launches the app, same as before — but
+    // not if this click is the tail end of a drag we just finished
+    item.el.addEventListener('click', ()=>{
+      if(item.suppressClick){ item.suppressClick = false; return; }
+      item.src.click();
+    });
+  });
+
+  // ---------- show/hide the whole icon layer ----------
+  const MODE_KEY = 'desktopIconsModeOn';
+
+  function setMode(on, opts){
+    opts = opts || {};
     document.body.classList.toggle('desktop-icons-mode', on);
     toggle.classList.toggle('active', on);
     toggle.setAttribute('aria-pressed', on ? 'true' : 'false');
@@ -635,10 +889,17 @@ document.getElementById('csBackBtn')?.addEventListener('click', closeCaseStudy);
       // over a desktop full of the same icons
       document.getElementById('moreAppsFolder')?.classList.remove('visible');
       document.getElementById('moreAppsBtn')?.setAttribute('aria-expanded','false');
+      layoutAll();
+    }else{
+      clearSelection();
     }
+    if(!opts.skipSave) CozySettings.set(MODE_KEY, on);
   }
 
   toggle.addEventListener('click', ()=> setMode(!document.body.classList.contains('desktop-icons-mode')));
+
+  // restore last visit's icon-layer on/off state
+  if(CozySettings.get(MODE_KEY, false)) setMode(true, { skipSave:true });
 })();
 
 // ===== TASKBAR / "APP BAY" (traditional desktop mode) =====
@@ -1539,7 +1800,17 @@ allWins.forEach(win=>{
 });
 
 // ===== THEME TOGGLE =====
-document.getElementById('themeToggle').addEventListener('click',()=>{ const r=document.documentElement; r.setAttribute('data-theme',r.getAttribute('data-theme')==='night'?'day':'night'); });
+document.getElementById('themeToggle').addEventListener('click',()=>{
+  const r=document.documentElement;
+  const next = r.getAttribute('data-theme')==='night' ? 'day' : 'night';
+  r.setAttribute('data-theme', next);
+  CozySettings.set('theme', next);
+});
+// restore last visit's day/night pick (index.html defaults to "night")
+(function(){
+  const savedTheme = CozySettings.get('theme', null);
+  if(savedTheme==='day' || savedTheme==='night') document.documentElement.setAttribute('data-theme', savedTheme);
+})();
 
 // ===== VINYL TOGGLE =====
 const vinylToggle=document.getElementById('vinylToggle'),scene=document.querySelector('.scene');
@@ -1736,7 +2007,11 @@ const vinylToggle=document.getElementById('vinylToggle'),scene=document.querySel
   `;
   document.head.appendChild(s);
 
-  let lastVolume = parseFloat(slider.value) || 0.22; // remembers volume to restore on unmute
+  // volume level is remembered per-browser (the on/off toggle itself
+  // intentionally is not — browsers block autoplay-with-sound anyway,
+  // so ambience always starts off and waits for an explicit click)
+  let lastVolume = parseFloat(CozySettings.get('bgmVolume', slider.value)) || 0.22;
+  slider.value = lastVolume;
   let muted = false;
   let hideTimer = null;
 
@@ -1805,6 +2080,7 @@ const vinylToggle=document.getElementById('vinylToggle'),scene=document.querySel
     if(muted && v > 0){ muted = false; toggle.classList.remove('muted'); toggle.setAttribute('aria-pressed','false'); toggle.setAttribute('aria-label','mute background music'); }
     if(v === 0 && !muted){ muted = true; toggle.classList.add('muted'); toggle.setAttribute('aria-pressed','true'); toggle.setAttribute('aria-label','unmute background music'); }
     applyVolume(v);
+    CozySettings.set('bgmVolume', v);
   });
 })();
 
@@ -2744,6 +3020,7 @@ function nextTrack(){
 }
 
 function formatTime(sec){ if(!isFinite(sec)||sec<0)sec=0; return Math.floor(sec/60)+':'+Math.floor(sec%60).toString().padStart(2,'0'); }
+playerVol.value = CozySettings.get('playerVolume', playerVol.value);
 playerAudio.volume=parseFloat(playerVol.value);
 function togglePlay(){
   if(isRadioMode){ toggleRadioPlay(); return; }
@@ -2816,9 +3093,38 @@ playerScrub.addEventListener('input',()=>{ playerAudio.currentTime=parseFloat(pl
 playerVol.addEventListener('input',()=>{
   playerAudio.volume=parseFloat(playerVol.value);
   if(radioAudio)radioAudio.volume=parseFloat(playerVol.value);
+  CozySettings.set('playerVolume', parseFloat(playerVol.value));
 });
 
 renderTrackList('chill');
+
+// ===== "PICK UP WHERE YOU LEFT OFF" (last track, paused) =====
+// Every pause (and right before the tab closes) we remember which
+// track was loaded and exactly where it was — not the live radio
+// stream, since "resuming" a live broadcast doesn't mean anything.
+// On the next visit that track is loaded straight into the player,
+// scrubbed to the same spot, and left paused: never auto-played,
+// since browsers block audio-with-sound before a user gesture anyway
+// and it'd be a rude surprise even if they didn't.
+function saveLastTrack(){
+  if(isRadioMode || playingGenre==null || playingIndex<0) return;
+  CozySettings.set('lastTrack', { genre: playingGenre, index: playingIndex, time: playerAudio.currentTime||0 });
+}
+playerAudio.addEventListener('pause', saveLastTrack);
+window.addEventListener('beforeunload', saveLastTrack);
+
+(function(){
+  const last = CozySettings.get('lastTrack', null);
+  if(!last || !GENRES[last.genre] || !GENRES[last.genre].tracks[last.index]) return;
+  loadTrack(last.genre, last.index, false);
+  const resumeAt = last.time || 0;
+  if(resumeAt > 0){
+    playerAudio.addEventListener('loadedmetadata', function setResumeTime(){
+      playerAudio.removeEventListener('loadedmetadata', setResumeTime);
+      if(resumeAt < (playerAudio.duration || Infinity)) playerAudio.currentTime = resumeAt;
+    });
+  }
+})();
 
 // ===== BACKGROUND PRELOADER =====
 (function(){
@@ -3109,8 +3415,8 @@ setTimeout(() => { gbCache=null; loadGuestbook(); }, 1800);
 
 
 // ===== LIVE WALLPAPER PICKER =====
-// Intentionally session-only: no localStorage. Every reload starts back
-// at the default background, no matter what was picked before.
+// Remembers the last wallpaper a visitor picked (by id) via
+// CozySettings, and re-applies it on the next visit.
 (function(){
   const grid     = document.getElementById('wallpaper-grid');
   const bgVideo  = document.getElementById('liveWallpaper');
@@ -3212,6 +3518,7 @@ setTimeout(() => { gbCache=null; loadGuestbook(); }, 1800);
       grid.querySelectorAll('.wallpaper-tile.active-pick').forEach(t => t.classList.remove('active-pick'));
       tile.classList.add('active-pick');
       applyWallpaper(opt.file || null);
+      CozySettings.set('wallpaperId', opt.id);
     });
 
     return tile;
@@ -3221,8 +3528,14 @@ setTimeout(() => { gbCache=null; loadGuestbook(); }, 1800);
   grid.appendChild(buildTile({ id: 'default', label: 'default', file: null }));
   WALLPAPERS.forEach(opt => grid.appendChild(buildTile(opt)));
 
-  // Always starts on "default" — no saved/restored state on load
-  grid.querySelector('.wallpaper-tile[data-file=""]')?.classList.add('active-pick');
+  // restore whatever was picked last visit — falls back to "default"
+  // (no saved pick, or a saved id that no longer matches a wallpaper)
+  const savedId = CozySettings.get('wallpaperId', 'default');
+  const savedOpt = WALLPAPERS.find(w => w.id === savedId);
+  const initialTile = (savedOpt && grid.querySelector(`.wallpaper-tile[data-file="${savedOpt.file}"]`))
+    || grid.querySelector('.wallpaper-tile[data-file=""]');
+  initialTile?.classList.add('active-pick');
+  if (savedOpt) applyWallpaper(savedOpt.file);
 })();
 
 

@@ -366,25 +366,26 @@
   }
 
   /* ===== DESKTOP ICONS ("show apps as desktop icons" mode) =====
-     A classic OS-style icon grid, anchored to the top-left corner and
-     filling top-to-bottom before wrapping into a new column — same
-     layout convention as a real desktop. Hidden (scaled/faded to
-     nothing, pointer-events off) until body.desktop-icons-mode is
-     toggled on; each icon animates in on its own staggered delay (set
-     inline by script.js) so they pop in one after another in reading
-     order rather than all at once. */
+     A free-floating, OS-style icon layer: each icon is absolutely
+     positioned (left/top set inline by script.js) so it can be dragged
+     anywhere and its spot remembered per-visitor. It defaults to the
+     same top-to-bottom-then-wrap column arrangement a real desktop
+     starts with. The layer itself spans almost the whole screen with
+     pointer-events off, so empty space is "see-through" to clicks/
+     drags (that's what lets a rubber-band selection start anywhere on
+     the desktop, not just inside this box) while each icon button
+     re-enables pointer-events for itself. Hidden (scaled/faded to
+     nothing) until body.desktop-icons-mode is toggled on; each icon
+     animates in on its own staggered delay (set inline by script.js)
+     so they pop in one after another in reading order rather than all
+     at once. */
   .desktop-icons{
-    position:fixed; top:20px; left:20px; bottom:20px;
+    position:fixed; inset:20px;
     z-index:150;
-    display:grid;
-    grid-auto-flow:column;
-    grid-auto-columns:76px;
-    grid-template-rows:repeat(auto-fill, 78px);
-    justify-items:center;
-    row-gap:2px; column-gap:4px;
     pointer-events:none;
   }
   .desktop-icon{
+    position:absolute;
     display:flex; flex-direction:column; align-items:center; gap:4px;
     width:70px;
     background:none; border:none; padding:6px 2px; margin:0;
@@ -395,13 +396,27 @@
     transition: opacity .3s cubic-bezier(.34,1.4,.64,1),
                 scale .34s cubic-bezier(.34,1.7,.64,1),
                 translate .3s cubic-bezier(.34,1.4,.64,1),
-                background .15s ease;
+                background .15s ease, box-shadow .15s ease,
+                left .05s linear, top .05s linear;
   }
   body.desktop-icons-mode .desktop-icon{
     opacity:1; scale:1; translate:0 0;
     pointer-events:auto;
   }
   .desktop-icon:hover{ background:rgba(255,255,255,.08); }
+  /* rubber-band-selected or actively-being-dragged icons get a soft
+     highlight, same idea as a real OS's selection tint */
+  .desktop-icon.selected{
+    background:rgba(96,150,255,.22);
+    box-shadow:0 0 0 1px rgba(96,150,255,.55) inset;
+  }
+  .desktop-icon.dragging{
+    transition:none; /* snap 1:1 with the pointer while dragging */
+    background:rgba(96,150,255,.28);
+    box-shadow:0 8px 20px var(--shadow), 0 0 0 1px rgba(96,150,255,.6) inset;
+    z-index:2;
+    cursor:grabbing;
+  }
   .desktop-icon-glyph{
     width:42px; height:42px; border-radius:11px;
     background:var(--bg-2); border:1px solid var(--panel-edge);
@@ -420,6 +435,19 @@
   @media (max-width:720px), (max-height:500px) and (max-width:1024px){
     #desktopIconsToggle{ display:none; } /* dock is the primary nav on mobile — leave it alone */
   }
+
+  /* rubber-band selection box drawn while click-dragging on empty
+     desktop space in icon mode */
+  .desktop-selection-box{
+    position:fixed;
+    z-index:151;
+    display:none;
+    background:rgba(96,150,255,.14);
+    border:1px solid rgba(96,150,255,.7);
+    border-radius:2px;
+    pointer-events:none;
+  }
+  .desktop-selection-box.active{ display:block; }
 
   /* ===== TASKBAR / "APP BAY" (traditional desktop mode) =====
      A real OS-style taskbar: tucked out of sight along whichever screen
