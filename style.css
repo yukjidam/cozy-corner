@@ -474,13 +474,14 @@
     user-select:none;
   }
   .win-bar:active{ cursor:grabbing; }
-  .win-bar-left{ display:flex; align-items:center; gap:10px; }
+  .win-bar-left{ display:flex; align-items:center; gap:10px; min-width:0; flex:1; }
   .win-title{
     font-family:'Space Mono', monospace;
     font-size:.72rem; color:var(--text-muted);
     letter-spacing:.06em;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;
   }
-  .win-dots{ display:flex; gap:6px; }
+  .win-dots{ display:flex; gap:6px; flex:none; }
   .win-dot{
     width:12px; height:12px; border-radius:50%;
     border:none; padding:0; cursor:pointer;
