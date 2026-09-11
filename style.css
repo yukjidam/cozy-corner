@@ -889,7 +889,7 @@
     -webkit-appearance:none; width:10px; height:10px; border-radius:50%; background:#c9b8e8; cursor:pointer;
   }
   .avp-vol::-moz-range-thumb{ width:10px; height:10px; border:none; border-radius:50%; background:#c9b8e8; cursor:pointer; }
-  .win-body h2{ font-size:1.4rem; margin-bottom:4px; }
+  .win-body h2{ font-size:clamp(1.15rem, .93rem + .94cqi, 1.75rem); margin-bottom:4px; }
 
   /* ===== SHARED INNER COMPONENTS ===== */
   .tag-row{ display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 16px; }
@@ -959,7 +959,7 @@
   /* Default: stacked — title block, then the repo link below it. This is
      what you see at the window's normal/narrow width. */
   .cs-header{ display:flex; flex-direction:column; gap:10px; }
-  .cs-header .cs-tagline{ margin-top:4px; color:var(--text-muted); }
+  .cs-header .cs-tagline{ margin-top:4px; color:var(--text-muted); font-size:clamp(.85rem, .76rem + .39cqi, 1.1rem); }
   .cs-header .resume-link{ margin-top:0; }
   #csTitle:focus{ outline:none; } /* focused programmatically for a11y, not via keyboard/click */
 
@@ -967,7 +967,8 @@
      window's narrowest resizable width. */
   .cs-sections{ margin-top:18px; display:grid; grid-template-columns:1fr; gap:14px; }
   .cs-section{ border-top:1px solid var(--panel-edge); padding-top:12px; }
-  .cs-placeholder{ color:var(--text-muted); font-size:.88rem; font-style:italic; margin-top:4px; }
+  .cs-section .label{ font-size:clamp(.66rem, .615rem + .19cqi, .78rem); }
+  .cs-placeholder{ color:var(--text-muted); font-size:clamp(.8rem, .73rem + .31cqi, 1rem); font-style:italic; margin-top:4px; }
 
   /* As the WORK window gets wider, let the case study reflow too — repo
      link moves up next to the title, and the four sections become a
@@ -984,12 +985,59 @@
     margin-top:16px; padding:26px 20px; text-align:center;
     background:var(--panel); border:1px dashed var(--panel-edge); border-radius:14px;
   }
-  .cs-soon-emoji{ font-size:2rem; display:block; margin-bottom:8px; }
+  .cs-soon-emoji{ font-size:clamp(1.5rem, 1.17rem + 1.41cqi, 2.4rem); display:block; margin-bottom:8px; }
   .cs-soon-title{
-    font-family:'Fredoka',sans-serif; font-weight:700; font-size:1.05rem; margin:0 0 6px;
+    font-family:'Fredoka',sans-serif; font-weight:700;
+    /* scales with the window's own width via container query units,
+       instead of a single fixed size that reads tiny in a wide window
+       and cramped in a narrow one. The slope is shallow enough that it
+       keeps climbing out to a very wide window instead of hitting its
+       ceiling by ~600-900px, which is what made it look "stuck" once
+       the window opened at its default width. */
+    font-size:clamp(1rem, .83rem + .71cqi, 1.45rem); margin:0 0 4px;
   }
-  .cs-soon-sub{
-    font-size:.85rem; color:var(--text-muted); max-width:38ch; margin:0 auto; line-height:1.5;
+
+  /* Retro "under construction" hazard band draped across the coming-soon
+     box, standing in for the old paragraph of explanation. A continuous
+     diagonal yellow/navy stripe, with a bordered label floating in the
+     middle carrying the blinking headline text. */
+  .cs-tape{
+    position:relative;
+    margin-top:18px;
+    height:32px;
+    border-radius:5px;
+    overflow:hidden;
+    background:repeating-linear-gradient(
+      135deg,
+      #f5c518 0 12px,
+      #17122a 12px 24px
+    );
+    box-shadow:0 6px 16px var(--shadow);
+  }
+  .cs-tape-label{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    background:#17122a;
+    border:2px solid #f5c518;
+    border-radius:3px;
+    padding:4px 12px;
+    max-width:calc(100% - 24px);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .cs-tape-blink{
+    font-family:'Space Mono', monospace;
+    font-weight:700;
+    font-size:clamp(.62rem, .55rem + .3cqi, .82rem);
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:#f5c518;
+    animation:cs-tape-blink 1.2s steps(1, jump-none) infinite;
+  }
+  @keyframes cs-tape-blink{
+    0%, 49%{ opacity:1; }
+    50%, 100%{ opacity:0; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .cs-tape-blink{ animation:none; opacity:1; }
   }
   /* ===== devlog entries ===== */
   .devlog-list{ display:flex; flex-direction:column; gap:14px; margin-top:16px; }
