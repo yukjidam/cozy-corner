@@ -646,16 +646,18 @@ document.getElementById('csBackBtn')?.addEventListener('click', closeCaseStudy);
   if(!toggle || !iconWrap || !dock || !desktopEl) return;
 
   const ICON_W = 70, ICON_H = 78;      // must match .desktop-icon sizing in CSS
-  const COL_GAP = 80, ROW_GAP = 82;    // default top-left grid spacing (old layout)
+  const COL_GAP = 80, ROW_GAP = 82;    // grid cell spacing — real desktop icon slots
+  const GRID_PAD = 4;                  // inset of slot (0,0) from the icon layer's edge
 
   const sourceButtons = [
     ...document.querySelectorAll('.dock button[data-win]'),
     ...document.querySelectorAll('.folder-app-btn[data-win]'),
   ];
 
-  // saved icon positions: { [iconId]: { xFrac, yFrac } }, each fraction
-  // 0..1 of the free space the icon has to move around in, so layouts
-  // hold up across different screen sizes
+  // saved icon SLOTS: { [iconId]: { col, row } } — a fixed grid coordinate
+  // rather than a free pixel/fraction, so icons always land on the same
+  // snap points a real desktop would use, and two icons can never claim
+  // the same slot.
   let savedPositions = CozySettings.get('desktopIconPositions', {}) || {};
   function persistPositions(){ CozySettings.set('desktopIconPositions', savedPositions); }
 
@@ -672,7 +674,7 @@ document.getElementById('csBackBtn')?.addEventListener('click', closeCaseStudy);
     icon.setAttribute('aria-label', label);
     icon.innerHTML = `<span class="desktop-icon-glyph">${glyph}</span><span class="desktop-icon-label">${label}</span>`;
     iconWrap.appendChild(icon);
-    icons.push({ el: icon, src, id, index: i });
+    icons.push({ el: icon, src, id, index: i, slot: null });
   });
 
   function containerBox(){
@@ -680,46 +682,87 @@ document.getElementById('csBackBtn')?.addEventListener('click', closeCaseStudy);
     return { w: Math.max(1, r.width), h: Math.max(1, r.height) };
   }
 
+  // how many grid columns/rows currently fit the icon layer — recomputed
+  // on every layout pass so the grid adapts to the viewport, same as a
+  // real desktop re-flowing its icon grid when you resize the screen
+  function gridDims(){
+    const box = containerBox();
+    const cols = Math.max(1, Math.floor((box.w - GRID_PAD) / COL_GAP));
+    const rows = Math.max(1, Math.floor((box.h - GRID_PAD) / ROW_GAP));
+    return { cols, rows };
+  }
+
+  function slotToPos(slot){ return { x: GRID_PAD + slot.col*COL_GAP, y: GRID_PAD + slot.row*ROW_GAP }; }
+  function slotKey(col,row){ return col+','+row; }
+
   // where an icon sits by default (before it's ever been dragged) —
   // same top-to-bottom-then-wrap column layout the old CSS grid used
-  function defaultPosition(index){
-    const rowsPerCol = Math.max(1, Math.floor((iconWrap.clientHeight || 600) / ROW_GAP));
-    const col = Math.floor(index / rowsPerCol), row = index % rowsPerCol;
-    return { x: 4 + col*COL_GAP, y: 4 + row*ROW_GAP };
+  function defaultSlot(index, rows){
+    const rowsPerCol = Math.max(1, rows);
+    return { col: Math.floor(index / rowsPerCol), row: index % rowsPerCol };
   }
 
-  function applyPosition(item){
-    const box = containerBox();
-    const maxX = Math.max(0, box.w - ICON_W), maxY = Math.max(0, box.h - ICON_H);
-    const saved = savedPositions[item.id];
-    let px, py;
-    if(saved){
-      px = saved.xFrac * maxX;
-      py = saved.yFrac * maxY;
-    }else{
-      const d = defaultPosition(item.index);
-      px = Math.min(d.x, maxX);
-      py = Math.min(d.y, maxY);
+  // finds the nearest unoccupied slot to (col,row), searching outward
+  // ring by ring (so a slot taken by another icon bumps you to the
+  // closest free neighbor instead of stacking on top of it)
+  function findFreeSlot(col, row, cols, rows, occupied){
+    col = Math.min(cols-1, Math.max(0, col));
+    row = Math.min(rows-1, Math.max(0, row));
+    if(!occupied.has(slotKey(col,row))) return { col, row };
+    const maxRadius = cols + rows;
+    for(let radius=1; radius<=maxRadius; radius++){
+      const candidates = [];
+      for(let dc=-radius; dc<=radius; dc++){
+        for(let dr=-radius; dr<=radius; dr++){
+          if(Math.max(Math.abs(dc), Math.abs(dr)) !== radius) continue; // ring only
+          const c = col+dc, r = row+dr;
+          if(c<0 || c>=cols || r<0 || r>=rows) continue;
+          if(occupied.has(slotKey(c,r))) continue;
+          candidates.push({ col:c, row:r, dist: dc*dc + dr*dr });
+        }
+      }
+      if(candidates.length){
+        candidates.sort((a,b)=> a.dist - b.dist);
+        return { col: candidates[0].col, row: candidates[0].row };
+      }
     }
-    item.el.style.left = px + 'px';
-    item.el.style.top  = py + 'px';
+    return { col, row }; // grid is completely full — extremely unlikely
   }
 
-  function layoutAll(){ icons.forEach(applyPosition); }
+  // lays out every icon on the current grid: saved slot if it has one
+  // (clamped back onto the grid if the viewport shrank since), else its
+  // default slot — resolving any collisions along the way so nothing
+  // ever overlaps, even right after a resize
+  function layoutAll(){
+    const { cols, rows } = gridDims();
+    const occupied = new Set();
+    icons.forEach(item=>{
+      const saved = savedPositions[item.id];
+      let col, row;
+      if(saved){
+        col = Math.min(cols-1, Math.max(0, Math.round(saved.col)));
+        row = Math.min(rows-1, Math.max(0, Math.round(saved.row)));
+      }else{
+        const d = defaultSlot(item.index, rows);
+        col = Math.min(cols-1, Math.max(0, d.col));
+        row = Math.min(rows-1, Math.max(0, d.row));
+      }
+      const resolved = findFreeSlot(col, row, cols, rows, occupied);
+      occupied.add(slotKey(resolved.col, resolved.row));
+      item.slot = resolved;
+      const pos = slotToPos(resolved);
+      item.el.style.left = pos.x + 'px';
+      item.el.style.top  = pos.y + 'px';
+    });
+  }
   layoutAll();
 
   let suppressResizeLayout = false;
   window.addEventListener('resize', ()=>{ if(!suppressResizeLayout) layoutAll(); });
 
   function persistPosition(item){
-    const box = containerBox();
-    const maxX = Math.max(1, box.w - ICON_W), maxY = Math.max(1, box.h - ICON_H);
-    const left = parseFloat(item.el.style.left) || 0;
-    const top  = parseFloat(item.el.style.top) || 0;
-    savedPositions[item.id] = {
-      xFrac: Math.min(1, Math.max(0, left / maxX)),
-      yFrac: Math.min(1, Math.max(0, top / maxY)),
-    };
+    if(!item.slot) return;
+    savedPositions[item.id] = { col: item.slot.col, row: item.slot.row };
     persistPositions();
   }
 
@@ -812,6 +855,8 @@ document.getElementById('csBackBtn')?.addEventListener('click', closeCaseStudy);
       const dragGroup = isSelected(item) ? icons.filter(isSelected) : [item];
       let dragMoved = false;
       const box = containerBox();
+      // free movement while dragging — only clamped to the icon layer's
+      // own bounds, not the grid; the snap happens once on release
       const maxX = Math.max(0, box.w - ICON_W), maxY = Math.max(0, box.h - ICON_H);
       const startPointer = { x: e.clientX, y: e.clientY };
       const starts = dragGroup.map(it=>({
@@ -839,7 +884,27 @@ document.getElementById('csBackBtn')?.addEventListener('click', closeCaseStudy);
         window.removeEventListener('mouseup', onUp);
         suppressResizeLayout = false;
         if(dragMoved){
+          // snap every dropped icon to its nearest free grid slot —
+          // slots already held by icons outside this drag are off
+          // limits, so a drop that lands on an occupied spot bumps to
+          // the closest open neighbor instead of overlapping it
+          const { cols, rows } = gridDims();
+          const draggedIds = new Set(dragGroup.map(it=> it.id));
+          const occupied = new Set();
+          icons.forEach(it=>{
+            if(!draggedIds.has(it.id) && it.slot) occupied.add(slotKey(it.slot.col, it.slot.row));
+          });
           dragGroup.forEach(it=>{
+            const curX = parseFloat(it.el.style.left) || 0;
+            const curY = parseFloat(it.el.style.top)  || 0;
+            const targetCol = Math.round((curX - GRID_PAD) / COL_GAP);
+            const targetRow = Math.round((curY - GRID_PAD) / ROW_GAP);
+            const resolved = findFreeSlot(targetCol, targetRow, cols, rows, occupied);
+            occupied.add(slotKey(resolved.col, resolved.row));
+            it.slot = resolved;
+            const pos = slotToPos(resolved);
+            it.el.style.left = pos.x + 'px';
+            it.el.style.top  = pos.y + 'px';
             it.el.classList.remove('dragging');
             persistPosition(it);
             // a real drag just happened on this icon — the browser is

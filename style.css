@@ -397,7 +397,7 @@
                 scale .34s cubic-bezier(.34,1.7,.64,1),
                 translate .3s cubic-bezier(.34,1.4,.64,1),
                 background .15s ease, box-shadow .15s ease,
-                left .05s linear, top .05s linear;
+                left .16s cubic-bezier(.2,.8,.3,1.2), top .16s cubic-bezier(.2,.8,.3,1.2);
   }
   body.desktop-icons-mode .desktop-icon{
     opacity:1; scale:1; translate:0 0;
