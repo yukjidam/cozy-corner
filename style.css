@@ -931,6 +931,41 @@
   }
   .case-study-btn:hover{ text-decoration:underline; }
 
+  .resume-link{
+    display:inline-flex; align-items:center; gap:6px;
+    margin-top:10px; font-weight:700; font-size:.92rem; color:var(--accent);
+  }
+  .resume-link:hover{ text-decoration:underline; }
+
+  /* ===== case study view (swapped in-place inside #win-work) ===== */
+  .cs-back-btn{
+    background:none; border:none; padding:0; margin:0 0 14px; font-family:inherit;
+    color:var(--text-muted); font-weight:700; font-size:.85rem; cursor:pointer;
+  }
+  .cs-back-btn:hover{ color:var(--accent); text-decoration:underline; }
+
+  /* Default: stacked — title block, then the repo link below it. This is
+     what you see at the window's normal/narrow width. */
+  .cs-header{ display:flex; flex-direction:column; gap:10px; }
+  .cs-header .cs-tagline{ margin-top:4px; color:var(--text-muted); }
+  .cs-header .resume-link{ margin-top:0; }
+  #csTitle:focus{ outline:none; } /* focused programmatically for a11y, not via keyboard/click */
+
+  /* Sections: single column by default, so this also holds up at the
+     window's narrowest resizable width. */
+  .cs-sections{ margin-top:18px; display:grid; grid-template-columns:1fr; gap:14px; }
+  .cs-section{ border-top:1px solid var(--panel-edge); padding-top:12px; }
+  .cs-placeholder{ color:var(--text-muted); font-size:.88rem; font-style:italic; margin-top:4px; }
+
+  /* As the WORK window gets wider, let the case study reflow too — repo
+     link moves up next to the title, and the four sections become a
+     2-column grid instead of one long stacked list. */
+  @container win (min-width: 560px){
+    .cs-header{ flex-direction:row; align-items:flex-start; justify-content:space-between; gap:20px; }
+    .cs-header .resume-link{ flex:none; white-space:nowrap; margin-top:6px; }
+    .cs-sections{ grid-template-columns:repeat(2,1fr); gap:18px 28px; }
+  }
+
   /* ===== "coming soon" empty-state block, shared by the case-study
      window and the devlog window ===== */
   .cs-soon{
@@ -944,9 +979,6 @@
   .cs-soon-sub{
     font-size:.85rem; color:var(--text-muted); max-width:38ch; margin:0 auto; line-height:1.5;
   }
-  .cs-sections{ margin-top:18px; display:flex; flex-direction:column; gap:14px; }
-  .cs-section{ border-top:1px solid var(--panel-edge); padding-top:12px; }
-  .cs-placeholder{ color:var(--text-muted); font-size:.88rem; font-style:italic; margin-top:4px; }
   .project-cover{
     height:100px; border-radius:8px; margin-bottom:10px;
     background:linear-gradient(135deg, var(--accent), var(--accent-2));

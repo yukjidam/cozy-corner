@@ -352,6 +352,10 @@ function closeWin(win){
   updateDockBtn(win.id,false);
   const body=win.querySelector('.win-body');
   if(body) body.scrollTop=0;
+  // the work window can be left mid-case-study — closing it should always
+  // reset back to the project grid, so reopening it doesn't strand you
+  // on whatever project you last looked at
+  if(win.id==='win-work') resetCaseStudyView();
   // window is gone from the tab order now (display:none) — if focus was
   // inside it, it would otherwise silently fall back to <body>, leaving
   // keyboard/AT users with no sense of where they are
@@ -394,12 +398,13 @@ document.querySelectorAll('.dock button').forEach(btn=>{
   });
 });
 
-// ===== CASE STUDY WINDOW =====
-// One shared window (#win-casestudy) whose title/tagline/repo link get
-// swapped in per project when a "case study →" button is clicked. Real
-// write-ups (problem/approach/screens/lessons) aren't written yet, so
-// the window currently always shows its "coming soon" state — the data
-// map below is what future write-up content would slot into.
+// ===== CASE STUDY (swaps in-place inside #win-work, no separate window) =====
+// Clicking a project's "case study →" button hides the project grid and
+// shows a case-study view within the SAME win-work window/instance —
+// title/tagline/repo link get swapped in per project. Real write-ups
+// (problem/approach/screens/lessons) aren't written yet, so it currently
+// always shows the "coming soon" state — the data map below is what
+// future write-up content would slot into.
 const CASE_STUDIES = {
   animu:       { title:'Animu', tagline:'an anime library app powered by the Jikan API.', repo:'https://github.com/yukjidam/Animu' },
   lettercraft: { title:'LetterCraft', tagline:'a digital letter customizer that exports to a ready-to-open HTML file.', repo:'https://github.com/yukjidam/Lettercraft' },
@@ -408,20 +413,61 @@ const CASE_STUDIES = {
   barruga:     { title:'IM-Barruga', tagline:'a freelance portfolio build for a civil engineering student.', repo:'https://github.com/yukjidam/IM-Barruga' },
   alex:        { title:'Alex Clgn', tagline:'a pink cyber/samurai themed portfolio template.', repo:'https://github.com/yukjidam/japanese-themed-portfolio' },
 };
-function openCaseStudy(projectId){
+
+let lastCaseStudyTrigger = null;
+
+function openCaseStudy(projectId, triggerBtn){
   const cs = CASE_STUDIES[projectId];
-  if(!cs) return;
+  const mainView = document.getElementById('workMainView');
+  const csView   = document.getElementById('workCaseStudyView');
+  if(!cs || !mainView || !csView) return;
+
   const titleEl=document.getElementById('csTitle');
   const taglineEl=document.getElementById('csTagline');
   const repoEl=document.getElementById('csRepoLink');
   if(titleEl) titleEl.textContent = cs.title;
   if(taglineEl) taglineEl.textContent = cs.tagline;
   if(repoEl) repoEl.href = cs.repo;
-  openWin('win-casestudy');
+
+  mainView.hidden = true;
+  csView.hidden = false;
+
+  const winTitle=document.querySelector('#win-work .win-title');
+  if(winTitle) winTitle.textContent = 'work / '+cs.title;
+
+  const body=document.querySelector('#win-work .win-body');
+  if(body) body.scrollTop = 0;
+
+  lastCaseStudyTrigger = triggerBtn || null;
+  // move focus onto the new view's heading so keyboard/AT users land
+  // somewhere sensible instead of on a now-hidden button
+  titleEl?.focus();
 }
+
+function resetCaseStudyView(){
+  const mainView = document.getElementById('workMainView');
+  const csView   = document.getElementById('workCaseStudyView');
+  if(!mainView || !csView || csView.hidden) return; // nothing to reset
+  csView.hidden = true;
+  mainView.hidden = false;
+  const winTitle=document.querySelector('#win-work .win-title');
+  if(winTitle) winTitle.textContent = 'work';
+}
+
+function closeCaseStudy(){
+  const trigger=lastCaseStudyTrigger;
+  resetCaseStudyView();
+  const body=document.querySelector('#win-work .win-body');
+  if(body) body.scrollTop = 0;
+  // send focus back to whichever project's button opened this case
+  // study, so "back" doesn't just dump focus at the top of the window
+  if(trigger && document.contains(trigger)) trigger.focus();
+}
+
 document.querySelectorAll('.case-study-btn[data-case]').forEach(btn=>{
-  btn.addEventListener('click', ()=> openCaseStudy(btn.dataset.case));
+  btn.addEventListener('click', ()=> openCaseStudy(btn.dataset.case, btn));
 });
+document.getElementById('csBackBtn')?.addEventListener('click', closeCaseStudy);
 
 // ===== MORE APPS FOLDER =====
 (function(){
