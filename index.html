@@ -112,6 +112,14 @@
       <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="var(--text)" stroke-width="1.6"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg>
       <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="var(--text)" stroke-width="1.6"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
     </button>
+    <button id="desktopIconsToggle" class="icon-btn" aria-pressed="false" aria-label="show apps as desktop icons" title="show apps as desktop icons">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--text)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/>
+        <rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/>
+        <rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/>
+        <rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>
+      </svg>
+    </button>
   </div>
 
   <nav class="dock">
@@ -125,6 +133,11 @@
     <button data-win="player"><span class="dock-icon">🎵</span><span class="dock-label">player</span><span class="dock-dot"></span><span class="dock-tooltip">player</span></button>
     <button id="moreAppsBtn"><span class="dock-icon" id="moreAppsIcon" style="font-size:1.1rem;">📁</span><span class="dock-label">more</span><span class="dock-dot" id="moreAppsDot"></span><span class="dock-tooltip">more apps</span></button>
   </nav>
+
+  <!-- ===== DESKTOP ICONS (shown in place of the dock + stickies when
+       the "show apps as desktop icons" toggle above is on). Populated
+       from the dock + more-apps folder buttons by script.js. ===== -->
+  <div id="desktopIcons" class="desktop-icons" aria-label="apps" inert></div>
 
   <!-- ===== MORE APPS FOLDER POPUP ===== -->
   <div id="moreAppsFolder" style="

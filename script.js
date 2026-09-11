@@ -579,6 +579,61 @@ document.getElementById('csBackBtn')?.addEventListener('click', closeCaseStudy);
   updateFolderDot();
 })();
 
+// ===== DESKTOP ICONS ("show apps as desktop icons" toggle) =====
+// Flattens every launchable app — the main dock AND the apps tucked
+// inside the "more apps" folder — into a row of icons that appear on
+// the desktop instead, in place of the dock + sticky notes. Rather than
+// re-implementing what each app button does, every generated icon just
+// forwards a real .click() to its original (now-hidden) dock/folder
+// button, so opening/toggling a window still goes through the exact
+// same logic (sounds, bounce animation, player special-casing, etc).
+(function(){
+  const toggle = document.getElementById('desktopIconsToggle');
+  const iconWrap = document.getElementById('desktopIcons');
+  const dock = document.querySelector('.dock');
+  if(!toggle || !iconWrap || !dock) return;
+
+  const sourceButtons = [
+    ...document.querySelectorAll('.dock button[data-win]'),
+    ...document.querySelectorAll('.folder-app-btn[data-win]'),
+  ];
+
+  sourceButtons.forEach((src, i)=>{
+    const glyph = src.querySelector('.dock-icon, span:first-child')?.textContent?.trim() || '📄';
+    const label = src.querySelector('.dock-label, span:last-child')?.textContent?.trim() || src.dataset.win;
+    const icon = document.createElement('button');
+    icon.type = 'button';
+    icon.className = 'desktop-icon';
+    icon.style.transitionDelay = (i*28)+'ms'; // staggers the pop-in/out
+    icon.setAttribute('aria-label', label);
+    icon.innerHTML = `<span class="desktop-icon-glyph">${glyph}</span><span class="desktop-icon-label">${label}</span>`;
+    icon.addEventListener('click', ()=> src.click());
+    iconWrap.appendChild(icon);
+  });
+
+  function setMode(on){
+    document.body.classList.toggle('desktop-icons-mode', on);
+    toggle.classList.toggle('active', on);
+    toggle.setAttribute('aria-pressed', on ? 'true' : 'false');
+    // fully remove the hidden side (dock+widgets, or the icon grid)
+    // from the tab order and AT tree while it's invisible, not just
+    // visually — matches how the rest of the site treats hidden panels
+    dock.inert = on;
+    document.querySelectorAll('.sticky, .desk-widget').forEach(el=>{ el.inert = on; });
+    const garlandEl = document.querySelector('.garland');
+    if(garlandEl) garlandEl.inert = on;
+    iconWrap.inert = !on;
+    if(on){
+      // the "more apps" folder popup doesn't make sense to leave open
+      // over a desktop full of the same icons
+      document.getElementById('moreAppsFolder')?.classList.remove('visible');
+      document.getElementById('moreAppsBtn')?.setAttribute('aria-expanded','false');
+    }
+  }
+
+  toggle.addEventListener('click', ()=> setMode(!document.body.classList.contains('desktop-icons-mode')));
+})();
+
 // ===== ALL FILES (repo code viewer) =====
 (function(){
   const winFiles=document.getElementById('win-files');

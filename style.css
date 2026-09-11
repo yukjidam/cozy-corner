@@ -248,6 +248,8 @@
   #themeToggle{ position:relative; }
   #vinylToggle.active{ background:var(--accent); }
   #vinylToggle.active svg{ fill:var(--bg); }
+  #desktopIconsToggle.active{ background:var(--accent); }
+  #desktopIconsToggle.active svg{ stroke:var(--bg); }
 
   /* ===== VOLUME CONTROL ===== */
   #volToggle.muted{ background:var(--panel-edge); }
@@ -283,6 +285,14 @@
     border-radius:20px;
     padding:8px 14px 10px;
     box-shadow:0 8px 32px var(--shadow), 0 2px 8px var(--shadow);
+    /* "show desktop icons" mode fades + drops the whole dock out of the
+       way; translate is an independent transform property so it layers
+       on top of the translateX(-50%) centering above instead of
+       clobbering it */
+    transition: opacity .32s ease, translate .32s cubic-bezier(.4,0,.2,1);
+  }
+  body.desktop-icons-mode .dock{
+    opacity:0; translate:0 60px; pointer-events:none;
   }
   .dock button{
     position:relative;
@@ -353,6 +363,62 @@
   @keyframes folderPop{
     from{ opacity:0; transform:scale(.88) translateY(8px); }
     to{ opacity:1; transform:scale(1) translateY(0); }
+  }
+
+  /* ===== DESKTOP ICONS ("show apps as desktop icons" mode) =====
+     A classic OS-style icon grid, anchored to the top-left corner and
+     filling top-to-bottom before wrapping into a new column — same
+     layout convention as a real desktop. Hidden (scaled/faded to
+     nothing, pointer-events off) until body.desktop-icons-mode is
+     toggled on; each icon animates in on its own staggered delay (set
+     inline by script.js) so they pop in one after another in reading
+     order rather than all at once. */
+  .desktop-icons{
+    position:fixed; top:20px; left:20px; bottom:20px;
+    z-index:150;
+    display:grid;
+    grid-auto-flow:column;
+    grid-auto-columns:76px;
+    grid-template-rows:repeat(auto-fill, 78px);
+    justify-items:center;
+    row-gap:2px; column-gap:4px;
+    pointer-events:none;
+  }
+  .desktop-icon{
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    width:70px;
+    background:none; border:none; padding:6px 2px; margin:0;
+    border-radius:8px;
+    color:var(--text); cursor:pointer; font-family:inherit;
+    opacity:0; scale:.35; translate:-14px 0;
+    pointer-events:none;
+    transition: opacity .3s cubic-bezier(.34,1.4,.64,1),
+                scale .34s cubic-bezier(.34,1.7,.64,1),
+                translate .3s cubic-bezier(.34,1.4,.64,1),
+                background .15s ease;
+  }
+  body.desktop-icons-mode .desktop-icon{
+    opacity:1; scale:1; translate:0 0;
+    pointer-events:auto;
+  }
+  .desktop-icon:hover{ background:rgba(255,255,255,.08); }
+  .desktop-icon-glyph{
+    width:42px; height:42px; border-radius:11px;
+    background:var(--bg-2); border:1px solid var(--panel-edge);
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.3rem;
+    box-shadow:0 2px 6px var(--shadow);
+    transition: background .2s ease, box-shadow .2s ease, transform .18s cubic-bezier(.34,1.6,.64,1);
+  }
+  .desktop-icon:hover .desktop-icon-glyph{ background:var(--panel-edge); box-shadow:0 4px 14px var(--shadow); transform:translateY(-2px); }
+  .desktop-icon-label{
+    font-size:.6rem; font-weight:700; color:var(--text);
+    white-space:nowrap; letter-spacing:.02em;
+    font-family:'Space Mono', monospace;
+    text-shadow:0 1px 3px var(--shadow), 0 1px 3px var(--shadow);
+  }
+  @media (max-width:720px), (max-height:500px) and (max-width:1024px){
+    #desktopIconsToggle{ display:none; } /* dock is the primary nav on mobile — leave it alone */
   }
 
   /* ===== DESKTOP WINDOWS ===== */
@@ -1030,10 +1096,10 @@
     letter-spacing:.08em;
     text-transform:uppercase;
     color:#f5c518;
-    animation:cs-tape-blink 1.2s steps(1, jump-none) infinite;
+    animation:cs-tape-blink 1s linear infinite;
   }
   @keyframes cs-tape-blink{
-    0%, 49%{ opacity:1; }
+    0%, 49.9%{ opacity:1; }
     50%, 100%{ opacity:0; }
   }
   @media (prefers-reduced-motion: reduce){
@@ -2015,13 +2081,25 @@
     position:fixed; z-index:10;
     pointer-events:auto; user-select:none;
     cursor:grab;
-    transition: box-shadow .2s ease, transform .15s ease;
+    transition: box-shadow .2s ease, transform .15s ease,
+                opacity .3s ease, scale .3s cubic-bezier(.34,1.6,.64,1);
   }
   .desk-widget:active{ cursor:grabbing; }
   .desk-widget.dragging{
     box-shadow:0 16px 48px var(--shadow), 0 4px 16px var(--shadow) !important;
     z-index:50;
   }
+
+  /* "show apps as desktop icons" mode clears every floating decoration
+     — clock, calendar, haiku/quote/visitor cards — off the desktop,
+     each with a slight stagger so they don't all vanish at once */
+  body.desktop-icons-mode .desk-widget{
+    opacity:0; scale:.6; pointer-events:none;
+  }
+  body.desktop-icons-mode #widgetCal{ transition-delay:.04s; }
+  body.desktop-icons-mode #widgetHaiku{ transition-delay:.08s; }
+  body.desktop-icons-mode #widgetQuote{ transition-delay:.12s; }
+  body.desktop-icons-mode #widgetVisitors{ transition-delay:.16s; }
 
   .widget-clock{
     top:20px; left:20px;
@@ -2181,7 +2259,10 @@
     pointer-events:auto; user-select:none;
     max-width:168px;
     cursor:grab;
-    transition: box-shadow .2s ease;
+    /* scale/opacity here are independent transform properties, so they
+       layer on top of each note's own inline rotate() instead of
+       overriding it — the note fades out shrunk-but-still-tilted */
+    transition: box-shadow .2s ease, opacity .3s ease, scale .3s cubic-bezier(.34,1.6,.64,1);
   }
   .sticky:active{ cursor:grabbing; }
   .sticky.dragging{
@@ -2202,15 +2283,27 @@
   .sticky-mint{   background:#a7f3d0; }
   .sticky-lavender{ background:#ddd6fe; }
 
+  /* "show apps as desktop icons" mode clears the stickies out of the
+     way, staggered slightly so they don't all vanish in lockstep */
+  body.desktop-icons-mode .sticky{
+    opacity:0; scale:.5; pointer-events:none;
+  }
+  body.desktop-icons-mode .sticky-lavender{ transition-delay:.05s; }
+  body.desktop-icons-mode .sticky-mint{ transition-delay:.1s; }
+
   .paw-print{
     position:fixed; z-index:8; pointer-events:none; user-select:none;
     font-size:1.2rem; opacity:.12;
     animation: paw-drift 16s ease-in-out infinite;
+    transition: opacity .3s ease;
   }
   @keyframes paw-drift{
     0%,100%{ transform:translateY(0) rotate(var(--pr,0deg)); }
     50%{ transform:translateY(-14px) rotate(calc(var(--pr,0deg) + 10deg)); }
   }
+  /* the drift keyframes above only ever animate `transform`, so this
+     opacity transition rides alongside them with no conflict */
+  body.desktop-icons-mode .paw-print{ opacity:0; }
 
   /* ===== POLAROID GARLAND ===== */
   .garland{
@@ -2220,7 +2313,9 @@
     gap:clamp(14px, 4vw, 46px);
     padding:0 16px;
     max-width:760px; margin:0 auto;
+    transition: opacity .3s ease, scale .3s ease;
   }
+  body.desktop-icons-mode .garland{ opacity:0; scale:.94; }
   .garland-wire{
     position:absolute; top:0; left:0; width:100%; height:34px;
     overflow:visible;
